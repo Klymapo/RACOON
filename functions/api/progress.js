@@ -30,7 +30,7 @@ async function verifyUser(request,env){
  if(!valid)throw Error('JWT no verificable');
  const email=typeof payload.email==='string'?payload.email.trim().toLowerCase():'';
  if(!email)throw Error('Cuenta sin correo electrónico');
- if(env.ALLOWED_EMAIL&&email!==env.ALLOWED_EMAIL.toLowerCase().trim())throw Error('Cuenta no autorizada');
+ if(!env.ALLOWED_EMAIL||email!==env.ALLOWED_EMAIL.toLowerCase().trim())throw Error('Cuenta no autorizada');
  return email;
 }
 function sanitize(track){
