@@ -1,0 +1,49 @@
+name: RACOON · comprobar cuenta Cloudflare
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/workflows/diagnostico-cloudflare.yml]
+permissions:
+  contents: read
+jobs:
+  diagnostico:
+    name: Comparar cuenta y localizar proyecto
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comparar Account ID sin revelarlo
+        env:
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CF_ACCOUNT" || { echo "Cloudflare Account ID no configurado"; exit 1; }
+          HASH=$(printf '%s' "$CF_ACCOUNT" | sha256sum | cut -d' ' -f1)
+          if [ "$HASH" = "d3f40f06082f2237af3ac9324271fe8f9867c134ff832c7ecb545556ca3943a7" ]; then
+            echo "CUENTA_COINCIDE_CON_D1=SI" >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice::La cuenta configurada en GitHub es la misma que aparece en el dashboard con racoon-radar."
+          else
+            echo "CUENTA_COINCIDE_CON_D1=NO" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::La cuenta configurada en GitHub no coincide con la cuenta del dashboard donde está racoon-radar."
+          fi
+      - name: Comprobar Pages con el token de despliegue
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Falta token"; exit 1; }
+          npm install -g wrangler@4
+          npx wrangler pages project list --json > /tmp/racoon-projects.json
+          node - <<'JS'
+          const fs=require('fs');
+          const all=JSON.parse(fs.readFileSync('/tmp/racoon-projects.json','utf8'));
+          const arr=Array.isArray(all)?all:(all.result||[]);
+          const matches=arr.filter(x=>x.name==='racoon');
+          console.log('Cantidad de proyectos Pages visibles al token:',arr.length);
+          console.log('Existe proyecto racoon:',matches.length?'SI':'NO');
+          for(const x of matches)console.log('Dominio de Pages:',x.subdomain||x.domains?.join(', ')||'no indicado');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+            'PROYECTO_RACOON_EXISTE='+ (matches.length?'SI':'NO')+'\n');
+          JS
