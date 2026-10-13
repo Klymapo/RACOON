@@ -36,21 +36,12 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Faltan credenciales de Cloudflare"; exit 1; }
-          PROJECT="${PROJECT:-racoon}"
+          # Este proyecto ya se creó durante la primera publicación.
+          # No volver a crearlo: la lista de proyectos del token puede omitirlo.
+          PROJECT="${PROJECT:-racoon-radar-klymapo}"
+          if [ "$PROJECT" = "racoon" ]; then PROJECT="racoon-radar-klymapo"; fi
           [[ "$PROJECT" =~ ^[a-z0-9-]+$ ]] || { echo "::error::Nombre de proyecto inválido"; exit 1; }
           npm install -g wrangler@4
-          wrangler pages project list --json > /tmp/racoon-projects.json
-          # El nombre racoon existe en otra cuenta. Usar un proyecto exclusivo
-          # cuando el token actual no pueda visualizarlo, sin sobrescribir otros sitios.
-          if ! node -e "const p=require('/tmp/racoon-projects.json'); const a=Array.isArray(p)?p:(p.result||[]); process.exit(a.some(x=>x.name===process.argv[1])?0:1)" "$PROJECT"; then
-            if [ "$PROJECT" = "racoon" ]; then
-              PROJECT="racoon-radar-klymapo"
-              echo "El proyecto racoon pertenece a otra cuenta; usar $PROJECT en la cuenta conectada."
-            fi
-          fi
-          if ! node -e "const p=require('/tmp/racoon-projects.json'); const a=Array.isArray(p)?p:(p.result||[]); process.exit(a.some(x=>x.name===process.argv[1])?0:1)" "$PROJECT"; then
-            wrangler pages project create "$PROJECT" --production-branch main
-          fi
           STATIC_DIR="$(mktemp -d)"
           cp -R public/. "$STATIC_DIR/"
           rm -f "$STATIC_DIR/_routes.json"
