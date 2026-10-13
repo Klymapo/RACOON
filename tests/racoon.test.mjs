@@ -44,7 +44,7 @@ test('Archivos públicos sin claves privadas',()=>{
 });
 
 test('The Vermilion Mask: datos y emisión correcta del primer cour',()=>{
- const match=html.match(/const DATA=(\\[[^\\n]+\\]);/);
+ const match=html.match(/const DATA=(\[[^\n]+\]);/);
  const serie=JSON.parse(match[1]).find(x=>x.id==='verm');
  assert.equal(serie.date,'2026-10-10');
  assert.equal(serie.day,5); // sábado
