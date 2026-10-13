@@ -1,9 +1,9 @@
 {
-  "version": "2.0.0",
-  "publishedAt": "2026-10-13T00:00:00Z",
+  "version": "2.1.0",
+  "publishedAt": "2026-10-13T16:10:00Z",
   "changes": [
-    "Nueva navegación RACOON Wizard",
-    "Calendario semanal responsive",
-    "Datos locales y respaldos compatibles"
+    "Calendario semanal recurrente con horarios previstos",
+    "Actualización automática del catálogo original y contadores con procedencia",
+    "Filtros de progreso, favoritos, edición manual y actualización PWA segura"
   ]
 }

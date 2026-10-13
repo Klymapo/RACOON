@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CATALOG} from '../public/js/catalog.mjs';
 import {createDefaultState} from '../public/js/storage.mjs';
-import {buildDashboardModel, applyTrackingPatch, createApp} from '../public/js/app.mjs';
+import {buildDashboardModel, applyTrackingPatch, filterProgressEntries, createApp} from '../public/js/app.mjs';
 
 class MemoryStorage {
   values = new Map();
@@ -30,6 +30,11 @@ test('dashboard counts pending episodes and upcoming series from local state', (
   assert.equal(model.pending[0].remaining, 2);
 });
 
+test('dashboard uses the next weekly slot instead of only the premiere date', () => {
+  const model = buildDashboardModel(CATALOG, createDefaultState(CATALOG), '2026-10-13');
+  assert.ok(model.upcoming.some((entry) => entry.id === 'legacy:witch' && entry.date === '2026-10-14'));
+});
+
 test('tracking patches preserve manual progress when catalog metadata changes', () => {
   const state = createDefaultState(CATALOG);
   state.tracking['legacy:verm'] = {seen: 2, status: 'Viendo', favorite: true, changedAt: 10, availableOverride: 2, totalOverride: 12, manualFields: ['availableOverride']};
@@ -48,4 +53,12 @@ test('app controller persists local tracking actions without a server', () => {
   assert.ok(storage.getItem('racoon-v2-state'));
   app.selectView('progress');
   assert.equal(app.getView(), 'progress');
+});
+
+test('progress filters connect search, status, and favorites to the library model', () => {
+  const state = createDefaultState(CATALOG);
+  state.tracking['legacy:verm'] = {seen: 1, availableOverride: 2, status: 'Viendo', favorite: true};
+  state.tracking['legacy:over'] = {seen: 4, availableOverride: 4, status: 'Al día', favorite: false};
+  assert.deepEqual(filterProgressEntries(CATALOG, state, {query: 'vermilion', filter: 'favorites'}).map(({entry}) => entry.id), ['legacy:verm']);
+  assert.deepEqual(filterProgressEntries(CATALOG, state, {filter: 'uptodate'}).map(({entry}) => entry.id), ['legacy:over']);
 });

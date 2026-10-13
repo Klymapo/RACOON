@@ -3,6 +3,7 @@ import {stableId} from '../model.mjs';
 export const ANILIST_URL = 'https://graphql.anilist.co';
 const SEARCH_QUERY = `query($search:String!){Page(page:1,perPage:12){media(search:$search,type:ANIME,isAdult:false){id type format season seasonYear title{romaji english native} synonyms description genres episodes status coverImage{large} startDate{year month day} nextAiringEpisode{episode airingAt} siteUrl}}}`;
 const DETAIL_QUERY = `query($id:Int!){Media(id:$id,type:ANIME){id type format season seasonYear title{romaji english native} synonyms description genres episodes status coverImage{large} startDate{year month day} nextAiringEpisode{episode airingAt} siteUrl}}`;
+const SEASON_QUERY = `query($season:MediaSeason!,$year:Int!){Page(page:1,perPage:50){media(season:$season,seasonYear:$year,type:ANIME,isAdult:false){id type format season seasonYear title{romaji english native} synonyms description genres episodes status coverImage{large} startDate{year month day} nextAiringEpisode{episode airingAt} siteUrl}}}`;
 
 function stripHtml(value) {
   return String(value || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -82,4 +83,9 @@ export async function fetchAnimeDetails(id, options = {}) {
   const data = await request(DETAIL_QUERY, {id: Number(id)}, options);
   if (!data.Media) throw new Error('AniList no encontró la serie');
   return normalizeAniListMedia(data.Media);
+}
+
+export async function fetchSeasonalAnime({season = 'FALL', year = 2026, ...options} = {}) {
+  const data = await request(SEASON_QUERY, {season, year}, options);
+  return (data.Page?.media || []).map(normalizeAniListMedia);
 }

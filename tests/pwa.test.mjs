@@ -30,6 +30,27 @@ test('activation is user-controlled and sends SKIP_WAITING only on request', () 
   assert.equal(typeof listeners.controllerchange, 'function');
 });
 
+test('applyUpdate refreshes the registration before activating a newly found worker', async () => {
+  const messages = [];
+  let updateCalls = 0;
+  const registration = {
+    waiting: null,
+    update: async () => {
+      updateCalls += 1;
+      registration.waiting = {postMessage: (message) => messages.push(message)};
+    }
+  };
+  const result = await (await registerPwa({
+    navigator: {serviceWorker: {register: async () => registration}},
+    window: {addEventListener() {}},
+    currentVersion: '2.0.0',
+    fetch: async () => response({version: '2.0.1', changes: []})
+  })).applyUpdate();
+  assert.equal(result, true);
+  assert.equal(updateCalls, 1);
+  assert.deepEqual(messages, [{type: 'SKIP_WAITING'}]);
+});
+
 test('registers the service worker and exposes a manual version check', async () => {
   const callbacks = [];
   const navigatorLike = {serviceWorker: {register: async () => ({addEventListener() {}})}};

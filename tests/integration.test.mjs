@@ -21,6 +21,7 @@ test('provider failure preserves catalog, evidence, and personal progress', asyn
   assert.equal(result.state.tracking['legacy:verm'].availableOverride, 2);
   assert.deepEqual(result.state.catalogOfficial['legacy:verm'], original);
   assert.equal(result.state.updateMeta.providers.catalog.status, 'failed');
+  assert.equal(result.state.updateMeta.lastChecked, 200);
 });
 
 test('successful provider updates official catalog without touching tracking', async () => {
@@ -31,6 +32,13 @@ test('successful provider updates official catalog without touching tracking', a
   assert.equal(result.state.catalogOfficial['legacy:verm'].title, 'Updated title');
   assert.equal(result.state.tracking['legacy:verm'].seen, 2);
   assert.equal(result.state.updateMeta.providers.catalog.status, 'completed');
+});
+
+test('an empty successful provider result is recorded as no update', async () => {
+  const result = await refreshCatalog(createDefaultState(CATALOG), async () => [], 300);
+  assert.equal(result.status, 'no-update');
+  assert.equal(result.state.updateMeta.providers.catalog.status, 'no-update');
+  assert.equal(result.state.updateMeta.lastChecked, 300);
 });
 
 test('workflow remains static-only and guarded against server artifacts', () => {

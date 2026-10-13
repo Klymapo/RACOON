@@ -12,6 +12,8 @@ export function normalizeLegacyCatalog(raw = []) {
     legacyId: entry.id,
     mediaKind: entry.mediaKind || 'season',
     title: entry.title || entry.name || 'Sin título',
+    availableEpisodes: entry.availableEpisodes ?? null,
+    totalEpisodes: entry.totalEpisodes ?? null,
     sources: entry.sources || (entry.source ? [{kind: 'secondary', url: entry.source}] : [])
   }));
 }

@@ -1,12 +1,13 @@
 import {CATALOG} from './catalog.mjs';
 import {createDefaultState, loadState, saveState} from './storage.mjs';
 import {buildCalendarModel} from './schedule.mjs';
-import {searchAnime, fetchAnimeDetails} from './providers/anilist.mjs';
+import {mexicoDate} from './time.mjs';
+import {searchAnime, fetchAnimeDetails, fetchSeasonalAnime} from './providers/anilist.mjs';
 import {registerPwa} from './pwa.mjs';
 import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} from './backup.mjs';
 import {shouldRefresh, refreshCatalog, FOUR_HOURS} from './refresh.mjs';
 
-const RACOON_VERSION = '2.0.0';
+const RACOON_VERSION = '2.1.0';
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -18,12 +19,22 @@ function availableFor(entry, tracking = {}) {
   return tracking.availableOverride ?? entry.availableEpisodes ?? 0;
 }
 
+function availableValue(entry, tracking = {}) {
+  return tracking.availableOverride ?? entry.availableEpisodes ?? null;
+}
+
 function totalFor(entry, tracking = {}) {
   return tracking.totalOverride ?? entry.totalEpisodes ?? null;
 }
 
 function normalizeTracking(tracking = {}) {
   return {seen: 0, status: 'Pendiente', favorite: false, changedAt: 0, availableOverride: null, totalOverride: null, manualFields: [], ...tracking};
+}
+
+function optionalFormInteger(value) {
+  if (value === '' || value === null || value === undefined) return null;
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number >= 0 ? number : null;
 }
 
 function addDays(ymd, amount) {
@@ -38,7 +49,21 @@ function mondayOf(ymd) {
   return addDays(ymd, 1 - day);
 }
 
-export function buildDashboardModel(catalog, state, today = new Date().toISOString().slice(0, 10)) {
+function nextWeeklyDate(entry, today) {
+  if (entry.kind === 'Finalizada') return null;
+  const schedule = entry.weeklySchedule || (Number.isInteger(entry.day) ? {day: entry.day, startDate: entry.date} : null);
+  if (!schedule || !Number.isInteger(schedule.day)) return entry.date && entry.date >= today ? entry.date : null;
+  const start = entry.date && entry.date > today ? entry.date : today;
+  for (let offset = 0; offset < 14; offset += 1) {
+    const candidate = addDays(start, offset);
+    const day = new Date(`${candidate}T12:00:00Z`).getUTCDay();
+    const mondayIndex = day === 0 ? 6 : day - 1;
+    if (mondayIndex === schedule.day && (!schedule.startDate || candidate >= schedule.startDate) && (!schedule.endDate || candidate <= schedule.endDate)) return candidate;
+  }
+  return null;
+}
+
+export function buildDashboardModel(catalog, state, today = mexicoDate(Date.now())) {
   const entries = entryMap(catalog, state);
   const tracked = Object.entries(state.tracking)
     .map(([id, raw]) => ({id, entry: entries[id], tracking: normalizeTracking(raw)}))
@@ -46,7 +71,10 @@ export function buildDashboardModel(catalog, state, today = new Date().toISOStri
   const pending = tracked.map(({id, entry, tracking}) => ({id, entry, tracking, available: availableFor(entry, tracking), remaining: Math.max(0, availableFor(entry, tracking) - tracking.seen)}))
     .filter((item) => item.remaining > 0)
     .sort((left, right) => right.remaining - left.remaining || String(left.entry.title || left.entry.name).localeCompare(String(right.entry.title || right.entry.name)));
-  const upcoming = Object.values(entries).filter((entry) => entry.date && entry.date >= today && entry.kind !== 'Finalizada').sort((left, right) => left.date.localeCompare(right.date)).slice(0, 6);
+  const upcoming = Object.values(entries).map((entry) => {
+    const date = nextWeeklyDate(entry, today);
+    return date ? {...entry, date} : null;
+  }).filter(Boolean).sort((left, right) => left.date.localeCompare(right.date)).slice(0, 6);
   return {
     stats: {
       tracked: tracked.length,
@@ -73,6 +101,33 @@ export function saveCatalogEntry(state, entry, edits = {}) {
   return {...state, catalogOfficial: {...state.catalogOfficial, [entry.id]: saved}};
 }
 
+export function filterProgressEntries(catalog, state, {query = '', filter = 'all', sort = 'title'} = {}) {
+  const normalizedQuery = String(query).trim().toLocaleLowerCase();
+  const entries = Object.values(entryMap(catalog, state)).map((entry) => {
+    const tracking = normalizeTracking(state.tracking?.[entry.id]);
+    const available = availableValue(entry, tracking);
+    const remaining = available === null ? null : Math.max(0, available - tracking.seen);
+    return {entry, tracking, available, remaining};
+  }).filter(({entry, tracking, available, remaining}) => {
+    const haystack = `${entry.title || entry.name} ${entry.alternativeTitles?.join(' ') || ''}`.toLocaleLowerCase();
+    if (normalizedQuery && !haystack.includes(normalizedQuery)) return false;
+    if (filter === 'watching' && tracking.status !== 'Viendo') return false;
+    if (filter === 'pending' && !(remaining !== null && remaining > 0)) return false;
+    if (filter === 'uptodate' && !(available !== null && available > 0 && tracking.seen >= available)) return false;
+    if (filter === 'finished' && tracking.status !== 'Terminada') return false;
+    if (filter === 'favorites' && !tracking.favorite) return false;
+    return true;
+  });
+  const compareTitle = (left, right) => String(left.entry.title || left.entry.name).localeCompare(String(right.entry.title || right.entry.name), 'es');
+  entries.sort((left, right) => {
+    if (sort === 'progress') return (right.tracking.seen - left.tracking.seen) || compareTitle(left, right);
+    if (sort === 'status') return String(left.tracking.status).localeCompare(String(right.tracking.status), 'es') || compareTitle(left, right);
+    if (sort === 'favorites') return Number(right.tracking.favorite) - Number(left.tracking.favorite) || compareTitle(left, right);
+    return compareTitle(left, right);
+  });
+  return entries;
+}
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (character) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[character]));
 }
@@ -97,7 +152,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   }
 
   function renderHome() {
-    const model = buildDashboardModel(CATALOG, state, new Date(now()).toISOString().slice(0, 10));
+    const model = buildDashboardModel(CATALOG, state, mexicoDate(now()));
     const stats = elements('homeStats');
     if (stats) stats.innerHTML = [
       ['tracked', model.stats.tracked, 'Series en seguimiento'],
@@ -109,29 +164,42 @@ export function createApp({document = globalThis.document, storage = globalThis.
     if (pending) pending.innerHTML = model.pending.length ? model.pending.slice(0, 4).map((item) => `<div class="stack-item"><div class="stack-icon">${escapeHtml(item.entry.icon || '✦')}</div><div class="stack-copy"><strong>${escapeHtml(item.entry.title || item.entry.name)}</strong><span>${item.remaining} episodio${item.remaining === 1 ? '' : 's'} pendiente${item.remaining === 1 ? '' : 's'}</span></div></div>`).join('') : '<div class="empty-state"><strong>Todo en calma</strong>No tienes episodios pendientes.</div>';
     const upcoming = elements('upcomingList');
     if (upcoming) upcoming.innerHTML = model.upcoming.length ? model.upcoming.slice(0, 4).map((entry) => `<div class="stack-item"><div class="stack-icon">${escapeHtml(entry.icon || '✦')}</div><div class="stack-copy"><strong>${escapeHtml(entry.title || entry.name)}</strong><span>${escapeHtml(entry.date)} · ${escapeHtml(entry.platform || 'Fuente pendiente')}</span></div></div>`).join('') : '<div class="empty-state"><strong>Sin próximos estrenos</strong>Agrega una serie para verla aquí.</div>';
-    setText('homeUpdated', 'Guardado local · datos verificables');
+    const checked = Number(state.updateMeta?.lastChecked);
+    const provider = state.updateMeta?.providers?.catalog;
+    const freshness = checked ? `Fuentes: ${provider?.status === 'failed' ? 'sin conexión' : 'revisadas'} · ${new Date(checked).toLocaleString('es-MX', {dateStyle: 'short', timeStyle: 'short'})}` : 'Fuentes pendientes de primera revisión';
+    setText('homeUpdated', `${freshness} · guardado local`);
   }
 
   function renderProgress() {
     const target = elements('progressList');
     if (!target) return;
-    const entries = entryMap(CATALOG, state);
-    const cards = Object.entries(entries).map(([id, entry]) => {
-      const tracking = normalizeTracking(state.tracking[id]);
-      const available = availableFor(entry, tracking);
+    const entries = filterProgressEntries(CATALOG, state, {query: elements('progressSearch')?.value || '', filter: elements('progressFilter')?.value || 'all', sort: elements('progressSort')?.value || state.preferences.sort || 'title'});
+    const cards = entries.map(({entry, tracking, available}) => {
+      const id = entry.id;
       const total = totalFor(entry, tracking);
       const percent = available ? Math.min(100, Math.round((tracking.seen / available) * 100)) : 0;
-      return `<article class="library-card" data-library-id="${escapeHtml(id)}"><div class="poster">${escapeHtml(entry.icon || '✦')}</div><div class="card-content"><span class="status-pill">${escapeHtml(tracking.status)}</span><h3>${escapeHtml(entry.title || entry.name)}</h3><div class="card-meta">${tracking.seen} vistos · ${available} disponibles · ${total ?? '?'} total</div><div class="progress-line"><span style="width:${percent}%"></span></div><div class="card-actions"><button class="mini-button" type="button" data-progress-action="minus" data-id="${escapeHtml(id)}">−1</button><button class="mini-button" type="button" data-progress-action="plus" data-id="${escapeHtml(id)}">＋1</button><button class="mini-button" type="button" data-progress-action="catchup" data-id="${escapeHtml(id)}">Al corriente</button></div></div></article>`;
+      const poster = entry.poster ? `<img src="${escapeHtml(entry.poster)}" alt="" loading="lazy">` : escapeHtml(entry.icon || '✦');
+      const availableLabel = available === null ? 'pendiente' : available;
+      return `<article class="library-card" data-library-id="${escapeHtml(id)}"><div class="poster">${poster}</div><div class="card-content"><div class="card-topline"><span class="status-pill">${escapeHtml(tracking.status)}</span><button class="favorite-button ${tracking.favorite ? 'is-favorite' : ''}" type="button" data-progress-action="favorite" data-id="${escapeHtml(id)}" aria-label="${tracking.favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}">${tracking.favorite ? '★' : '☆'}</button></div><h3>${escapeHtml(entry.title || entry.name)}</h3><div class="card-meta"><span>${tracking.seen} vistos · ${availableLabel} disponibles · ${total ?? '?'} total</span></div><div class="progress-line"><span style="width:${percent}%"></span></div><div class="progress-edit-grid"><label>Vistos<input type="number" min="0" max="9999" value="${tracking.seen}" data-progress-field="seen" data-id="${escapeHtml(id)}"></label><label>Disponibles<input type="number" min="0" max="9999" value="${available ?? ''}" placeholder="?" data-progress-field="availableOverride" data-id="${escapeHtml(id)}"></label><label>Total<input type="number" min="0" max="9999" value="${total ?? ''}" placeholder="?" data-progress-field="totalOverride" data-id="${escapeHtml(id)}"></label></div><div class="card-actions"><button class="mini-button" type="button" data-progress-action="minus" data-id="${escapeHtml(id)}">−1</button><button class="mini-button" type="button" data-progress-action="plus" data-id="${escapeHtml(id)}">＋1</button><button class="mini-button" type="button" data-progress-action="catchup" data-id="${escapeHtml(id)}"${available === null ? ' disabled' : ''}>Al corriente</button></div></div></article>`;
     });
     target.innerHTML = cards.join('') || '<div class="empty-state"><strong>Tu biblioteca está vacía</strong>Agrega tu primera serie.</div>';
   }
 
   function renderCalendar() {
-    const today = new Date(now()).toISOString().slice(0, 10);
+    const today = mexicoDate(now());
     const weekStart = state.preferences.calendarWeek || mondayOf(today);
     const selectedDay = state.preferences.selectedDay || weekStart;
     const entries = Object.values({...Object.fromEntries(CATALOG.map((entry) => [entry.id, entry])), ...state.catalogOfficial, ...state.catalogCustom});
-    const model = buildCalendarModel(entries, state, {weekStart, selectedDay, platform: state.preferences.platform || 'all', status: state.preferences.status || 'all'});
+    const platformSelect = elements('calendarPlatform');
+    const selectedPlatform = state.preferences.platform || 'all';
+    let effectivePlatform = selectedPlatform;
+    if (platformSelect) {
+      const platforms = [...new Set(Object.values(entries).flatMap((entry) => entry.platforms || entry.platform ? [entry.platform || entry.platforms?.[0]] : []).filter(Boolean))].sort((left, right) => left.localeCompare(right, 'es'));
+      platformSelect.innerHTML = ['<option value="all">Todas las plataformas</option>', ...platforms.map((platform) => `<option value="${escapeHtml(platform)}">${escapeHtml(platform)}</option>`)].join('');
+      effectivePlatform = platforms.includes(selectedPlatform) ? selectedPlatform : 'all';
+      platformSelect.value = effectivePlatform;
+    }
+    const model = buildCalendarModel(entries, state, {weekStart, selectedDay, platform: effectivePlatform, status: state.preferences.status || 'all'});
     const selector = elements('daySelector');
     if (selector) selector.innerHTML = model.days.map((day, index) => `<button class="day-chip ${day.date === model.selectedDay ? 'is-active' : ''}" type="button" data-calendar-day="${day.date}" role="tab" aria-selected="${day.date === model.selectedDay}"><strong>${DAY_NAMES[index]}</strong><small>${day.entries.length} estreno${day.entries.length === 1 ? '' : 's'}</small></button>`).join('');
     const calendar = elements('calendar');
@@ -150,7 +218,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
     const target = elements('seriesConfirmation');
     if (!target) return;
     target.classList.remove('is-hidden');
-    target.innerHTML = `<div class="panel-heading"><h3>Confirmar serie</h3><span class="badge badge-teal">${escapeHtml(entry.id)}</span></div><h3>${escapeHtml(entry.title)}</h3><p class="muted">${escapeHtml(entry.synopsis || 'Sin sinopsis verificada.')}</p><div class="tag-row"><span class="status-pill">Temporada: ${escapeHtml(entry.season || 'Pendiente de verificar')}</span><span class="status-pill">Total: ${entry.totalEpisodes ?? 'Pendiente de verificar'}</span><span class="status-pill">Emisión: ${escapeHtml(entry.airingStatus || 'Pendiente de verificar')}</span></div><p class="muted">Fuente: <a href="${escapeHtml(entry.sources?.[0]?.url || '#')}" target="_blank" rel="noopener noreferrer">AniList ↗</a>. Puedes guardarla aunque falten datos.</p><div class="button-row"><button class="button button-primary" type="button" data-save-series="${escapeHtml(entry.id)}">Guardar en mi biblioteca</button><button class="button button-ghost" type="button" data-cancel-series>Cancelar</button></div>`;
+    target.innerHTML = `<div class="panel-heading"><h3>Confirmar serie</h3><span class="badge badge-teal">${escapeHtml(entry.id)}</span></div><div class="series-form"><label>Título<input data-series-field="title" value="${escapeHtml(entry.title || '')}"></label><label>Títulos alternativos<input data-series-field="alternativeTitles" value="${escapeHtml((entry.alternativeTitles || []).join(', '))}"></label><label>Sinopsis<textarea data-series-field="synopsis" rows="4">${escapeHtml(entry.synopsis || '')}</textarea></label><div class="form-grid"><label>Géneros<input data-series-field="genres" value="${escapeHtml((entry.genres || []).join(', '))}" placeholder="Pendiente de verificar"></label><label>Temporada<input data-series-field="season" value="${escapeHtml(entry.season || '')}" placeholder="Pendiente"></label><label>Año<input type="number" data-series-field="seasonYear" value="${entry.seasonYear ?? ''}" placeholder="Pendiente"></label><label>Estreno<input type="date" data-series-field="premiereDate" value="${escapeHtml(entry.premiereDate || '')}"></label><label>Total de episodios<input type="number" min="0" data-series-field="totalEpisodes" value="${entry.totalEpisodes ?? ''}" placeholder="Pendiente"></label><label>Estado de emisión<input data-series-field="airingStatus" value="${escapeHtml(entry.airingStatus || '')}" placeholder="Pendiente"></label><label>Plataforma<input data-series-field="platform" value="${escapeHtml(entry.platform || entry.platforms?.[0] || '')}" placeholder="Pendiente de verificar"></label><label>Disponibilidad México<input data-series-field="regionalAvailability" value="${escapeHtml(entry.regionalAvailability || '')}" placeholder="Pendiente de verificar"></label></div></div><div class="tag-row"><span class="status-pill">ID permanente: ${escapeHtml(entry.id)}</span><span class="status-pill">Fuente consultada: AniList</span></div><p class="muted">Fuente: <a href="${escapeHtml(entry.sources?.[0]?.url || '#')}" target="_blank" rel="noopener noreferrer">AniList ↗</a>. Los campos regionales quedan sin verificar hasta confirmar una fuente mexicana.</p><div class="button-row"><button class="button button-primary" type="button" data-save-series="${escapeHtml(entry.id)}">Guardar en mi biblioteca</button><button class="button button-ghost" type="button" data-cancel-series>Cancelar</button></div>`;
   }
 
   function renderAddStatus(message = '') { setText('searchStatus', message); }
@@ -180,14 +248,43 @@ export function createApp({document = globalThis.document, storage = globalThis.
     const known = Object.values(state.catalogOfficial).filter((entry) => String(entry.id).startsWith('anilist:')).slice(0, 20);
     const result = await refreshCatalog(state, async () => {
       const entries = [];
-      for (const entry of known) {
-        try { entries.push(await fetchAnimeDetails(entry.sourceId || entry.id.split(':')[1], {fetch})); } catch { /* conserva el último dato confirmado */ }
+      const failures = [];
+      const legacy = Object.values(state.catalogOfficial).filter((entry) => String(entry.id).startsWith('legacy:'));
+      if (legacy.length) {
+        try {
+          const seasonal = await fetchSeasonalAnime({season: 'FALL', year: 2026, fetch});
+          const normalize = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/\b(?:t\s*\d+|season\s*\d+|parte\s*\d+|part\s*\d+|temporada\s*\d+)\b/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+          for (const local of legacy) {
+            const aliases = [local.title, local.name, local.alias, ...(local.alternativeTitles || [])].flatMap((value) => String(value || '').split('/')).map(normalize).filter((value) => value.length > 3);
+            const remote = seasonal.find((candidate) => [candidate.title, ...(candidate.alternativeTitles || [])].map(normalize).some((title) => aliases.some((alias) => title === alias || title.includes(alias) || alias.includes(title))));
+            if (!remote) continue;
+            const next = {...local, ...remote, id: local.id, legacyId: local.legacyId, title: local.title, name: local.name, alias: local.alias, platform: local.platform, platforms: local.platforms, weeklySchedule: local.weeklySchedule, scheduleEvents: local.scheduleEvents, sources: [...(local.sources || []), ...(remote.sources || [])]};
+            if (Number.isInteger(remote.totalEpisodes)) next.totalEpisodes = remote.totalEpisodes;
+            if (remote.nextAiring?.episode) {
+              next.nextAiring = remote.nextAiring;
+              const airingAt = Number(remote.nextAiring.airingAt) * 1000;
+              const candidate = remote.nextAiring.episode - (airingAt > now() ? 1 : 0);
+              if (candidate > 0) {
+                next.availableEpisodes = Math.max(Number(local.availableEpisodes) || 0, candidate);
+                next.availableConfidence = 'estimated';
+              }
+            } else if (remote.airingStatus === 'FINISHED' && Number.isInteger(remote.totalEpisodes)) {
+              next.availableEpisodes = remote.totalEpisodes;
+              next.availableConfidence = 'confirmed';
+            }
+            entries.push(next);
+          }
+        } catch (error) { failures.push(error); }
       }
+      for (const entry of known) {
+        try { entries.push({...entry, ...(await fetchAnimeDetails(entry.sourceId || entry.id.split(':')[1], {fetch}))}); } catch (error) { failures.push(error); /* conserva el último dato confirmado */ }
+      }
+      if (!entries.length && failures.length) throw failures[0];
       return entries;
     }, now());
     state = result.state;
     saveState(storage, state);
-    setText('freshness', result.status === 'completed' ? 'Fuentes revisadas · datos locales intactos' : 'Fuentes sin conexión · último dato conservado');
+    setText('freshness', result.status === 'completed' ? `Fuentes actualizadas · ${new Date(now()).toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit'})}` : result.status === 'no-update' ? 'Fuentes revisadas · sin novedades' : 'Fuentes sin conexión · último dato conservado');
     render();
     return result;
   }
@@ -230,11 +327,32 @@ export function createApp({document = globalThis.document, storage = globalThis.
         if (!result) return;
         selectedSeries = result;
         renderSeriesConfirmation(result);
+        if (result.sourceId) fetchAnimeDetails(result.sourceId, {fetch}).then((details) => {
+          selectedSeries = {...selectedSeries, ...details, platform: selectedSeries.platform, regionalAvailability: selectedSeries.regionalAvailability};
+          renderSeriesConfirmation(selectedSeries);
+        }).catch(() => { /* la ficha de búsqueda sigue siendo guardable sin enriquecer */ });
         return;
       }
       const saveSeries = event.target.closest?.('[data-save-series]');
       if (saveSeries && selectedSeries?.id === saveSeries.dataset.saveSeries) {
-        state = saveCatalogEntry(state, selectedSeries);
+        const fields = Object.fromEntries([...document.querySelectorAll?.('[data-series-field]') || []].map((field) => [field.dataset.seriesField, field.value]));
+        const edited = {
+          ...selectedSeries,
+          title: fields.title?.trim() || selectedSeries.title,
+          alternativeTitles: fields.alternativeTitles?.split(',').map((value) => value.trim()).filter(Boolean) || selectedSeries.alternativeTitles || [],
+          synopsis: fields.synopsis?.trim() || '',
+          genres: fields.genres?.split(',').map((value) => value.trim()).filter(Boolean) || selectedSeries.genres || [],
+          season: fields.season?.trim() || null,
+          seasonYear: optionalFormInteger(fields.seasonYear),
+          premiereDate: fields.premiereDate || null,
+          totalEpisodes: optionalFormInteger(fields.totalEpisodes),
+          airingStatus: fields.airingStatus?.trim() || 'UNKNOWN',
+          platform: fields.platform?.trim() || null,
+          platforms: fields.platform?.trim() ? [fields.platform.trim()] : [],
+          regionalAvailability: fields.regionalAvailability?.trim() || null,
+          regionalAvailabilityConfidence: fields.regionalAvailability?.trim() ? 'unverified' : 'unverified'
+        };
+        state = saveCatalogEntry(state, edited);
         saveState(storage, state);
         render();
         renderAddStatus('Serie guardada en tu biblioteca local.');
@@ -255,7 +373,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
       }
       const goWeek = event.target.closest?.('[data-calendar-week]');
       if (goWeek) {
-        const current = state.preferences.calendarWeek || mondayOf(new Date(now()).toISOString().slice(0, 10));
+        const current = state.preferences.calendarWeek || mondayOf(mexicoDate(now()));
         state.preferences.calendarWeek = addDays(current, Number(goWeek.dataset.calendarWeek));
         state.preferences.selectedDay = state.preferences.calendarWeek;
         saveState(storage, state);
@@ -269,24 +387,34 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const available = availableFor(entry, tracking);
       if (action.dataset.progressAction === 'plus') setTracking(id, {seen: Math.min(available || Number.MAX_SAFE_INTEGER, tracking.seen + 1), status: 'Viendo'});
       if (action.dataset.progressAction === 'minus') setTracking(id, {seen: Math.max(0, tracking.seen - 1), status: tracking.seen <= 1 ? 'Pendiente' : 'Viendo'});
-      if (action.dataset.progressAction === 'catchup') setTracking(id, {seen: available, status: 'Al día'});
+      if (action.dataset.progressAction === 'catchup' && available > 0) setTracking(id, {seen: available, status: 'Al día'});
+      if (action.dataset.progressAction === 'favorite') setTracking(id, {favorite: !tracking.favorite});
+    });
+    document.addEventListener('change', (event) => {
+      const field = event.target.closest?.('[data-progress-field]');
+      if (!field) return;
+      const id = field.dataset.id;
+      const value = field.value === '' ? null : Math.max(0, Number(field.value));
+      const manualFields = new Set(normalizeTracking(state.tracking[id]).manualFields);
+      manualFields.add(field.dataset.progressField);
+      setTracking(id, {[field.dataset.progressField]: Number.isFinite(value) ? value : null, manualFields: [...manualFields]});
     });
   }
   elements('previousWeek')?.addEventListener?.('click', () => {
     const button = {dataset: {calendarWeek: '-7'}};
-    state.preferences.calendarWeek = addDays(state.preferences.calendarWeek || mondayOf(new Date(now()).toISOString().slice(0, 10)), -7);
+    state.preferences.calendarWeek = addDays(state.preferences.calendarWeek || mondayOf(mexicoDate(now())), -7);
     state.preferences.selectedDay = state.preferences.calendarWeek;
     saveState(storage, state);
     renderCalendar();
   });
   elements('nextWeek')?.addEventListener?.('click', () => {
-    state.preferences.calendarWeek = addDays(state.preferences.calendarWeek || mondayOf(new Date(now()).toISOString().slice(0, 10)), 7);
+    state.preferences.calendarWeek = addDays(state.preferences.calendarWeek || mondayOf(mexicoDate(now())), 7);
     state.preferences.selectedDay = state.preferences.calendarWeek;
     saveState(storage, state);
     renderCalendar();
   });
   elements('currentWeek')?.addEventListener?.('click', () => {
-    const week = mondayOf(new Date(now()).toISOString().slice(0, 10));
+    const week = mondayOf(mexicoDate(now()));
     state.preferences.calendarWeek = week;
     state.preferences.selectedDay = week;
     saveState(storage, state);
@@ -294,6 +422,9 @@ export function createApp({document = globalThis.document, storage = globalThis.
   });
   elements('calendarPlatform')?.addEventListener?.('change', (event) => { state.preferences.platform = event.target.value; saveState(storage, state); renderCalendar(); });
   elements('calendarStatus')?.addEventListener?.('change', (event) => { state.preferences.status = event.target.value; saveState(storage, state); renderCalendar(); });
+  elements('progressSearch')?.addEventListener?.('input', () => renderProgress());
+  elements('progressFilter')?.addEventListener?.('change', () => renderProgress());
+  elements('progressSort')?.addEventListener?.('change', (event) => { state.preferences.sort = event.target.value; saveState(storage, state); renderProgress(); });
   elements('searchForm')?.addEventListener?.('submit', async (event) => {
     event.preventDefault();
     const query = elements('animeSearch')?.value?.trim();
@@ -315,7 +446,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
     if (dialog?.showModal && !dialog.open) dialog.showModal();
   };
   elements('dismissUpdate')?.addEventListener?.('click', () => elements('updateDialog')?.close?.());
-  elements('applyUpdate')?.addEventListener?.('click', () => { elements('updateDialog')?.close?.(); pwaController?.applyUpdate?.(); });
+  elements('applyUpdate')?.addEventListener?.('click', async () => { setText('updateStatus', 'Preparando actualización segura…'); const applied = await pwaController?.applyUpdate?.(); if (!applied) setText('updateStatus', 'La actualización aún no está lista; puedes intentarlo de nuevo.'); else elements('updateDialog')?.close?.(); });
   elements('checkUpdate')?.addEventListener?.('click', async () => { setText('updateStatus', 'Comprobando versión…'); await pwaController?.checkNow?.(); });
   elements('quickRefresh')?.addEventListener?.('click', () => refreshRemote(true));
   elements('exportBackup')?.addEventListener?.('click', () => downloadFile('racoon-respaldo.json', JSON.stringify(createBackup(state), null, 2), 'application/json;charset=utf-8'));
@@ -358,7 +489,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   if (typeof window !== 'undefined') {
     const refreshIfDue = () => { if (shouldRefresh(state.updateMeta, now())) refreshRemote(false); };
     refreshIfDue();
-    window.setInterval?.(refreshIfDue, Math.min(FOUR_HOURS, 60 * 1000));
+    window.setInterval?.(refreshIfDue, 60 * 1000);
     document.addEventListener?.('visibilitychange', () => { if (!document.hidden) refreshIfDue(); });
   }
   return {selectView, setTracking, render, getState: () => state, getView: () => currentView, fetch};

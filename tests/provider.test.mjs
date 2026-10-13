@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizeAniListMedia, searchAnime, fetchAnimeDetails} from '../public/js/providers/anilist.mjs';
+import {normalizeAniListMedia, searchAnime, fetchAnimeDetails, fetchSeasonalAnime} from '../public/js/providers/anilist.mjs';
 import {saveCatalogEntry} from '../public/js/app.mjs';
 import {createDefaultState} from '../public/js/storage.mjs';
 
@@ -52,6 +52,18 @@ test('detail lookup and network failure are explicit', async () => {
   const details = await fetchAnimeDetails(123, {fetch: async () => response({data: {Media: media}})});
   assert.equal(details.id, 'anilist:123');
   await assert.rejects(() => searchAnime('x', {fetch: async () => { throw new Error('offline'); }}), /AniList/);
+});
+
+test('seasonal refresh uses one public query without credentials', async () => {
+  let request;
+  const results = await fetchSeasonalAnime({season: 'FALL', year: 2026, fetch: async (url, options) => {
+    request = {url, options};
+    return response({data: {Page: {media: [media]}}});
+  }});
+  assert.equal(results[0].id, 'anilist:123');
+  assert.equal(request.options.headers.Authorization, undefined);
+  assert.match(request.options.body, /FALL/);
+  assert.match(request.options.body, /2026/);
 });
 
 test('saves a result with missing fields by permanent ID without duplicating it', () => {

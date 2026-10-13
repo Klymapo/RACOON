@@ -12,6 +12,9 @@ test('RACOON muestra 25 animes sin duplicados',()=>{
  assert.equal(CATALOG.length,25);
  assert.equal(new Set(CATALOG.map(x=>x.id)).size,25);
  for(const x of CATALOG)for(const f of ['title','platform','date'])assert.ok(x[f]);
+ assert.equal(CATALOG.find((entry)=>entry.id==='legacy:verm').availableEpisodes,1);
+ assert.equal(CATALOG.find((entry)=>entry.id==='legacy:verm').scheduleConfidence,'contradictory');
+ assert.equal(CATALOG.filter((entry)=>entry.weeklySchedule?.frequency==='weekly').length,23);
 });
 
 test('Los módulos JavaScript tienen sintaxis válida',()=>{

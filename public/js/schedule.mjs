@@ -6,6 +6,34 @@ function plusDays(ymd, amount) {
   return date.toISOString().slice(0, 10);
 }
 
+function recurringDate(entry, weekStart, index) {
+  if (entry.kind === 'Finalizada') return null;
+  const schedule = entry.weeklySchedule || (Number.isInteger(entry.day) ? {day: entry.day, startDate: entry.date} : null);
+  if (!schedule || schedule.frequency === 'once' || !Number.isInteger(schedule.day)) return null;
+  const date = plusDays(weekStart, index);
+  const startDate = schedule.startDate || entry.date;
+  if (startDate && date < startDate) return null;
+  if (schedule.endDate && date > schedule.endDate) return null;
+  return schedule.day === index ? date : null;
+}
+
+function sourceTimeFor(entry, date) {
+  if (!entry.sourceTime?.time || !entry.sourceTime?.timeZone) return null;
+  return {...entry.sourceTime, date};
+}
+
+function explicitEvent(entry, date) {
+  return (entry.scheduleEvents || []).find((event) => event.date === date) || null;
+}
+
+function statusLabel(confidence) {
+  return confidence === 'confirmed' ? 'Confirmado'
+    : confidence === 'announced' ? 'Anunciado'
+      : confidence === 'estimated' ? 'Previsto'
+        : confidence === 'contradictory' ? 'Contradictorio'
+          : 'Sin verificar';
+}
+
 function statusMatches(entry, tracking, filter) {
   if (filter === 'all') return true;
   const available = tracking.availableOverride ?? entry.availableEpisodes ?? 0;
@@ -22,26 +50,39 @@ export function buildCalendarModel(catalog = [], state = {}, options = {}) {
     const tracking = state.tracking?.[entry.id] || {seen: 0};
     return (options.platform === 'all' || !options.platform || String(entry.platform || '').includes(options.platform))
       && statusMatches(entry, tracking, options.status || 'all');
-  }).map((entry) => {
+  }).flatMap((entry) => {
     const tracking = state.tracking?.[entry.id] || {seen: 0};
-    let mexicoDate = entry.date;
-    let mexicoTime = null;
-    if (entry.sourceTime) {
-      const epoch = zonedDateTimeToEpoch(entry.sourceTime.date, entry.sourceTime.time, entry.sourceTime.timeZone);
-      const formatted = formatInTimeZone(epoch, 'America/Mexico_City', 'en-CA');
-      mexicoDate = formatted.slice(0, 10);
-      mexicoTime = formatted;
-    }
-    const confidence = entry.scheduleConfidence || 'unverified';
-    return {
-      ...entry,
-      tracking,
-      confidence,
-      statusLabel: confidence === 'confirmed' ? 'Confirmado' : confidence === 'announced' ? 'Anunciado' : confidence === 'estimated' ? 'Estimado' : 'Sin verificar',
-      mexicoDate,
-      mexicoTime,
-      episodeLabel: entry.episodeLabel || 'Episodio pendiente de verificar'
-    };
+    return days.map((day, index) => {
+      const recurring = recurringDate(entry, weekStart, index);
+      const explicit = explicitEvent(entry, day.date);
+      const initialDate = entry.date === day.date ? day.date : null;
+      if (!recurring && !explicit && !initialDate) return null;
+      if (!recurring && entry.kind === 'Finalizada' && !explicit && !initialDate) return null;
+      const eventDate = explicit?.date || recurring || initialDate;
+      const eventTime = explicit?.sourceTime || (recurring ? sourceTimeFor(entry, eventDate) : entry.sourceTime);
+      let mexicoDate = eventDate;
+      let mexicoTime = null;
+      if (eventTime?.date && eventTime?.time && eventTime?.timeZone) {
+        const epoch = zonedDateTimeToEpoch(eventTime.date, eventTime.time, eventTime.timeZone);
+        const formatted = formatInTimeZone(epoch, 'America/Mexico_City', 'en-CA');
+        mexicoDate = formatted.slice(0, 10);
+        mexicoTime = formatted;
+      }
+      const isProjected = Boolean(recurring && !initialDate && !explicit);
+      const confidence = explicit?.confidence || (isProjected ? entry.weeklySchedule?.confidence || 'estimated' : null) || entry.scheduleConfidence || 'unverified';
+      const candidates = explicit?.episodeCandidates || entry.episodeCandidates;
+      const episodeLabel = explicit?.episodeLabel || (candidates?.length ? `Episodio ${candidates.join('/')} · discrepancia` : entry.episodeLabel) || 'Episodio pendiente de verificar';
+      return {
+        ...entry,
+        ...explicit,
+        tracking,
+        confidence,
+        statusLabel: statusLabel(confidence),
+        mexicoDate,
+        mexicoTime,
+        episodeLabel
+      };
+    }).filter(Boolean);
   });
   for (const event of filtered) {
     const day = days.find((candidate) => candidate.date === event.mexicoDate);

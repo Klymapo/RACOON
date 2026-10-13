@@ -36,6 +36,26 @@ export function activateWaitingWorker(registration, windowLike = globalThis.wind
   return true;
 }
 
+async function waitForInstallingWorker(registration) {
+  const worker = registration?.installing;
+  if (!worker) return registration?.waiting || null;
+  if (worker.state === 'installed') return registration.waiting || worker;
+  return new Promise((resolve) => {
+    worker.addEventListener?.('statechange', () => {
+      if (worker.state === 'installed') resolve(registration.waiting || worker);
+    });
+  });
+}
+
+export async function activateLatestWorker(registration, windowLike = globalThis.window) {
+  if (!registration) return false;
+  try { await registration.update?.(); } catch { /* continúa con el worker ya instalado */ }
+  const worker = registration.waiting || await waitForInstallingWorker(registration);
+  if (!worker) return false;
+  if (!registration.waiting) registration.waiting = worker;
+  return activateWaitingWorker(registration, windowLike);
+}
+
 export async function registerPwa({navigator = globalThis.navigator, window = globalThis.window, fetch = globalThis.fetch, currentVersion = '0.0.0', onUpdate = () => {}} = {}) {
   const serviceWorker = navigator?.serviceWorker;
   const registration = serviceWorker?.register ? await serviceWorker.register('/sw.js') : null;
@@ -52,5 +72,5 @@ export async function registerPwa({navigator = globalThis.navigator, window = gl
     });
   });
   await checkNow();
-  return {registration, checkNow, applyUpdate: () => activateWaitingWorker(registration, window)};
+  return {registration, checkNow, applyUpdate: () => activateLatestWorker(registration, window)};
 }

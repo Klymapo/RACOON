@@ -12,6 +12,7 @@ RACOON es una PWA pública y local-first para descubrir series, consultar su age
 - Migración de `anime-radar-otono-2026-v1` sin borrar la clave anterior.
 - Exportación JSON completa, importación con vista previa, fusión/reemplazo y CSV.
 - Actualizaciones PWA diferidas: RACOON avisa y la persona decide cuándo activar la nueva versión.
+- v2.1 corrige slots semanales recurrentes, refresca el catálogo estacional completo y distingue sin novedades, fallo y contradicción.
 
 ## Datos personales y límites
 

@@ -41,3 +41,16 @@ test('places an event on the Mexico day after timezone conversion', () => {
   assert.equal(model.days.find((day) => day.date === '2026-10-18').entries[0].id, 'legacy:late');
   assert.equal(model.mobileEntries[0].mexicoDate, '2026-10-18');
 });
+
+test('repeats a verified weekly slot after the initial premiere date', () => {
+  const model = buildCalendarModel([{id: 'legacy:weekly', title: 'Weekly Show', date: '2026-10-10', day: 5, platform: 'Crunchyroll', scheduleConfidence: 'announced'}], {tracking: {}}, {weekStart: '2026-10-12', selectedDay: '2026-10-17'});
+  assert.equal(model.mobileEntries[0].id, 'legacy:weekly');
+  assert.equal(model.mobileEntries[0].mexicoDate, '2026-10-17');
+  assert.equal(model.mobileEntries[0].statusLabel, 'Previsto');
+  assert.equal(model.mobileEntries[0].episodeLabel, 'Episodio pendiente de verificar');
+});
+
+test('does not project weekly episodes after a finished season', () => {
+  const model = buildCalendarModel([{id: 'legacy:finished', title: 'Finished Show', date: '2026-10-01', day: 3, kind: 'Finalizada'}], {tracking: {}}, {weekStart: '2026-10-12', selectedDay: '2026-10-15'});
+  assert.equal(model.mobileEntries.length, 0);
+});

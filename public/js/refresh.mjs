@@ -16,10 +16,11 @@ export async function refreshCatalog(state, loader, now = Date.now()) {
     const entries = await loader();
     if (!Array.isArray(entries)) throw new Error('Respuesta de catálogo inválida');
     for (const entry of entries.filter((item) => item?.id)) next.catalogOfficial[entry.id] = entry;
-    next.updateMeta = {...next.updateMeta, lastChecked: now, providers: {...next.updateMeta.providers, catalog: {status: 'completed', lastChecked: now, error: null}}};
-    return {state: next, status: 'completed', entries: entries.length};
+    const status = entries.length ? 'completed' : 'no-update';
+    next.updateMeta = {...next.updateMeta, lastChecked: now, providers: {...next.updateMeta.providers, catalog: {status, lastChecked: now, error: null}}};
+    return {state: next, status, entries: entries.length};
   } catch (error) {
-    next.updateMeta = {...next.updateMeta, providers: {...next.updateMeta.providers, catalog: {status: 'failed', lastChecked: next.updateMeta.providers?.catalog?.lastChecked || 0, error: String(error.message || error)}}};
+    next.updateMeta = {...next.updateMeta, lastChecked: now, providers: {...next.updateMeta.providers, catalog: {status: 'failed', lastChecked: now, error: String(error.message || error)}}};
     return {state: next, status: 'failed', error: true};
   }
 }

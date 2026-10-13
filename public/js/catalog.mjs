@@ -353,5 +353,44 @@ const LEGACY_CATALOG = [
   }
 ];
 
-export const CATALOG = normalizeLegacyCatalog(LEGACY_CATALOG);
+const LEGACY_VERIFIED = {
+  avatar: {availableEpisodes: 3, totalEpisodes: 13, availableConfidence: 'confirmed', scheduleConfidence: 'confirmed'},
+  elusive: {availableEpisodes: 12, totalEpisodes: 12, availableConfidence: 'confirmed', scheduleConfidence: 'confirmed'},
+  kaiju: {availableEpisodes: 12, totalEpisodes: 12, availableConfidence: 'confirmed', scheduleConfidence: 'confirmed'},
+  verm: {
+    availableEpisodes: 1,
+    totalEpisodes: 12,
+    availableConfidence: 'confirmed',
+    scheduleConfidence: 'contradictory',
+    episodeCandidates: [2, 3],
+    scheduleEvents: [{
+      date: '2026-10-17',
+      episodeCandidates: [2, 3],
+      confidence: 'contradictory',
+      sourceTime: {date: '2026-10-17', time: '03:30', timeZone: 'America/Los_Angeles'},
+      sources: [
+        {kind: 'official', url: 'https://the-vermilion-mask.com/en/news/contents/article_l8njwjhk7pkt85jr.html'},
+        {kind: 'platform', url: 'https://www.crunchyroll.com/es/news/seasonal-lineup/2026/10/11/crunchyroll-calendario-semanal-otono-2026'}
+      ]
+    }]
+  }
+};
+
+function decorateLegacyEntry(entry) {
+  const verified = LEGACY_VERIFIED[entry.legacyId] || {};
+  const isFinished = entry.kind === 'Finalizada';
+  return {
+    ...entry,
+    ...verified,
+    weeklySchedule: !isFinished && Number.isInteger(entry.day) ? {
+      frequency: 'weekly',
+      day: entry.day,
+      startDate: entry.date,
+      confidence: verified.scheduleConfidence || 'announced'
+    } : null,
+    sources: entry.sources
+  };
+}
+
+export const CATALOG = normalizeLegacyCatalog(LEGACY_CATALOG).map(decorateLegacyEntry);
 export const CATALOG_BY_ID = new Map(CATALOG.map((entry) => [entry.id, entry]));
