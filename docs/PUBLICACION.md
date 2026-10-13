@@ -1,16 +1,42 @@
 # RACOON · publicación pública, sin cuentas
-**Modo actual: estático y local.** No requiere Cloudflare Access, D1 ni sesiones de usuario.
 
-## Despliegue automático
-1. En GitHub > RACOON > Settings > Secrets and variables > Actions > Secrets, conserva `CLOUDFLARE_API_TOKEN` (permiso Cloudflare Pages: Edit) y `CLOUDFLARE_ACCOUNT_ID` de la **misma cuenta**. No compartas el token en chats.
-2. Opcional: en Variables, `RACOON_PAGES_PROJECT=racoon`. Si no está definido, el workflow usa `racoon`.
-3. En GitHub > Actions > «RACOON · publicar PWA pública», ejecuta «Run workflow», o sube un cambio a `main`.
-4. El workflow ejecuta las pruebas, localiza o crea el proyecto Pages y sube únicamente `public/`. Busca la URL efectiva `*.pages.dev` en el registro del job «Publicar sitio estático».
-5. Abre el enlace desde una sesión privada: debe mostrar directamente el radar, sin pantalla de Cloudflare Access. Si hay una política Access anterior, desactívala desde la cuenta Cloudflare adecuada.
-6. En Chrome Android: menú ⋮ > «Agregar a pantalla principal» o «Instalar app», según el dispositivo.
+RACOON v2 sigue siendo un sitio estático. Cloudflare Pages utiliza el proyecto existente `racoon-radar-klymapo`; no se debe crear otro proyecto ni activar Functions/D1 para esta aplicación.
 
-**Protección de datos:** todo el seguimiento permanece en el `localStorage` de ese navegador/origen. Usa «↓ Copia JSON» para hacer un respaldo; «↑ Importar JSON» para restaurar o moverlo a otro dispositivo. No se solicita login ni se envían datos del progreso al servidor.
+## Antes de publicar
 
-La carpeta `functions/` y `schema.sql` están archivadas en el repositorio como prototipo; el workflow los excluye expresamente del despliegue al trabajar desde una carpeta temporal fuera del repo.
+1. Trabaja en una rama y abre Pull Request; no publiques directamente desde una rama de trabajo. El evento `pull_request` ejecuta únicamente el job de calidad.
+2. Ejecuta `node --test tests/*.test.mjs` y revisa las capturas de QA.
+3. En GitHub > Settings > Secrets and variables > Actions > Secrets, conserva `CLOUDFLARE_API_TOKEN` con permiso Pages: Edit y `CLOUDFLARE_ACCOUNT_ID` de la misma cuenta. Nunca copies valores de secretos al código o a una captura.
+4. Opcionalmente define la variable `RACOON_PAGES_PROJECT`. El workflow corrige el nombre histórico `racoon` al proyecto `racoon-radar-klymapo` y usa ese valor por defecto.
 
-**Actualizaciones:** cada push a `main` despliega la app pública. AniList se consulta cada cuatro horas mientras esté abierta; no existe un cron remoto ni actualización de títulos automática.
+## Despliegue
+
+Después de fusionar el Pull Request en `main`, el workflow:
+
+- ejecuta todas las pruebas `tests/*.test.mjs`;
+- instala Wrangler en el runner del job de publicación;
+- copia sólo `public/` a una carpeta temporal;
+- comprueba que no existan `functions/` ni `schema.sql` en esa carpeta;
+- publica en el proyecto Pages existente.
+
+También se puede lanzar desde GitHub Actions > «RACOON · publicar PWA pública» > «Run workflow». La URL efectiva aparece en el registro de Wrangler. El sitio no debe mostrar una pantalla de Cloudflare Access.
+
+## Uso y restauración
+
+El progreso se guarda en el navegador. En Respaldos, usa «Exportar JSON» antes de cambiar de equipo o limpiar datos del sitio. La importación muestra conteos y permite fusionar o reemplazar con confirmación. CSV sirve para análisis, no para restaurar la biblioteca.
+
+## Actualizaciones y reversión
+
+`public/version.json` y el Service Worker permiten que la aplicación anuncie una versión nueva sin recargar de forma inesperada. «Más tarde» deja el worker esperando; «Actualizar ahora» lo activa. Si una publicación falla, corrige el Pull Request y vuelve a ejecutar las pruebas antes de fusionar.
+
+Para revertir una versión publicada, revierte el commit fusionado mediante un nuevo Pull Request y deja que Actions publique la revisión. Los datos locales no se eliminan; si se necesita volver a una versión anterior, restaura el JSON exportado en esa versión.
+
+## Límites conocidos
+
+No existe sincronización entre dispositivos ni un cron remoto que fabrique datos. La revisión automática ocurre al iniciar, al volver a la pestaña y cada cuatro horas mientras la aplicación está abierta. La búsqueda estacional de AniList se pagina hasta un límite de seguridad de 10 páginas por temporada/año; si lo excede, esa consulta falla sin aplicar datos parciales. Las series con ID se revisan por lotes de 20; una respuesta HTTP 429 detiene el lote. Si AniList falla, se conserva el último dato disponible. AniList describe emisiones japonesas, no la publicación mexicana de Crunchyroll, Netflix u otras plataformas. El calendario puede proyectar un patrón semanal como «Previsto», pero sin sumar episodios disponibles. Los horarios regionales sin fuente pública fiable siguen sin verificar.
+
+## Check externo «Workers Builds: racoon»
+
+En el PR #1 este check fallido lo crea la GitHub App `cloudflare-workers-and-pages`: su propio resumen identifica `Script: racoon` y enlaza a la compilación del servicio **Workers** `racoon` en Cloudflare, no al proyecto **Pages** `racoon-radar-klymapo` ni al workflow estático de este repositorio. Volvió a fallar incluso en el commit `b896458`, que solo actualizó documentación; el job de calidad de GitHub Actions pasó y el job de Pages quedó omitido como corresponde a un PR. Esto confirma que el check rojo es externo al flujo de publicación de Pages, pero **no revela la causa exacta** del fallo del Worker. GitHub registra cero anotaciones y no expone su log. No tenemos acceso a la configuración ni al log de ese Worker, y la integración actual no permite consultar la protección de rama desde esta sesión.
+
+Para resolverlo, el propietario debe abrir el enlace del check en el panel de Cloudflare y revisar el log de ese build, la conexión Git y si el Worker `racoon` se sigue usando. Si es obsoleto, desconectar únicamente su build Git tras verificarlo; si está en uso, corregir la causa que muestre el log. No se debe borrar el Worker ni silenciar el check a ciegas. El job de calidad del PR verifica RACOON independientemente y nunca publica a producción.

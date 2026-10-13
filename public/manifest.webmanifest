@@ -1,22 +1,22 @@
 {
-  "name": "RACOON · Anime Radar",
+  "name": "RACOON · Anime Wizard",
   "short_name": "RACOON",
-  "description": "Mis estrenos y progreso de anime guardados en este dispositivo.",
+  "description": "Mi biblioteca, calendario y progreso de anime guardados en este dispositivo.",
   "lang": "es-MX",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#090c18",
-  "theme_color": "#121829",
+  "background_color": "#100B24",
+  "theme_color": "#100B24",
   "icons": [
     {
-      "src": "/icons/radar-192.png",
+      "src": "/icons/racoon-wizard-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/radar-512.png",
+      "src": "/icons/racoon-wizard-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

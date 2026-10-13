@@ -1,41 +1,50 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync, existsSync} from 'node:fs';
+import {readFileSync, existsSync, readdirSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
-import {runInNewContext} from 'node:vm';
+import {CATALOG} from '../public/js/catalog.mjs';
 
 const html=readFileSync('public/index.html','utf8');
+const styles=readFileSync('public/styles.css','utf8');
 const manifest=JSON.parse(readFileSync('public/manifest.webmanifest','utf8'));
 
 test('RACOON muestra 25 animes sin duplicados',()=>{
- const match=html.match(/const DATA=(\[[^\n]+\]);/);
- assert.ok(match,'No se encuentra DATA en HTML');
- const data=JSON.parse(match[1]);
- assert.equal(data.length,25);
- assert.equal(new Set(data.map(x=>x.id)).size,25);
- for(const x of data)for(const f of ['name','platform','date'])assert.ok(x[f]);
+ assert.equal(CATALOG.length,25);
+ assert.equal(new Set(CATALOG.map(x=>x.id)).size,25);
+ for(const x of CATALOG)for(const f of ['title','platform','date'])assert.ok(x[f]);
+ assert.equal(CATALOG.find((entry)=>entry.id==='legacy:verm').availableEpisodes,1);
+ assert.equal(CATALOG.find((entry)=>entry.id==='legacy:verm').scheduleEvents[0].confidence,'contradictory');
+ assert.equal(CATALOG.filter((entry)=>entry.weeklySchedule?.frequency==='weekly').length,23);
 });
 
-test('El JavaScript embebido tiene sintaxis válida',()=>{
- const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
- assert.ok(scripts.length);
- for(const [,code] of scripts){
-  const r=spawnSync(process.execPath,['--check'],{input:code,encoding:'utf8'});
+test('Los módulos JavaScript tienen sintaxis válida',()=>{
+ const modules=readdirSync('public/js',{recursive:true}).filter(file=>String(file).endsWith('.mjs'));
+ assert.ok(modules.length);
+ for(const file of modules){
+  const r=spawnSync(process.execPath,['--check',`public/js/${file}`],{encoding:'utf8'});
   assert.equal(r.status,0,r.stderr);
  }
 });
 
 test('PWA instalable',()=>{
- assert.equal(manifest.name,'RACOON · Anime Radar');
+ assert.equal(manifest.name,'RACOON · Anime Wizard');
  assert.equal(manifest.display,'standalone');
  for(const icon of manifest.icons)assert.ok(existsSync('public'+icon.src));
  assert.ok(existsSync('public/sw.js'));
 });
 
+test('published version metadata, application and service worker stay in sync',()=>{
+ const version=JSON.parse(readFileSync('public/version.json','utf8')).version;
+ assert.match(readFileSync('public/js/app.mjs','utf8'),new RegExp(`RACOON_VERSION = '${version}'`));
+ assert.match(readFileSync('public/sw.js','utf8'),new RegExp(`VERSION = '${version}'`));
+});
+
 test('Progreso local y traslado mediante JSON',()=>{
- for(const text of ['localStorage.getItem(stateKey)','localStorage.setItem(stateKey','id="backup"','id="restore"','data-catchup','data-seen','data-aired','data-total'])assert.ok(html.includes(text),text);
+ const storage=readFileSync('public/js/storage.mjs','utf8');
+ const backup=readFileSync('public/js/backup.mjs','utf8');
+ for(const text of ['anime-radar-otono-2026-v1','STATE_KEY','saveState','loadState'])assert.ok(storage.includes(text),text);
+ for(const text of ['createBackup','parseBackup','mergeBackup','replaceWithBackup'])assert.ok(backup.includes(text),text);
  assert.ok(!html.includes('/api/progress'),'La aplicación pública no debe solicitar datos personales al backend');
- assert.ok(!html.includes('cloudIndicator'),'La interfaz pública no debe sugerir que sincroniza');
 });
 
 test('Archivos públicos sin claves privadas',()=>{
@@ -43,23 +52,13 @@ test('Archivos públicos sin claves privadas',()=>{
  assert.ok(!/BEGIN (RSA |EC )?PRIVATE KEY/.test(html));
 });
 
-test('The Vermilion Mask: datos y emisión correcta del primer cour',()=>{
- const match=html.match(/const DATA=(\[[^\n]+\]);/);
- const serie=JSON.parse(match[1]).find(x=>x.id==='verm');
- assert.equal(serie.date,'2026-10-10');
- assert.equal(serie.day,5); // sábado
- assert.equal(serie.platform,'Crunchyroll');
- assert.ok(html.includes("verm:{total:12,mode:'weekly',verified:true}"));
- const code=html.slice(html.indexOf('const CR_SLOTS='),html.indexOf('const LIVE_INTERVAL ='));
- assert.ok(code.startsWith('const CR_SLOTS='));
- const calc=at=>runInNewContext(code+'; crSchedule({id:"verm",kind:"Estreno"},Date.parse('+JSON.stringify(at)+'));',{Date,Intl});
- const previo=calc('2026-10-13T14:00:00Z');
- assert.equal(previo.released,1);
- assert.equal(previo.ep,2);
- assert.equal(previo.date,'2026-10-17');
- const posterior=calc('2026-10-17T10:00:00Z');
- assert.equal(posterior.released,2);
- assert.equal(posterior.ep,3);
- assert.equal(posterior.date,'2026-10-24');
- assert.equal(calc('2026-12-27T18:00:00Z'),null,'No inventar un episodio 13 durante el receso');
+test('RACOON Wizard exposes five accessible views and modular assets',()=>{
+ assert.match(html,/type="module"[^>]+src="\/js\/app\.mjs"/);
+ for(const id of ['home','calendar','progress','add','backups'])assert.match(html,new RegExp(`data-view="${id}"`));
+ for(const id of ['homeView','calendarView','progressView','addView','backupsView'])assert.match(html,new RegExp(`id="${id}"`));
+ for(const token of ['#100B24','#1B1538','#8656E8','#B49AFF','#F4EFFF','#72DFD0','#F1CA78'])assert.ok(styles.includes(token),token);
+ assert.ok(existsSync('public/icons/racoon-wizard.svg'));
+ assert.ok(existsSync('public/icons/racoon-wizard-192.png'));
+ assert.ok(existsSync('public/icons/racoon-wizard-512.png'));
+ assert.ok(!html.includes('/api/progress'));
 });

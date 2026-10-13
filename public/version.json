@@ -1,0 +1,9 @@
+{
+  "version": "2.2.1",
+  "publishedAt": "2026-10-13T17:27:47Z",
+  "changes": [
+    "Ediciones y eliminaciones de series protegidas durante consultas a AniList",
+    "La actualización conserva el catálogo local y el progreso personal",
+    "Caché de la PWA renovada sin borrar datos locales"
+  ]
+}

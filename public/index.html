@@ -1,361 +1,87 @@
-<!DOCTYPE html>
-<html lang="es">
+<!doctype html>
+<html lang="es-MX">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#090c18">
-<title>RACOON · Anime Radar | Otoño 2026</title>
-<link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" type="image/svg+xml" href="/icons/radar.svg">
-<link rel="apple-touch-icon" href="/icons/radar-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="RACOON">
-<meta name="mobile-web-app-capable" content="yes">
-
-<style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;600;700&display=swap');
-:root{color-scheme:dark;--bg:#090c18;--panel:#121829;--panel2:#171f32;--stroke:#28334b;--text:#f1f4ff;--muted:#9aaac4;--accent:#a09bff;--cyan:#5be0d0;--orange:#ffca8c;--f:'DM Sans',system-ui,sans-serif;--h:'Space Grotesk',system-ui,sans-serif}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:radial-gradient(ellipse 60% 350px at 96% -1%,#362e77aa,transparent),radial-gradient(ellipse 40% 300px at 2% 15%,#154f5d66,transparent),var(--bg);color:var(--text);font-family:var(--f);line-height:1.42}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid #a4e5e0;outline-offset:3px}a{color:inherit}.shell{max-width:1500px;margin:auto;padding:26px clamp(14px,3vw,40px) 70px}.topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px}.brand{font:700 16px var(--h);letter-spacing:.12em;display:flex;align-items:center;gap:9px}.mark{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:linear-gradient(135deg,#9a86f8,#59d6d1);color:#0b1020}.eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);font-weight:800}.updated{font-size:12px;color:var(--muted)}.hero{display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:center;padding:30px 34px;border:1px solid #5b568d8f;background:linear-gradient(115deg,#201d44 0%,#101c31 56%,#111b2e 100%);border-radius:24px;overflow:hidden;position:relative}.hero:before{content:'';position:absolute;right:-150px;top:-240px;width:610px;height:610px;border:1px solid #a29aff35;border-radius:50%;box-shadow:0 0 0 50px #9a94ff09,0 0 0 100px #9a94ff06}.hero>*{position:relative;z-index:1}h1{font:700 clamp(32px,4.7vw,62px)/1.07 var(--h);letter-spacing:-.055em;margin:12px 0 14px}h1 em{font-style:normal;background:linear-gradient(90deg,#d5b9ff,#8fe6e2);color:transparent;background-clip:text}.hero p{color:#c0cce3;font-size:15px;max-width:620px;margin:0}.heroRight{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}.largeNum{font:700 105px/.95 var(--h);letter-spacing:-.08em;color:#c7c3ff;text-shadow:0 0 70px #aa95ff88}.largeNote{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#e2deff}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}.chip{border:1px solid #6d6289;border-radius:99px;padding:5px 10px;font-size:12px;color:#e2ddff;background:#7668ba26}.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0 26px}.stat{border:1px solid var(--stroke);background:#11182aaa;border-radius:16px;padding:16px 19px;display:flex;align-items:center;justify-content:space-between}.stat .num{font:700 31px var(--h)}.stat span{font-size:12px;color:var(--muted)}.stat b{font-size:20px}.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}.heading h2{font:700 24px var(--h);letter-spacing:-.035em;margin:0 0 3px}.heading p{font-size:13px;color:var(--muted);margin:0}.inputs{display:flex;flex-wrap:wrap;gap:8px}.field,select,.toolButton{border:1px solid var(--stroke);background:#151d30;color:var(--text);padding:10px 12px;border-radius:11px;min-height:41px}.field{width:min(270px,100%)}select{max-width:200px}.toolButton{display:inline-flex;gap:7px;align-items:center;font-size:13px;font-weight:700}.toolButton:hover,.toolButton.active{background:#29295c;border-color:#817cc7}.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:11px;align-items:stretch}.day{background:#12192aaf;border:1px solid #2b344a;border-radius:17px;padding:10px;min-height:180px}.day-head{display:flex;justify-content:space-between;align-items:center;gap:6px;border-bottom:1px solid #2e374d;padding:4px 3px 12px;margin-bottom:10px}.day-head h3{font:700 13px var(--h);margin:0}.count{border-radius:8px;background:#29314a;color:#bdc9e2;font-size:11px;padding:3px 7px}.tile{margin:8px 0;padding:11px 10px 10px;border:1px solid #384158;background:#1b2337;border-radius:13px;position:relative;box-shadow:0 3px 0 #0a101822;transition:transform .15s,border-color .15s}.tile:hover{transform:translateY(-2px);border-color:#8b86c0}.tile.done{opacity:.6}.tile .circle{display:inline-grid;place-items:center;background:linear-gradient(135deg,#42396c,#31495b);width:34px;height:34px;border-radius:10px;font-size:20px;margin-bottom:8px}.tile h4{font-size:13px;line-height:1.26;margin:0 0 9px;overflow-wrap:anywhere}.mini{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.p{font-size:10px;color:#c4d1e7;border-radius:6px;background:#303a50;padding:3px 5px}.p.cr{background:#593a27;color:#ffd3b2}.p.nf{background:#572631;color:#ffd0dc}.p.dp{background:#253759;color:#bcd5ff}.p.pm{background:#253d41;color:#b4ebdc}.p.para{background:#383350;color:#dad0ff}.release{font-size:11px;color:#b7c4df;margin-top:9px}.star{position:absolute;top:7px;right:7px;border:none;background:transparent;color:#8b99af;padding:5px;font-size:20px;line-height:1}.star.on{color:#ffd681}.empty{font-size:11px;color:#5e708f;padding:14px 3px}.subsection{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:25px 0 13px}.subsection h2{font:700 23px var(--h);margin:0}.subsection span{font-size:12px;color:var(--muted)}.library{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.rowcard{border:1px solid var(--stroke);border-radius:14px;background:#131a2ba8;padding:15px;display:flex;gap:13px;align-items:flex-start}.poster{flex:0 0 60px;width:60px;height:76px;display:grid;place-items:center;font-size:28px;border-radius:12px;background:linear-gradient(145deg,#383963,#18565c);border:1px solid #5d658b}.row-main{flex:1;min-width:0}.row-top{display:flex;align-items:start;justify-content:space-between;gap:8px}.row-main h3{font-size:15px;line-height:1.27;margin:0 0 3px}.genre{font-size:11px;color:var(--muted)}.description{font-size:12px;line-height:1.5;color:#c4cfe2;margin:9px 0}.detail{font-size:11px;color:#adbbd3;margin:6px 0}.detail strong{color:#edf1fb}.actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}.actions select{font-size:11px;min-height:31px;padding:4px 7px;max-width:145px}.actions a{font-size:11px;text-decoration:none;color:#99e9e4;font-weight:700}.actions a:hover{text-decoration:underline}.pill{font-size:10px;border:1px solid #47546d;color:#bdcde8;border-radius:99px;padding:3px 7px;white-space:nowrap}.pill.finished{border-color:#666070;color:#bbaec8}.warn{margin-top:12px;border:1px solid #80663c66;background:#32281955;border-radius:12px;padding:12px 15px;font-size:12px;color:#e2d3b4}.footer{font-size:12px;line-height:1.65;color:#8da0c1;margin-top:24px;border-top:1px solid #2a3450;padding-top:20px}.footer a{color:#a9d9dc}.hidden{display:none!important}.divider{border:0;border-top:1px solid #2c344a;margin:28px 0}.mutebtn{background:none;border:0;color:#93e0db;font-size:12px;font-weight:700;cursor:pointer;padding:5px}.tagrow{display:flex;gap:6px;flex-wrap:wrap}.badge{font-size:10px;padding:3px 7px;border-radius:7px;background:#4d478522;color:#c4bcff;border:1px solid #554d7c}.badge.finished{background:#5e5b6722;color:#b7b5c0;border-color:#4d5267}.notice{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#bdcde5;line-height:1.55;margin:0 0 18px}.notice strong{color:#efefff}.notice .dot{color:#65d9d1}#results{color:#aaa4d0}.completed-label{padding:10px 0;color:#b9bacd;font-size:12px}
-@media(max-width:1180px){.week{grid-template-columns:repeat(4,minmax(0,1fr))}.library{grid-template-columns:1fr 1fr}}@media(max-width:750px){.shell{padding:18px 14px 45px}.hero{grid-template-columns:1fr;padding:24px}.heroRight{display:none}.stats{gap:8px}.stat{padding:12px 9px;display:block}.stat .num{font-size:25px}.stat span{display:block;font-size:10px}.week{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.library{grid-template-columns:1fr}.inputs{width:100%}.field{width:100%}.day{padding:7px}.topline{margin-bottom:17px}}@media(min-width:751px) and (max-width:1200px){.library{grid-template-columns:1fr 1fr}}@media print{body{background:#fff;color:#111}.hero,.day,.rowcard,.stat{color:#111;background:#fff;box-shadow:none;border-color:#bbb}.toolbar .inputs,.actions,.star,.footer{display:none}.week{grid-template-columns:repeat(4,1fr)}.library{grid-template-columns:repeat(2,1fr)}.hero p,.genre,.detail,.description{color:#333}}
-
-/* Episodios y progreso personal — v2 */
-.episodes{margin:12px 0 5px;padding:13px;border:1px solid #414568;background:linear-gradient(135deg,#1b2540,#151f34);border-radius:13px}
-.episode-top{display:flex;justify-content:space-between;gap:8px;align-items:start;flex-wrap:wrap}
-.episode-top strong{font-size:12px;color:#e8ebff}
-.episode-top .ep-number{font:700 20px var(--h);color:#bfc5ff;white-space:nowrap}
-.episode-label{font-size:11px;color:#9faecd}
-.episode-track{height:7px;border-radius:30px;background:#303b55;margin:10px 0 7px;overflow:hidden}
-.episode-fill{height:100%;border-radius:30px;background:linear-gradient(90deg,#817bfc,#65dfcf);transition:width .25s ease}
-.episode-status{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:#b8c5df}
-.episode-status b{color:#80e6d7}
-.episode-status .behind{color:#ffca8c}
-.episode-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:12px}
-.ep-field{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:10px;letter-spacing:.012em;color:#aebed7;font-weight:700}
-.ep-field input{width:100%;min-width:0;border:1px solid #46516e;border-radius:8px;background:#101a2e;color:#f0f5ff;padding:8px;min-height:37px;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
-.ep-field input:focus{border-color:#85dedc}
-.episode-buttons{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
-.episode-buttons button{border:1px solid #546a83;background:#263652;border-radius:8px;padding:7px 11px;color:#e3f0ff;font-size:11px;font-weight:700;min-height:34px}
-.episode-buttons button.catchup{border-color:#567a7a;background:#174946;color:#9bf2e0}
-.episode-buttons button:hover{filter:brightness(1.18)}
-.episode-buttons button:disabled{opacity:.4;cursor:default}
-.ep-helper{font-size:10px;color:#97a7c2;line-height:1.4;margin-top:7px}
-.tile .ep-tile{font-size:11px;color:#bdcafa;margin-top:8px;line-height:1.4}
-.tile .ep-tile b{color:#8fefe0}
-.tile .tiny-progress{height:3px;border-radius:4px;background:#344058;overflow:hidden;margin-top:6px}
-.tile .tiny-progress span{display:block;height:100%;background:#78e0d3}
-.stat.secondary .num{color:#8fefdb}
-.notice .dot{flex:0 0 auto}
-.toolButton.backup{color:#b0fff0}
-@media(max-width:450px){.episode-controls{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.ep-field input{padding:7px 4px}.episodes{padding:11px}.tile .ep-tile{font-size:10px}}
-
-/* Pestañas accesibles y refresco automático: v3 */
-.syncnote{margin:0 0 12px;padding:10px 13px;border:1px solid #4e4967;border-radius:11px;background:#1d1d344a;color:#bfcce1;font-size:12px;line-height:1.6}.syncnote strong{color:#eee4ff}
-.platform-block{border:1px solid #303d5c;border-radius:17px;padding:12px 13px;background:#111b2e;margin:0 0 14px}
-.platform-label{font:700 12px var(--h);color:#d8def4;display:flex;align-items:center;gap:8px;margin:0 0 9px}
-.platform-tabs{display:flex;align-items:center;gap:7px;overflow-x:auto;padding:2px 1px 8px;scrollbar-width:thin;scrollbar-color:#5e658b transparent}
-.platform-tab{flex:none;display:flex;align-items:center;gap:6px;border:1px solid #37435c;border-radius:11px;padding:10px 13px;background:#182238;color:#c0cee8;min-height:42px;font-size:12px;font-weight:700;white-space:nowrap;transition:background .2s,border-color .2s}
-.platform-tab:hover{background:#272f4e}.platform-tab[aria-selected="true"]{background:#363366;border-color:#a39df5;color:#fff;box-shadow:inset 0 -2px 0 #b2a8ff}
-.platform-tab .tabcount{border-radius:7px;padding:2px 6px;background:#46506d;color:#dce5ff;font:600 10px var(--h)}
-.refreshbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:11px 14px;border:1px solid #35605f;border-radius:13px;background:#122d337c;margin:0 0 13px}
-.refreshbar .source{font-size:12px;color:#d0eceb;line-height:1.6;flex:1}
-.refreshbar .source b{color:#fff}
-.refreshbar .small{font-size:11px;color:#9db9c0}
-.refreshbar button{font-size:12px;padding:9px 12px;border:1px solid #4b8e90;border-radius:9px;background:#1b4a52;color:#d3fffa;font-weight:700}
-.refreshbar button:disabled{opacity:.6;cursor:wait}
-.ep-live{font-size:10px;color:#71e9cc;margin-top:4px}
-.ep-live.estimated{color:#a2b1cf}
-@media(max-width:750px){.platform-tab{padding:9px 11px}.refreshbar{align-items:stretch}.refreshbar button{width:100%}}
-
-
-.cr-time{display:flex;align-items:center;gap:10px;padding:12px 14px;margin:14px 0;border:1px solid #38babb55;background:linear-gradient(100deg,#10373b8c,#131f31);border-radius:12px}
-.cr-time-icon{font-size:23px}.cr-time>div{flex:1;min-width:0}.cr-time strong{font-family:var(--h);color:#c3faf2;font-size:17px}.cr-time div div{color:#d3e3f6;font-size:12px;margin-top:2px}.cr-time small{display:block;color:#86a7ac;font-size:11px;margin-top:3px}.cr-time a{font-size:11px;text-decoration:none;color:#a7eee5;border:1px solid #4c8488;padding:7px;border-radius:8px;white-space:nowrap}
-.cr-unknown{border-color:#5e6c8a;background:#1a2633}.tile-time{font-size:12px;color:#92e4d9;font-weight:700;margin-top:9px}.tile-time span{color:#92a2b9;font-weight:400}
-@media(max-width:490px){.cr-time{flex-wrap:wrap}.cr-time a{margin-left:auto}}
-
-
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#100B24">
+  <meta name="description" content="RACOON: biblioteca personal y calendario verificable de anime.">
+  <title>RACOON · Anime Wizard</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="/icons/racoon-wizard.svg">
+  <link rel="apple-touch-icon" href="/icons/racoon-wizard-192.png">
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<main class="shell">
-<div class="topline"><div class="brand"><span class="mark">✦</span> ANIME RADAR <span style="color:#6f7c95">/</span> 2026</div><div class="updated">Revisado · 12 oct 2026</div></div>
-<header class="hero"><div><div class="eyebrow">◉ Temporada de otoño · Octubre — diciembre</div><h1>Tu semana, <em>en anime.</em></h1><p>Un radar para saber qué se estrena cada día. Consulta los episodios disponibles, filtra por plataforma y registra por cuál vas. Marca tus favoritos y conserva tu avance.</p><div class="chips"><span class="chip">📆 Publicación semanal</span><span class="chip">🇲🇽 Enfoque México</span><span class="chip">✦ 25 títulos</span><span class="chip">📺 Progreso por episodio</span></div></div><div class="heroRight"><div class="largeNum">25</div><div class="largeNote">Series en tu radar</div></div></header>
-<div class="stats"><div class="stat"><div><div class="num">23</div><span>En emisión o estreno</span></div><b>▶</b></div><div class="stat"><div><div class="num">2</div><span>Ya concluyeron</span></div><b>✓</b></div><div class="stat secondary"><div><div class="num" id="progress">0</div><span>Series al corriente</span></div><b>✦</b></div></div>
-<section aria-label="Calendario semanal"><div class="toolbar"><div class="heading"><h2>Calendario semanal</h2><p>El día corresponde a la plataforma indicada. Los horarios confirmados para esta semana se muestran en hora de CDMX.</p></div><div class="inputs"><input class="field" id="search" placeholder="Buscar anime…" aria-label="Buscar anime"><select id="platform" aria-label="Filtrar plataforma" class="hidden" aria-hidden="true"><option value="all">Todas las plataformas</option><option value="Crunchyroll">Crunchyroll</option><option value="Netflix">Netflix</option><option value="Disney+">Disney+</option><option value="Paramount+">Paramount+</option><option value="Prime Video">Prime Video</option></select><select id="filter" aria-label="Filtrar lista"><option value="all">Todas las series</option><option value="favorites">Solo favoritas ☆</option><option value="active">Solo en emisión</option><option value="finished">Temporadas finalizadas</option><option value="watching">Estoy viendo</option><option value="behind">Con capítulos pendientes</option><option value="uptodate">Voy al corriente</option></select><button type="button" class="toolButton" id="export">↓ Exportar CSV</button><button type="button" class="toolButton backup" id="backup">↓ Copia JSON</button><button type="button" class="toolButton" id="restore">↑ Importar JSON</button><input type="file" id="restoreFile" accept="application/json,.json" class="hidden" aria-label="Importar copia de seguimiento"></div></div><div class="platform-block"><div class="platform-label">📺 Explorar por plataforma</div><nav class="platform-tabs" id="platformTabs" role="tablist" aria-label="Plataformas de streaming"></nav></div>
-<div class="syncnote">💾 <strong>Tu progreso se guarda automáticamente en este navegador.</strong> Para conservarlo o pasarlo a otro dispositivo, usa <strong>↓ Copia JSON</strong> y después <strong>↑ Importar JSON</strong>. Si borras los datos de este sitio, el progreso local también se elimina.</div>
-<div class="refreshbar" aria-live="polite"><div class="source"><b id="refreshTitle">⏱ Comprobación cada 4 horas</b><div class="small" id="refreshDetails">Horarios Crunchyroll publicados semanalmente; AniList se revisa cada cuatro horas.</div></div><button type="button" id="refreshNow">↻ Actualizar AniList</button></div>
-<div class="notice"><span class="dot">◆</span><span><strong>Atención:</strong> los horarios de Crunchyroll se muestran en <strong>hora de CDMX</strong> y se basan en su programación publicada del <strong>12 al 18 de octubre</strong>. Las próximas semanas se marcan como previstas hasta confirmarse. <strong>AniList</strong> actualiza su calendario de emisiones japonesas cada cuatro horas cuando la página está abierta; donde no sea posible se <strong>estiman por calendario</strong>. AniList refleja emisiones japonesas, no garantiza horarios de plataformas mexicanas; corrige cifras si hace falta. «Total» queda como «?» cuando no está confirmado.</span></div><div class="week" id="week"></div></section>
-<section aria-label="Fichas de series"><div class="subsection"><h2>Las 25 series</h2><span id="results">25 resultados</span></div><div class="library" id="library"></div></section>
-<div class="footer"><b>Sobre el seguimiento:</b> «Estrenados» prioriza el calendario semanal de Crunchyroll en sus series y utiliza AniList cuando no existe un número específico. AniList se consulta cada 4 horas mientras la página esté abierta y al regresar después de ese plazo; si no coincide o falla la API, se estima con las fechas del calendario. Estas comprobaciones no corren con la página cerrada. Puedes modificar las cifras y volver al cálculo automático. «Total de temporada» solo viene precargado cuando hay datos concretos. «Voy en» es tu último episodio visto y se guarda únicamente en este navegador y este origen; no existe sincronización automática entre dispositivos. Si marcas «Al corriente», se anota el último episodio disponible; cuando estrenen uno más, aparecerá como pendiente. Usa «Copia JSON» para conservar un respaldo e «Importar JSON» para recuperarlo en otro dispositivo. <br><b>Sobre las fechas:</b> las fichas priorizan los estrenos semanales de Crunchyroll, Netflix, Disney+ y Paramount+ y, donde no existe confirmación de catálogo mexicano, indican la emisión japonesa. Algunas plataformas publican anticipos o usan otros husos horarios. «Fecha inicial» es el comienzo de la tanda indicada, salvo cuando dice final de temporada. <br>Fuentes principales: <a href="https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll" target="_blank" rel="noopener">Crunchyroll, otoño 2026</a> · <a href="https://tokyo-revengers-anime.com/news/archives/4935" target="_blank" rel="noopener">Tokyo Revengers oficial</a> · <a href="https://www.paramountpressexpress.com/paramount-plus/shows/avatar-seven-havens/releases/?view=113232-in-a-world-that-fears-her-a-new-avatar-rises-paramount-avatar-seven-havens-official-trailer-is-out-now" target="_blank" rel="noopener">Paramount+</a>. <br>Tu seguimiento permanece solo en este navegador. Descarga una copia JSON para respaldarlo o llevarlo a otro dispositivo.</div>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="RACOON, ir a Inicio">
+        <img src="/icons/racoon-wizard.svg" alt="" width="42" height="42">
+        <span><strong>RACOON</strong><small>Anime Wizard</small></span>
+      </a>
+      <div class="topbar-actions">
+        <span class="freshness" id="freshness" aria-live="polite">Listo para explorar</span>
+        <button class="icon-button" id="quickRefresh" type="button" title="Actualizar datos" aria-label="Actualizar datos">↻</button>
+      </div>
+    </header>
 
-</main>
-<script>
-const DATA=[{"id":"fx","name":"FX Fighter Kurumi-chan","alias":"fx fighter","day":3,"date":"2026-10-01","platform":"Crunchyroll","kind":"Estreno","genre":"Drama · Finanzas","icon":"💹","desc":"Una universitaria entra al impredecible mundo del trading de divisas.","note":"Estreno semanal los jueves.","source":"https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"},{"id":"over","name":"Overgeared","alias":"overgeared","day":6,"date":"2026-10-04","platform":"Crunchyroll","kind":"Estreno","genre":"Fantasía · Videojuegos","icon":"⚒️","desc":"Grid encuentra el camino para convertirse en un herrero legendario.","note":"En televisión japonesa comenzó el viernes 2 de octubre; Crunchyroll publica los domingos.","source":"https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"},{"id":"bot","name":"The Apothecary Diaries · T3","alias":"boticafria / los diarios de la boticaria","day":4,"date":"2026-10-02","platform":"Crunchyroll","kind":"Nueva temporada","genre":"Misterio · Histórico","icon":"🌿","desc":"Maomao regresa a descifrar conspiraciones, venenos y secretos.","note":"Los viernes en Crunchyroll.","source":"https://www.crunchyroll.com/es/news/latest/2026/10/2/the-apothecary-diaries-3-anime-opening"},{"id":"tokyo","name":"Tokyo Revengers · Guerra de los Tres Titanes","alias":"revengers","day":4,"date":"2026-10-02","platform":"Disney+","kind":"Nueva temporada","genre":"Acción · Pandillas","icon":"🏍️","desc":"El arco final lleva el conflicto de las bandas a otra escala.","note":"Disney+ confirma episodios semanales los viernes.","source":"https://tokyo-revengers-anime.com/news/archives/4935"},{"id":"zombie","name":"#I'm Looking for a Zombie","alias":"looking for zombie","day":5,"date":"2026-10-03","platform":"Crunchyroll","kind":"Estreno","genre":"Aventura · Zombis","icon":"🧟","desc":"Aki explora un mundo postapocalíptico buscando a su padre.","note":"Crunchyroll: sábados. Prime Video muestra un lanzamiento previo fechado el viernes 2.","source":"https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"},{"id":"saint","name":"A Tale of the Secret Saint","alias":"secret saint","day":5,"date":"2026-10-03","platform":"Crunchyroll","kind":"Estreno","genre":"Fantasía · Reencarnación","icon":"✨","desc":"Fia descubre un poder sagrado que necesita ocultar.","note":"Episodios los sábados.","source":"https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"},{"id":"magical","name":"Magical Explorer","alias":"magical explorer","day":5,"date":"2026-10-03","platform":"Crunchyroll","kind":"Estreno","genre":"Isekai · Videojuegos","icon":"🪄","desc":"Un conocedor de un videojuego se reencarna como personaje secundario.","note":"Crunchyroll: sábados.","source":"https://www.crunchyroll.com/es/news/latest/2026/8/28/magical-explorer-anime-trailer-imagen-temas-musicales-reparto"},{"id":"ranma","name":"Ranma ½ · T3","alias":"ranma","day":5,"date":"2026-10-03","platform":"Netflix","kind":"Nueva temporada","genre":"Comedia · Artes marciales","icon":"🥋","desc":"Regresan Ranma, Akane y el caos romántico de las transformaciones.","note":"Netflix lanza un episodio semanal los sábados.","source":"https://websunday.net/96648/"},{"id":"romelia","name":"Romelia War Chronicle","alias":"romelia","day":5,"date":"2026-10-03","platform":"Crunchyroll","kind":"Estreno","genre":"Fantasía · Estrategia","icon":"🏰","desc":"Tras derrotar al Rey Demonio, Romelia reconstruye una nación.","note":"Crunchyroll: sábados. La emisión de TV japonesa inicia el lunes 5.","source":"https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"},{"id":"vertex","name":"Vertex Force","alias":"vertex","day":5,"date":"2026-10-03","platform":"Crunchyroll","kind":"Estreno","genre":"Mecha · Ciencia ficción","icon":"🤖","desc":"Una familia de Okinawa combate con un misterioso poder llamado Engine.","note":"Episodios los sábados.","source":"https://www.crunchyroll.com/es-es/news/latest/2026/5/8/vertex-force-anime-estreno-octubre-2026"},{"id":"space","name":"Reborn as a Space Mercenary","alias":"space mecenary","day":6,"date":"2026-10-04","platform":"Crunchyroll","kind":"Estreno","genre":"Isekai · Espacial","icon":"🚀","desc":"Un jugador despierta al mando de una nave en su universo de ciencia ficción favorito.","note":"Crunchyroll: domingos.","source":"https://www.crunchyroll.com/es/news/latest/2026/9/12/reborn-as-a-space-mercenary-anime-fecha-estreno"},{"id":"tank","name":"Tank Chair","alias":"tank chair","day":6,"date":"2026-10-04","platform":"Prime Video*","kind":"Estreno","genre":"Acción · Thriller","icon":"🦾","desc":"Un asesino despierta cuando siente una intención homicida contra él.","note":"Domingos confirmados en Japón; Prime Video lo emite allí. Revisa disponibilidad de tu catálogo mexicano.","source":"https://www.ppi.co.jp/news/ppinews20260812_tank-chair/?l=e"},{"id":"goblin","name":"So What's Wrong with Getting Reborn as a Goblin?","alias":"reborn as a goblin","day":0,"date":"2026-10-05","platform":"Crunchyroll","kind":"Estreno","genre":"Isekai · Fantasía","icon":"👹","desc":"Akira renace como goblin y utiliza habilidades extraordinarias para prosperar.","note":"Crunchyroll: lunes. Algunos catálogos anticiparon el episodio el domingo.","source":"https://www.crunchyroll.com/watch/GE00384315JAJP/so-whats-wrong-with-getting-reborn-as-a-goblin"},{"id":"chojo","name":"Super Psychic Policeman Chojo","alias":"pychic policemnan","day":1,"date":"2026-10-06","platform":"Crunchyroll","kind":"Estreno","genre":"Comedia · Policiaco","icon":"🔮","desc":"Una policía novata y un colega psíquico resuelven casos insólitos.","note":"Episodios los martes.","source":"https://www.crunchyroll.com/news/latest/2026/9/22/super-psychic-policeman-chojo-anime-theme-song-performers-new-trailer"},{"id":"cheat","name":"The Laid-Off Cheat-Granting Mage Enjoys a Second Lease on Life","alias":"cheat granting","day":1,"date":"2026-10-06","platform":"Crunchyroll","kind":"Estreno","genre":"Fantasía · Aventuras","icon":"🧙","desc":"Un encantador despedido comienza otra vida con sus poderes.","note":"Crunchyroll: martes.","source":"https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"},{"id":"witch","name":"The World's Strongest Witch","alias":"world strongrst wich","day":2,"date":"2026-10-07","platform":"Crunchyroll","kind":"Estreno","genre":"Isekai · Fantasía","icon":"🧹","desc":"Una habilidad llamada Internet convierte a una supuesta inútil en prodigio.","note":"Estreno 7 de octubre; día semanal: miércoles.","source":"https://www.crunchyroll.com/news/latest/2026/10/10/the-worlds-strongest-witch-anime-opening-song-music-video-honeyworks-hakoniwalily"},{"id":"avatar","name":"Avatar: Seven Havens","alias":"avatar","day":4,"date":"2026-10-09","platform":"Paramount+","kind":"Nueva serie","genre":"Aventura · Fantasía","icon":"🌪️","desc":"Una nueva Avatar surge en un mundo que teme al ciclo del Avatar.","note":"Estrenos POR BLOQUES: 9 oct (3 episodios), 16 oct (3), 23 oct (3), 30 oct (4).","source":"https://www.paramountpressexpress.com/paramount-plus/shows/avatar-seven-havens/releases/?view=113232-in-a-world-that-fears-her-a-new-avatar-rises-paramount-avatar-seven-havens-official-trailer-is-out-now"},{"id":"verm","name":"The Vermilion Mask","alias":"vermilion mask","day":5,"date":"2026-10-10","platform":"Crunchyroll","kind":"Estreno","genre":"Fantasía · Acción","icon":"🎭","desc":"Peru, aprendiz de un fabricante de máscaras, busca destruir las creaciones de su maestro tras una tragedia provocada por una máscara que lo poseyó.","note":"Sábados a las 3:30 a. m. CDMX. Primera parte: 12 episodios (octubre-diciembre); segunda parte anunciada para abril de 2027.","source":"https://www.crunchyroll.com/es-es/news/latest/2026/10/11/the-vermilion-mask-anime-opening-ending"},{"id":"yoza","name":"Mission: Yozakura Family · T2, parte 2","alias":"yozakura","day":6,"date":"2026-10-11","platform":"Disney+","kind":"Continuación","genre":"Comedia · Espionaje","icon":"🌸","desc":"La peculiar familia de espías prosigue su segunda temporada.","note":"Emisión japonesa: domingos desde el 11 de octubre; confirma la hora en Disney+ México.","source":"https://www.youtube.com/watch?v=aHHTfKMdZuw"},{"id":"dark","name":"A Certain Dark Item","alias":"dark item","day":4,"date":"2026-10-09","platform":"Crunchyroll","kind":"Estreno","genre":"Ciencia ficción · Acción","icon":"🕶️","desc":"Una unidad clandestina completa misiones peligrosas en Ciudad Academia.","note":"Nuevos episodios los viernes.","source":"https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"},{"id":"elusive","name":"The Elusive Samurai · T2","alias":"elusive samurai","day":4,"date":"2026-10-02","platform":"Disponibilidad variable","kind":"Finalizada","genre":"Histórico · Aventura","icon":"🏹","desc":"Tokiyuki elude a sus perseguidores mientras busca recuperar su legado.","note":"Temporada de verano; el episodio 12 y final llegó el 2 de octubre. No hay entrega semanal nueva después.","source":"https://www.primevideo.com/-/es_419/detail/0R8APCIXTN39CTPNQA3FQZ3Q6G?tr=gb"},{"id":"kaiju","name":"Kaiju Girl Caramelise","alias":"kaiju girl","day":3,"date":"2026-09-17","platform":"Crunchyroll","kind":"Finalizada","genre":"Romance · Comedia","icon":"🦖","desc":"Una chica se convierte en un kaiju cuando se alteran sus emociones.","note":"Terminó su primera temporada el jueves 17 de septiembre (12 episodios).","source":"https://www.crunchyroll.com/es-es/news/latest/2026/6/7/kaiju-girl-caramelise-2-de-julio-trailer-imagen-interpretes-musicales"},{"id":"heavy","name":"The Exiled Heavy Knight Knows How to Game the System","alias":"heavy knight","day":3,"date":"2026-10-01","platform":"Crunchyroll","kind":"Continuación","genre":"Fantasía · Videojuegos","icon":"🛡️","desc":"Un caballero infravalorado emplea su conocimiento del juego para vencer.","note":"Comenzó en julio; el segundo bloque continúa los jueves desde octubre.","source":"https://www.crunchyroll.com/news/latest/2026/9/24/the-exiled-heavy-knight-knows-how-to-game-the-system-cour-2-anime-new-trailer-visual-theme-songs-voice-cast"},{"id":"dandi","name":"Dandivine","alias":"dandivine","day":2,"date":"2026-10-07","platform":"Crunchyroll","kind":"Estreno","genre":"Mecha · Acción","icon":"⚡","desc":"Un estudiante pilota un robot legendario para defender Tokio.","note":"Miércoles en Crunchyroll; emisión de madrugada según el horario japonés.","source":"https://www.aniplex.co.jp/lineup/dandivine/"},{"id":"sasaki","name":"Sasaki and Peeps · T2","alias":"sasaki and peeps","day":2,"date":"2026-10-07","platform":"Crunchyroll","kind":"Nueva temporada","genre":"Fantasía · Comedia","icon":"🐦","desc":"Un oficinista y un ave mágica viven aventuras cada vez menos discretas.","note":"Nuevos episodios los miércoles.","source":"https://www.crunchyroll.com/es/news/latest/2026/10/9/sasaki-and-peeps-2-anime-opening-ending"}];
-const days=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
-const stateKey='anime-radar-otono-2026-v1'; // conservar seguimiento del diseño anterior
-// Fuente explícita para contadores comprobados. El resto se estima por semana,
-// sin inventar el total de episodios de la temporada.
-const EP_META={
-  avatar:{total:13,mode:'batches',batches:[['2026-10-09',3],['2026-10-16',3],['2026-10-23',3],['2026-10-30',4]],verified:true},
-  heavy:{total:26,mode:'weekly',base:13,verified:true},
-  verm:{total:12,mode:'weekly',verified:true},
-  kaiju:{total:12,mode:'fixed',released:12,verified:true},
-  elusive:{total:12,mode:'fixed',released:12,verified:true}
-};
-// Revisión pública sin credenciales. AniList documenta que su calendario ofrece
-// mayor fiabilidad para las próximas emisiones que para episodios pasados.
-// HORARIOS OFICIALES: semana 12–18 de octubre, publicados por Crunchyroll.
-// Los horarios se almacenan en hora del Pacífico para convertirlos
-// correctamente a CDMX, incluso después del cambio estacional de EE. UU.
-// "ep" es el número publicado para esta semana, no siempre la numeración global.
-// Los casos sin ep no se contabilizan como verificados por Crunchyroll.
-const CR_WEEK_URL='https://www.crunchyroll.com/es/news/seasonal-lineup/2026/10/11/crunchyroll-calendario-semanal-otono-2026';
-const CR_LINEUP_URL='https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll';
-const CR_SLOTS={
-  goblin:{date:'2026-10-12',pt:'06:00',ep:3},
-  chojo:{date:'2026-10-13',pt:'07:30',ep:2},
-  cheat:{date:'2026-10-13',pt:'08:30',ep:2},
-  witch:{date:'2026-10-14',pt:'06:00',ep:2},
-  sasaki:{date:'2026-10-14',pt:'06:00',ep:2},
-  dandi:{date:'2026-10-14',pt:'10:00',ep:2},
-  fx:{date:'2026-10-15',pt:'05:30',ep:3},
-  heavy:{date:'2026-10-15',pt:'09:00',ep:16},
-  bot:{date:'2026-10-16',pt:'08:00',ep:3},
-  dark:{date:'2026-10-16',pt:'08:30',ep:3},
-  verm:{date:'2026-10-17',pt:'02:30',ep:2},
-  saint:{date:'2026-10-17',pt:'06:00',ep:4},
-  romelia:{date:'2026-10-17',pt:'06:00',ep:3},
-  vertex:{date:'2026-10-17',pt:'09:00',ep:3},
-  magical:{date:'2026-10-17',pt:'09:30',ep:4},
-  space:{date:'2026-10-18',pt:'07:00',ep:3},
-  over:{date:'2026-10-18',pt:'07:30',ep:4},
-  // El lineup oficial anuncia el horario de Zombie, no verificó episodio semanal.
-  zombie:{date:'2026-10-17',pt:'08:00',ep:null}
-};
-function plusDays(ymd,days){const d=new Date(ymd+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)}
-// Convierte un reloj en Pacific a instante absoluto sin depender de TZ del usuario.
-function zonedEpoch(ymd,hm,tz){
- const [yy,mo,dd]=ymd.split('-').map(Number),[hh,mi]=hm.split(':').map(Number);
- const target=Date.UTC(yy,mo-1,dd,hh,mi);let guess=target;
- const fmt=new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
- for(let i=0;i<3;i++){const v=Object.fromEntries(fmt.formatToParts(new Date(guess)).filter(x=>x.type!=='literal').map(x=>[x.type,Number(x.value)]));
-  const local=Date.UTC(v.year,v.month-1,v.day,v.hour,v.minute);guess+=target-local;}
- return guess;
-}
-function crSchedule(x,now=Date.now()){
- const q=CR_SLOTS[x.id];if(!q||x.kind==='Finalizada')return null;
- const anchor=zonedEpoch(q.date,q.pt,'America/Los_Angeles');
- // Repeticiones tras esta semana son previsiones, no verificaciones nuevas.
- const turns=Math.max(0,Math.floor((now-anchor)/604800000)+1);
- // Tras el episodio 12, no extrapolar entregas semanales durante la pausa hasta 2027.
- if(x.id==='verm'&&q.ep+turns>12)return null;
- const nextDate=plusDays(q.date,7*turns);
- const nextEpoch=zonedEpoch(nextDate,q.pt,'America/Los_Angeles');
- const released=q.ep===null?null:Math.max(0,q.ep-1+turns);
- return {released,ep:q.ep===null?null:q.ep+turns,date:nextDate,epoch:nextEpoch,
-  exactPublished:turns===0 || (turns===1&&now-anchor<604800000),
-  expected:turns>0,pt:q.pt,baseDate:q.date,anchor};
-}
-function crTimeLabel(x){const q=crSchedule(x);if(!q)return '';
- const dateForDisplay=new Date(q.epoch);
- const txt=new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',hour:'2-digit',minute:'2-digit',hour12:true}).format(dateForDisplay);
- return txt.replace(/\s?a\.\s?m\./i,' a. m.').replace(/\s?p\.\s?m\./i,' p. m.');
-}
-function crNextLabel(x){const q=crSchedule(x);if(!q)return '';
- const time=new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',weekday:'long',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(q.epoch);
- return time+(q.expected?' · previsto':' · anunciado para esta semana');
-}
-const LIVE_INTERVAL = 4 * 60 * 60 * 1000;
-const MAX_LIVE_AGE = 24 * 60 * 60 * 1000;
-const liveKey = 'anime-radar-anilist-cache-2026-v3';
-const LIVE_ALIASES={
- fx:['fx fighter kurumi chan','fx fighter kurumi','fx senshi kurumi chan'],
- over:['overgeared'],
- bot:['the apothecary diaries season 3','kusuriya no hitorigoto season 3','kusuriya no hitorigoto 3'],
- tokyo:['tokyo revengers war of the three titans','tokyo revengers santen senso hen','tokyo revengers season 4'],
- zombie:['im looking for a zombie','looking for a zombie'],
- saint:['a tale of the secret saint','tensei shita dai seijo wa seijo de aru koto wo hitakakusu'],
- magical:['magical explorer'],
- ranma:['ranma 1 2 season 3','ranma 1 2 2026','ranma 1 2 3rd season'],
- romelia:['romelia war chronicle','romelia senki'],
- vertex:['vertex force'],
- space:['reborn as a space mercenary','mezametara saikyou soubi to uchuusen mochi datta'],
- tank:['tank chair'], goblin:['so whats wrong with getting reborn as a goblin'],
- chojo:['super psychic policeman chojo','chojun chojo senpai'],
- cheat:['the laid off cheat granting mage enjoys a second lease on life'],
- witch:['the worlds strongest witch'],
- verm:['the vermilion mask'],
- yoza:['mission yozakura family season 2','yozakura san chi no daisakusen season 2'],
- dark:['dark item'], heavy:['the exiled heavy knight knows how to game the system'],
- dand:['dandivine'], sasaki:['sasaki and peeps season 2','sasaki to pii chan season 2']
-};
-let liveCache={lastChecked:0,lastAttempt:0,matches:{},error:null};
-try{const c=JSON.parse(localStorage.getItem(liveKey)||'{}');if(c&&typeof c==='object'&&typeof c.lastChecked==='number'&&c.matches&&typeof c.matches==='object')liveCache=c}catch(e){}
-let checking=false;
-function currentLive(x){if(Date.now()-liveCache.lastChecked>MAX_LIVE_AGE)return null;return liveCache.matches[x.id]||null}
-function cleanTitle(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ')}
-function matchMedia(x,media){const aliases=LIVE_ALIASES[x.id]||[];const titles=[media.title?.english,media.title?.romaji,...(media.synonyms||[])].map(cleanTitle).filter(Boolean);
- if(!aliases.length)return false;
- return titles.some(title=>aliases.some(alias=>{
-  const a=cleanTitle(alias);return title===a||(a.length>=15&&(title.startsWith(a+' ')||a.startsWith(title+' '))&&Math.min(a.length,title.length)>=12);
- }));
-}
-function fetchTimeout(url,options,ms=14000){const ac=new AbortController();const timer=setTimeout(()=>ac.abort(),ms);return fetch(url,{...options,signal:ac.signal}).finally(()=>clearTimeout(timer))}
-const LIVE_QUERY=`query($page:Int!){Page(page:$page,perPage:50){pageInfo{hasNextPage} media(season:FALL,seasonYear:2026,type:ANIME,isAdult:false){id title{english romaji} synonyms episodes status nextAiringEpisode{episode airingAt}}}}`;
-function deriveLive(media){let aired=null;
- const next=media.nextAiringEpisode;
- if(next&&Number.isInteger(next.episode)&&next.episode>0){aired=Math.max(0,next.episode-(next.airingAt<=Date.now()/1000?0:1))}
- else if(media.status==='FINISHED'&&Number.isInteger(media.episodes)&&media.episodes>0)aired=media.episodes;
- if(aired===null)return null;
- return {aired,total:Number.isInteger(media.episodes)&&media.episodes>0?media.episodes:null,id:media.id};
-}
-function setRefreshUi(status=''){const title=document.querySelector('#refreshTitle');const details=document.querySelector('#refreshDetails');const button=document.querySelector('#refreshNow');if(!title||!details)return;
- button.disabled=checking;button.textContent=checking?'↻ Consultando…':'↻ Actualizar AniList';
- if(checking){title.textContent='🔄 Revisando nuevos episodios…';details.textContent='AniList (Japón): datos en vivo. Horarios Crunchyroll: semana publicada del 12 al 18 de octubre.';return}
- const n=Object.keys(liveCache.matches||{}).length;const fresh=Date.now()-liveCache.lastChecked<MAX_LIVE_AGE;
- const date=liveCache.lastChecked?new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(liveCache.lastChecked):'sin revisión previa';
- title.textContent=`🕒 Crunchyroll: ${Object.keys(CR_SLOTS).length} horarios · AniList: ${n} coincidencias`;
- details.textContent='Crunchyroll: horarios publicados del 12–18 oct (copia integrada; no consulta automática del sitio). '
- +(fresh?`AniList revisado: ${date} · `:'')
- +(liveCache.error?'AniList sin conexión.':n?`${n} coincidencia${n===1?'':'s'} en AniList (emisión japonesa).`:'AniList sin coincidencias verificadas.')
- +' AniList se revisa cada 4 h con la página abierta o al regresar.';
- if(status==='manual')details.textContent+=' Revisión manual completada.';
-}
-async function refreshEpisodes(force=false){if(checking)return;
- const now=Date.now();if(!force&&now-Math.max(liveCache.lastChecked||0,liveCache.lastAttempt||0)<LIVE_INTERVAL){setRefreshUi();return}
- checking=true;setRefreshUi();try{
-  const results=[];for(let page=1;page<=5;page++){
-   const r=await fetchTimeout('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({query:LIVE_QUERY,variables:{page}})});
-   if(!r.ok)throw new Error('AniList HTTP '+r.status);
-   const payload=await r.json();if(payload.errors?.length||!payload.data?.Page)throw new Error('Respuesta API inválida');
-   const obj=payload.data.Page;results.push(...(obj.media||[]));if(!obj.pageInfo?.hasNextPage)break;
-  }
-  const found={};for(const x of DATA){if(x.kind==='Finalizada'||x.id==='avatar')continue;
-    const options=results.filter(m=>matchMedia(x,m));if(options.length!==1)continue;
-    const d=deriveLive(options[0]);if(d){
-      // Los cour actuales pueden continuar numeración anterior; nunca reducirla.
-      if(x.id==='heavy'&&d.aired<13)continue;
-      found[x.id]=d;
-    }
-  }
-  liveCache={lastChecked:Date.now(),lastAttempt:Date.now(),matches:found,error:null};
-  try{localStorage.setItem(liveKey,JSON.stringify(liveCache))}catch(e){}
- }catch(e){liveCache.error=String(e.message||e);liveCache.lastAttempt=Date.now();try{localStorage.setItem(liveKey,JSON.stringify(liveCache))}catch(err){}console.warn('AniList no disponible; cálculo local.',e)}
- finally{checking=false;setRefreshUi(force?'manual':'');render()}
-}
-const PLATFORM_TABS=[['all','✨ Todas'],['Crunchyroll','🟠 Crunchyroll'],['Netflix','🔴 Netflix'],['Disney+','🔵 Disney+'],['Paramount+','🟣 Paramount+'],['Prime Video','🟢 Prime Video']];
-function updatePlatformTabs(){const active=document.querySelector('#platform').value;
- document.querySelector('#platformTabs').innerHTML=PLATFORM_TABS.map(([p,label])=>{
-  const n=DATA.filter(x=>p==='all'||x.platform.includes(p)).length;
-  return `<button type="button" class="platform-tab" role="tab" data-platform-tab="${p}" aria-selected="${p===active}" tabindex="${p===active?'0':'-1'}">${label}<span class="tabcount">${n}</span></button>`;
- }).join('');
-}
+    <main>
+      <section class="hero-card" aria-labelledby="heroTitle">
+        <div class="hero-copy">
+          <p class="eyebrow">✦ Tu radar personal · CDMX</p>
+          <h1 id="heroTitle">Tu semana,<br><em>en modo mágico.</em></h1>
+          <p>Descubre estrenos, registra tu avance y conserva tu biblioteca en este dispositivo con fuentes visibles y datos honestos.</p>
+          <div class="hero-actions">
+            <button class="button button-primary" type="button" data-go="add">＋ Agregar serie</button>
+            <button class="button button-ghost" type="button" data-go="calendar">Ver calendario →</button>
+          </div>
+        </div>
+        <div class="hero-orbit" aria-hidden="true"><img src="/icons/racoon-wizard.svg" alt=""><span>✦</span><span>✧</span></div>
+      </section>
 
-let track={};try{track=JSON.parse(localStorage.getItem(stateKey)||'{}')||{}}catch(e){}
+      <nav class="primary-nav" aria-label="Secciones principales" role="tablist">
+        <button id="homeTab" class="nav-tab is-active" type="button" role="tab" data-view="home" aria-controls="homeView" aria-selected="true"><span>⌂</span>Inicio</button>
+        <button id="calendarTab" class="nav-tab" type="button" role="tab" data-view="calendar" aria-controls="calendarView" aria-selected="false"><span>▦</span>Calendario</button>
+        <button id="progressTab" class="nav-tab" type="button" role="tab" data-view="progress" aria-controls="progressView" aria-selected="false"><span>◒</span>Mi progreso</button>
+        <button id="addTab" class="nav-tab" type="button" role="tab" data-view="add" aria-controls="addView" aria-selected="false"><span>＋</span>Agregar series</button>
+        <button id="backupsTab" class="nav-tab" type="button" role="tab" data-view="backups" aria-controls="backupsView" aria-selected="false"><span>▣</span>Respaldos</button>
+      </nav>
 
-// RACOON publica solo la interfaz; el progreso permanece en el navegador.
-const $=(s)=>document.querySelector(s);
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const strip=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-const fmt=d=>{const [y,m,a]=d.split('-');return `${Number(a)} ${['','ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][Number(m)]}`};
-function mxDate(){try{const a=new Intl.DateTimeFormat('en-US',{timeZone:'America/Mexico_City',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const o=Object.fromEntries(a.filter(v=>v.type!=='literal').map(v=>[v.type,v.value]));return `${o.year}-${o.month}-${o.day}`}catch(e){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}}
-function dayNumber(ymd){return Date.parse(ymd+'T00:00:00Z')/86400000}
-const nonNeg=(n)=>Number.isFinite(Number(n))?Math.max(0,Math.floor(Number(n))):0;
-const optionalNumber=n=>n===''||n===null||n===undefined?null:nonNeg(n);
-const favorite=id=>Boolean(track[id]?.favorite);
-function countAuto(x){const m=EP_META[x.id]||{};const today=mxDate();let available=0;
- if(m.mode==='fixed')available=m.released;
- else if(m.mode==='batches')available=m.batches.reduce((s,[date,ep])=>s+(date<=today?ep:0),0);
- else {const elapsed=dayNumber(today)-dayNumber(x.date); available=elapsed<0?0:Math.floor(elapsed/7)+1+(m.base||0)}
- return m.total==null?available:Math.min(available,m.total);
-}
-function totalFor(x){const t=track[x.id]?.total;return t!==undefined?optionalNumber(t):(EP_META[x.id]?.total??(currentLive(x)?.total??null))}
-function airedFor(x){const n=track[x.id]?.aired;const cr=crSchedule(x);const auto=(cr?.released??currentLive(x)?.aired??countAuto(x));return n===undefined?auto:nonNeg(n)}
-function seenFor(x){return nonNeg(track[x.id]?.seen??0)}
-function statusFor(x){const t=track[x.id]||{};const watched=seenFor(x),released=airedFor(x),total=totalFor(x);
- if(t.grade==='Descartada')return 'Descartada';
- if(t.grade==='Terminada'&&watched>=released&&(total==null||watched>=total))return 'Terminada';
- if(watched>0&&total!==null&&watched>=total&&x.kind==='Finalizada')return 'Terminada';
- if(watched>0&&released>0&&watched>=released)return 'Al día';
- if(watched>0||t.grade==='Viendo')return 'Viendo';
- return 'Pendiente'
-}
-function pendingFor(x){return Math.max(0,airedFor(x)-seenFor(x))}
-function save(){try{localStorage.setItem(stateKey,JSON.stringify(track))}catch(e){console.warn('No se pudo guardar el progreso local:',e)}}
-function update(id,fields){track[id]={...(track[id]||{}),...fields,changedAt:Date.now()};save();render()}
-function setFavorite(id){update(id,{favorite:!favorite(id)})}
-function setGrade(id,v){const x=DATA.find(y=>y.id===id);if(!x)return;
- const release=airedFor(x),total=totalFor(x);let fields={grade:v};
- if(v==='Al día')fields.seen=release;
- if(v==='Terminada')fields.seen=total===null?release:Math.max(release,total);
- if(v==='Pendiente')fields.seen=0;
- update(id,fields);
-}
-function setSeen(id,value){const x=DATA.find(y=>y.id===id);if(!x)return;const n=nonNeg(value);update(id,{seen:n,grade:n===0?'Pendiente':'Viendo'})}
-function setAired(id,value){const x=DATA.find(y=>y.id===id);if(!x)return;const num=optionalNumber(value);update(id,{aired:num===null?undefined:num})}
-function setTotal(id,value){const x=DATA.find(y=>y.id===id);if(!x)return;update(id,{total:optionalNumber(value)})}
-function restoreAuto(id){track[id]=track[id]||{};delete track[id].aired;track[id].changedAt=Date.now();save();render()}
-function catchUp(id){const x=DATA.find(y=>y.id===id);if(x&&airedFor(x)>0)update(id,{seen:airedFor(x),grade:'Al día'})}
-function oneMore(id){const x=DATA.find(y=>y.id===id);if(x)update(id,{seen:Math.min(airedFor(x),seenFor(x)+1),grade:'Viendo'})}
-// Una sola migración conserva la selección «Al día» / «Terminada» de la primera versión.
-let migrated=false;
-for(const x of DATA){const t=track[x.id];if(!t||t.seen!==undefined)continue;
- if(t.grade==='Al día'){t.seen=airedFor(x);migrated=true}
- else if(t.grade==='Terminada'){t.seen=totalFor(x)??airedFor(x);migrated=true}}
-if(migrated)save();
-function getFiltered(){const search=strip($('#search').value.trim()),p=$('#platform').value,f=$('#filter').value;
- return DATA.filter(x=>(!search||strip(x.name+' '+x.alias+' '+x.genre).includes(search))
-  &&(p==='all'||x.platform.includes(p))
-  &&(f==='all'||(f==='favorites'&&favorite(x.id))||(f==='active'&&x.kind!=='Finalizada')
-  ||(f==='finished'&&x.kind==='Finalizada')||(f==='watching'&&['Viendo','Al día','Terminada'].includes(statusFor(x)))
-  ||(f==='behind'&&seenFor(x)>0&&pendingFor(x)>0)||(f==='uptodate'&&statusFor(x)==='Al día')))
-  .sort((a,b)=>a.day-b.day||a.date.localeCompare(b.date)||a.name.localeCompare(b.name));
-}
-function pclass(s){if(s.includes('Crunchyroll'))return 'cr';if(s.includes('Netflix'))return 'nf';if(s.includes('Disney'))return 'dp';if(s.includes('Paramount'))return 'para';if(s.includes('Prime'))return 'pm';return ''}
-function epSummary(x){const released=airedFor(x),total=totalFor(x),watched=seenFor(x);return `${released} / ${total===null?'?':total}`}
-function tile(x){const st=statusFor(x),rel=airedFor(x),seen=seenFor(x),percent=rel>0?Math.min(100,Math.round(100*seen/rel)):0;
- return `<article class="tile ${st==='Terminada'?'done':''}"><button class="star ${favorite(x.id)?'on':''}" data-fav="${x.id}" title="${favorite(x.id)?'Quitar de favoritos':'Añadir a favoritos'}" aria-label="Marcar favorito">${favorite(x.id)?'★':'☆'}</button><span class="circle">${x.icon}</span><h4>${esc(x.name)}</h4><div class="mini"><span class="p ${pclass(x.platform)}">${esc(x.platform)}</span></div><div class="release">${esc(fmt(x.date))} · ${esc(x.kind)}</div>${crSchedule(x)?`<div class="tile-time">🕒 ${esc(crTimeLabel(x))} CDMX <span>${crSchedule(x).expected?'· estimado':'· semanal'}</span></div>`:''}<div class="ep-tile">📺 ${esc(epSummary(x))} disponibles / total<br><b>Tú: ${seen} de ${rel}</b> · ${esc(st)}</div><div class="tiny-progress"><span style="width:${percent}%"></span></div></article>`;
-}
-function progressPanel(x){const released=airedFor(x),total=totalFor(x),seen=seenFor(x),status=statusFor(x),remaining=pendingFor(x),isAuto=track[x.id]?.aired===undefined;
- const displayTotal=total===null?'?':total;const percent=released>0?Math.min(100,Math.round(100*seen/released)):0;const cr=crSchedule(x);const liveSource=track[x.id]?.aired!==undefined?'Cantidad ajustada por ti':cr?.released!==null&&cr?.released!==undefined?(cr.expected?'Crunchyroll: extrapolación semanal; pendiente de nueva confirmación':'Crunchyroll: horario semanal anunciado; cantidad prevista'):currentLive(x)?'AniList: emisión japonesa · revisada cada 4 h':EP_META[x.id]?.mode==='batches'?'Calendario de estrenos por bloques':'Cálculo estimado por calendario';
- const statusText= status==='Descartada'?'Descartada':status==='Terminada'?'✓ Temporada terminada':released===0?'Aún no hay episodios':remaining===0&&seen>0?'✓ Vas al corriente':remaining>0?`Te faltan ${remaining} capítulo${remaining===1?'':'s'}`:'Sin empezar';
- return `<div class="episodes"><div class="episode-top"><div><strong>📺 Episodios estrenados</strong><div class="episode-label">${liveSource}</div></div><div class="ep-number">${released}<span style="color:#8391ac"> / </span>${displayTotal}</div></div>
- <div class="episode-track" aria-label="Progreso ${percent}%"><div class="episode-fill" style="width:${percent}%"></div></div>
- <div class="episode-status"><span>Tu avance: <b>${seen}</b> de <b>${released}</b> disponibles</span><b class="${remaining?'behind':''}">${esc(statusText)}</b></div>
- <div class="episode-controls"><label class="ep-field">Voy en el episodio<input type="number" data-seen="${x.id}" min="0" max="9999" inputmode="numeric" value="${seen}" aria-label="Mi último episodio visto de ${esc(x.name)}"></label><label class="ep-field">Estrenados<input type="number" data-aired="${x.id}" min="0" max="9999" inputmode="numeric" value="${released}" aria-label="Episodios estrenados de ${esc(x.name)}"></label><label class="ep-field">Total temporada<input type="number" data-total="${x.id}" min="1" max="9999" inputmode="numeric" placeholder="?" value="${total===null?'':total}" aria-label="Total de episodios de ${esc(x.name)}"></label></div>
- <div class="episode-buttons"><button type="button" class="catchup" data-catchup="${x.id}" ${released===0?'disabled':''}>✓ Voy al corriente</button><button type="button" data-next="${x.id}" ${seen>=released?'disabled':''}>+1 visto</button>${!isAuto?`<button type="button" data-reset="${x.id}">↻ Estrenos auto</button>`:''}</div>
- ${total===null?'<div class="ep-helper">Total no confirmado: puedes escribirlo cuando lo sepas.</div>':''}</div>`;
-}
-function card(x){return `<article class="rowcard"><div class="poster">${x.icon}</div><div class="row-main"><div class="row-top"><div><h3>${esc(x.name)}</h3><div class="genre">${esc(x.genre)} · ${days[x.day]}</div></div><span class="pill ${x.kind==='Finalizada'?'finished':''}">${esc(x.kind)}</span></div><p class="description">${esc(x.desc)}</p>${crSchedule(x)?`<div class="cr-time"><span class="cr-time-icon">🕒</span><div><strong>${esc(crTimeLabel(x))} · CDMX</strong><div>${esc(crNextLabel(x))}</div><small>${crSchedule(x).expected?'Horario repetido tentativo · sin confirmación para esa fecha':x.id==='zombie'?'Horario anunciado en la alineación oficial':'Horario publicado por Crunchyroll · sujeto a cambios'}</small></div><a href="${esc((x.id==='zombie'||x.id==='verm')?CR_LINEUP_URL:CR_WEEK_URL)}" target="_blank" rel="noopener noreferrer">Fuente ↗</a></div>`:x.platform.includes('Crunchyroll')?`<div class="cr-time cr-unknown"><span class="cr-time-icon">🕒</span><div><strong>Horario no verificado</strong><div>Comprueba el calendario de Crunchyroll.</div></div><a href="${CR_WEEK_URL}" target="_blank" rel="noopener noreferrer">Abrir ↗</a></div>`:''}<div class="detail"><strong>${x.kind==='Finalizada'?'Último episodio':'Fecha inicial'}:</strong> ${esc(fmt(x.date))} · <strong>Plataforma:</strong> ${esc(x.platform)}</div><div class="detail">${esc(x.note)}</div>${progressPanel(x)}<div class="actions"><select data-grade="${x.id}" aria-label="Seguimiento de ${esc(x.name)}">${['Pendiente','Viendo','Al día','Terminada','Descartada'].map(st=>`<option ${statusFor(x)===st?'selected':''}>${st}</option>`).join('')}</select><button class="mutebtn" data-fav="${x.id}" type="button">${favorite(x.id)?'★ Favorita':'☆ Favorita'}</button><a href="${esc(x.source)}" target="_blank" rel="noopener noreferrer">Ver fuente ↗</a></div></div></article>`}
-function render(){updatePlatformTabs();const filt=getFiltered();$('#progress').textContent=DATA.filter(x=>['Al día','Terminada'].includes(statusFor(x))).length;$('#results').textContent=filt.length+' de '+DATA.length+' resultados';
- $('#week').innerHTML=days.map((d,i)=>{const v=filt.filter(x=>x.day===i&&x.kind!=='Finalizada');return `<section class="day"><div class="day-head"><h3>${d}</h3><span class="count">${v.length}</span></div>${v.length?v.map(tile).join(''):'<div class="empty">Sin estrenos en este filtro</div>'}</section>`}).join('');
- const active=filt.filter(x=>x.kind!=='Finalizada'),done=filt.filter(x=>x.kind==='Finalizada');$('#library').innerHTML=[...active,...done].map(card).join('')||'<p style="color:#9aaac4">No hay coincidencias. Prueba otro filtro.</p>';
-}
-document.addEventListener('click',e=>{const tab=e.target.closest('[data-platform-tab]');if(tab){$('#platform').value=tab.dataset.platformTab;render();return}const b=e.target.closest('[data-fav],[data-catchup],[data-next],[data-reset]');if(!b)return;
- if(b.dataset.fav)setFavorite(b.dataset.fav);
- else if(b.dataset.catchup)catchUp(b.dataset.catchup);
- else if(b.dataset.next)oneMore(b.dataset.next);
- else if(b.dataset.reset)restoreAuto(b.dataset.reset);
-});
-document.addEventListener('change',e=>{const a=e.target;
- if(a.matches('[data-grade]'))setGrade(a.dataset.grade,a.value);
- else if(a.matches('[data-seen]'))setSeen(a.dataset.seen,a.value);
- else if(a.matches('[data-aired]'))setAired(a.dataset.aired,a.value);
- else if(a.matches('[data-total]'))setTotal(a.dataset.total,a.value);
-});
-['search','platform','filter'].forEach(x=>$('#'+x).addEventListener(x==='search'?'input':'change',render));
-function download(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-$('#export').addEventListener('click',()=>{const rows=[['Anime','Dia semanal','Fecha inicial o final','Plataforma','Tipo','Estrenados','Total de temporada','Episodios vistos','Pendientes','Al corriente','Seguimiento','Favorito','Hora Crunchyroll CDMX','Próximo CR (referencia)','Notas','Fuente'],...DATA.map(x=>[x.name,days[x.day],x.date,x.platform,x.kind,airedFor(x),totalFor(x)??'',seenFor(x),pendingFor(x),statusFor(x)==='Al día'?'Sí':'No',statusFor(x),favorite(x.id)?'Sí':'No',crTimeLabel(x),crNextLabel(x),x.note,x.source])];const csv='\uFEFF'+rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');download('anime_radar_episodios_2026.csv',csv,'text/csv;charset=utf-8;')});
-$('#backup').addEventListener('click',()=>download('mi_progreso_anime_2026.json',JSON.stringify({version:2,exportedAt:new Date().toISOString(),track},null,2),'application/json;charset=utf-8;'));
-$('#restore').addEventListener('click',()=>$('#restoreFile').click());
-$('#restoreFile').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const parsed=JSON.parse(await f.text());const data=parsed.track??parsed;if(!data||typeof data!=='object'||Array.isArray(data))throw Error('Archivo inválido');
- const ids=new Set(DATA.map(x=>x.id));const clean={};for(const [id,value] of Object.entries(data)){if(ids.has(id)&&value&&typeof value==='object'&&!Array.isArray(value)){const v={};if(typeof value.favorite==='boolean')v.favorite=value.favorite;if(typeof value.grade==='string'&&['Pendiente','Viendo','Al día','Terminada','Descartada'].includes(value.grade))v.grade=value.grade;v.changedAt=Date.now();for(const k of ['seen','aired','total'])if(value[k]!==undefined&&value[k]!==null)v[k]=nonNeg(value[k]);clean[id]=v}}
- if(!confirm('¿Importar esta copia y reemplazar el seguimiento actual?'))return;track=clean;save();render();alert('Progreso importado correctamente.');}catch(err){alert('No se pudo importar el archivo JSON.')}finally{e.target.value=''}});
-render();
-setRefreshUi();
-$('#refreshNow').addEventListener('click',()=>refreshEpisodes(true));
-refreshEpisodes(false);
-setInterval(()=>refreshEpisodes(false),60*1000); // comprueba si vencieron las 4 horas
-if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('/sw.js').catch(console.warn);
-window.addEventListener('focus',()=>refreshEpisodes(false));
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshEpisodes(false)});
-</script>
-</body></html>
+      <div id="liveRegion" class="sr-only" aria-live="polite"></div>
+      <section id="homeView" class="view-panel" role="tabpanel" aria-labelledby="homeTab">
+        <div class="section-heading"><div><p class="eyebrow">Tu biblioteca</p><h2>Buenos días, mago del anime</h2></div><span class="view-note" id="homeUpdated">Sincronización local activa</span></div>
+        <div class="stat-grid" id="homeStats"></div>
+        <div class="dashboard-grid"><article class="panel-card" id="homePending"><div class="panel-heading"><h3>Episodios pendientes</h3><button class="text-button" type="button" data-go="progress">Ver todo →</button></div><div class="stack-list" id="pendingList"></div></article><article class="panel-card" id="homeUpcoming"><div class="panel-heading"><h3>Próximas emisiones</h3><button class="text-button" type="button" data-go="calendar">Calendario →</button></div><div class="stack-list" id="upcomingList"></div></article></div>
+      </section>
+
+      <section id="calendarView" class="view-panel is-hidden" role="tabpanel" aria-labelledby="calendarTab">
+        <div class="section-heading"><div><p class="eyebrow">Agenda de emisiones</p><h2>Calendario</h2><p>Horas en CDMX. Las emisiones japonesas de AniList no confirman estreno en México; las previsiones no cuentan como episodios disponibles.</p></div><div class="heading-actions"><button class="button button-ghost" id="previousWeek" type="button">← Semana anterior</button><button class="button button-ghost" id="nextWeek" type="button">Semana siguiente →</button></div></div>
+        <div class="calendar-toolbar"><button class="button button-soft" id="currentWeek" type="button">Semana actual</button><label class="select-wrap"><span class="sr-only">Plataforma</span><select id="calendarPlatform"><option value="all">Todas las plataformas</option></select></label><label class="select-wrap"><span class="sr-only">Estado</span><select id="calendarStatus"><option value="all">Todos los estados</option><option value="pending">Con pendientes</option><option value="uptodate">Al corriente</option></select></label></div>
+        <div id="daySelector" class="day-selector" role="tablist" aria-label="Días de la semana"></div><div id="calendar" class="calendar-layout"></div>
+      </section>
+
+      <section id="progressView" class="view-panel is-hidden" role="tabpanel" aria-labelledby="progressTab">
+        <div class="section-heading"><div><p class="eyebrow">Seguimiento local</p><h2>Mi progreso</h2><p>Tu avance es tuyo: los datos remotos no lo reducen.</p></div><div class="heading-actions"><input class="search-input" id="progressSearch" type="search" placeholder="Buscar en mi biblioteca…" aria-label="Buscar en mi biblioteca"><select id="progressFilter" aria-label="Filtrar progreso"><option value="all">Todas</option><option value="watching">Viendo</option><option value="pending">Pendientes</option><option value="uptodate">Al corriente</option><option value="finished">Finalizadas</option><option value="favorites">Favoritas</option></select><select id="progressSort" aria-label="Ordenar progreso"><option value="title">Título</option><option value="progress">Episodios vistos</option><option value="status">Estado</option><option value="favorites">Favoritos</option></select></div></div>
+        <div id="progressList" class="library-grid"></div>
+      </section>
+
+      <section id="addView" class="view-panel is-hidden" role="tabpanel" aria-labelledby="addTab">
+        <div class="section-heading"><div><p class="eyebrow">Catálogo ampliable</p><h2>Agregar series</h2><p>Busca en AniList y revisa la ficha antes de guardarla.</p></div></div>
+        <form id="searchForm" class="search-bar"><label class="sr-only" for="animeSearch">Buscar anime</label><input class="search-input" id="animeSearch" type="search" autocomplete="off" placeholder="Ej. Frieren, One Piece…"><button class="button button-primary" type="submit">Buscar</button></form>
+        <button class="button button-soft" id="createManualSeries" type="button">＋ Crear ficha manual sin AniList</button>
+        <div id="searchStatus" class="inline-status" aria-live="polite"></div><div id="searchResults" class="result-grid"></div><div id="seriesConfirmation" class="panel-card is-hidden"></div>
+      </section>
+
+      <section id="backupsView" class="view-panel is-hidden" role="tabpanel" aria-labelledby="backupsTab">
+        <div class="section-heading"><div><p class="eyebrow">Tu biblioteca, a salvo</p><h2>Respaldos y ajustes</h2><p>Exporta todo para conservarlo o moverlo a otro dispositivo.</p></div></div>
+        <div class="backup-grid"><article class="panel-card"><div class="panel-heading"><h3>Respaldo completo</h3><span class="badge badge-teal" id="backupSummary">0 series</span></div><p class="muted">Incluye progreso, favoritos, series agregadas, preferencias, fuentes y metadatos.</p><div class="button-row"><button class="button button-primary" id="exportBackup" type="button">↓ Exportar JSON</button><button class="button button-soft" id="exportCsv" type="button">↓ Exportar CSV</button><button class="button button-soft" id="importBackup" type="button">↑ Importar JSON</button><input id="backupFile" class="is-hidden" type="file" accept="application/json,.json"></div></article><article class="panel-card"><div class="panel-heading"><h3>Actualizaciones</h3><span class="badge" id="appVersion">RACOON v2</span></div><p class="muted" id="updateStatus">La aplicación comprobará versiones nuevas al iniciar.</p><button class="button button-soft" id="checkUpdate" type="button">↻ Comprobar versión</button></article></div>
+        <article class="panel-card danger-safe"><h3>Antes de restaurar</h3><p class="muted">Verás una vista previa con cantidades y conflictos. Fusionar conserva lo más reciente; reemplazar pide confirmación antes de sobrescribir.</p><div id="backupPreview" class="inline-status"></div></article>
+      </section>
+    </main>
+    <footer class="footer"><span>🪄 RACOON · datos personales sólo en este dispositivo</span><a href="https://docs.anilist.co/reference/object/airingschedule" target="_blank" rel="noopener noreferrer">Sobre las fuentes ↗</a></footer>
+  </div>
+
+  <dialog id="updateDialog" class="wizard-dialog"><div class="dialog-icon">🪄</div><h2>RACOON tiene una actualización disponible</h2><p id="updateMessage"></p><div class="button-row"><button class="button button-primary" id="applyUpdate" type="button">Actualizar ahora</button><button class="button button-ghost" id="dismissUpdate" type="button">Más tarde</button></div></dialog>
+  <dialog id="importDialog" class="wizard-dialog"><div class="dialog-icon">▣</div><h2>Revisar respaldo</h2><div id="importDetails"></div><div class="button-row"><button class="button button-primary" id="mergeImport" type="button">Fusionar datos</button><button class="button button-soft" id="replaceImport" type="button">Reemplazar biblioteca</button><button class="button button-ghost" id="cancelImport" type="button">Cancelar</button></div></dialog>
+  <script type="module" src="/js/app.mjs"></script>
+</body>
+</html>

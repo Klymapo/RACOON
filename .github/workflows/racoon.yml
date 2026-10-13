@@ -1,5 +1,7 @@
 name: RACOON · publicar PWA pública
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
@@ -17,11 +19,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/racoon.test.mjs
+      - run: node --test tests/*.test.mjs
   publicar:
     name: Publicar sitio estático en Cloudflare Pages
     needs: calidad
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,6 +46,8 @@ jobs:
           npm install -g wrangler@4
           STATIC_DIR="$(mktemp -d)"
           cp -R public/. "$STATIC_DIR/"
+          # La publicación deliberadamente no incluye functions/ ni schema.sql.
+          test ! -e "$STATIC_DIR/functions" && test ! -e "$STATIC_DIR/schema.sql"
           rm -f "$STATIC_DIR/_routes.json"
           cd "$STATIC_DIR"
           wrangler pages deploy . --project-name "$PROJECT" --branch main

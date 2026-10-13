@@ -1,0 +1,398 @@
+import {normalizeLegacyCatalog} from './model.mjs';
+
+const LEGACY_CATALOG = [
+  {
+    "id": "fx",
+    "name": "FX Fighter Kurumi-chan",
+    "alias": "fx fighter",
+    "day": 3,
+    "date": "2026-10-01",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Drama · Finanzas",
+    "icon": "💹",
+    "desc": "Una universitaria entra al impredecible mundo del trading de divisas.",
+    "note": "Estreno semanal los jueves.",
+    "source": "https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"
+  },
+  {
+    "id": "over",
+    "name": "Overgeared",
+    "alias": "overgeared",
+    "day": 6,
+    "date": "2026-10-04",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Fantasía · Videojuegos",
+    "icon": "⚒️",
+    "desc": "Grid encuentra el camino para convertirse en un herrero legendario.",
+    "note": "En televisión japonesa comenzó el viernes 2 de octubre; Crunchyroll publica los domingos.",
+    "source": "https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"
+  },
+  {
+    "id": "bot",
+    "name": "The Apothecary Diaries · T3",
+    "alias": "boticafria / los diarios de la boticaria",
+    "day": 4,
+    "date": "2026-10-02",
+    "platform": "Crunchyroll",
+    "kind": "Nueva temporada",
+    "genre": "Misterio · Histórico",
+    "icon": "🌿",
+    "desc": "Maomao regresa a descifrar conspiraciones, venenos y secretos.",
+    "note": "Los viernes en Crunchyroll.",
+    "source": "https://www.crunchyroll.com/es/news/latest/2026/10/2/the-apothecary-diaries-3-anime-opening"
+  },
+  {
+    "id": "tokyo",
+    "name": "Tokyo Revengers · Guerra de los Tres Titanes",
+    "alias": "revengers",
+    "day": 4,
+    "date": "2026-10-02",
+    "platform": "Disney+",
+    "kind": "Nueva temporada",
+    "genre": "Acción · Pandillas",
+    "icon": "🏍️",
+    "desc": "El arco final lleva el conflicto de las bandas a otra escala.",
+    "note": "Disney+ confirma episodios semanales los viernes.",
+    "source": "https://tokyo-revengers-anime.com/news/archives/4935"
+  },
+  {
+    "id": "zombie",
+    "name": "#I'm Looking for a Zombie",
+    "alias": "looking for zombie",
+    "day": 5,
+    "date": "2026-10-03",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Aventura · Zombis",
+    "icon": "🧟",
+    "desc": "Aki explora un mundo postapocalíptico buscando a su padre.",
+    "note": "Crunchyroll: sábados. Prime Video muestra un lanzamiento previo fechado el viernes 2.",
+    "source": "https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"
+  },
+  {
+    "id": "saint",
+    "name": "A Tale of the Secret Saint",
+    "alias": "secret saint",
+    "day": 5,
+    "date": "2026-10-03",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Fantasía · Reencarnación",
+    "icon": "✨",
+    "desc": "Fia descubre un poder sagrado que necesita ocultar.",
+    "note": "Episodios los sábados.",
+    "source": "https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"
+  },
+  {
+    "id": "magical",
+    "name": "Magical Explorer",
+    "alias": "magical explorer",
+    "day": 5,
+    "date": "2026-10-03",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Isekai · Videojuegos",
+    "icon": "🪄",
+    "desc": "Un conocedor de un videojuego se reencarna como personaje secundario.",
+    "note": "Crunchyroll: sábados.",
+    "source": "https://www.crunchyroll.com/es/news/latest/2026/8/28/magical-explorer-anime-trailer-imagen-temas-musicales-reparto"
+  },
+  {
+    "id": "ranma",
+    "name": "Ranma ½ · T3",
+    "alias": "ranma",
+    "day": 5,
+    "date": "2026-10-03",
+    "platform": "Netflix",
+    "kind": "Nueva temporada",
+    "genre": "Comedia · Artes marciales",
+    "icon": "🥋",
+    "desc": "Regresan Ranma, Akane y el caos romántico de las transformaciones.",
+    "note": "Netflix lanza un episodio semanal los sábados.",
+    "source": "https://websunday.net/96648/"
+  },
+  {
+    "id": "romelia",
+    "name": "Romelia War Chronicle",
+    "alias": "romelia",
+    "day": 5,
+    "date": "2026-10-03",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Fantasía · Estrategia",
+    "icon": "🏰",
+    "desc": "Tras derrotar al Rey Demonio, Romelia reconstruye una nación.",
+    "note": "Crunchyroll: sábados. La emisión de TV japonesa inicia el lunes 5.",
+    "source": "https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"
+  },
+  {
+    "id": "vertex",
+    "name": "Vertex Force",
+    "alias": "vertex",
+    "day": 5,
+    "date": "2026-10-03",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Mecha · Ciencia ficción",
+    "icon": "🤖",
+    "desc": "Una familia de Okinawa combate con un misterioso poder llamado Engine.",
+    "note": "Episodios los sábados.",
+    "source": "https://www.crunchyroll.com/es-es/news/latest/2026/5/8/vertex-force-anime-estreno-octubre-2026"
+  },
+  {
+    "id": "space",
+    "name": "Reborn as a Space Mercenary",
+    "alias": "space mecenary",
+    "day": 6,
+    "date": "2026-10-04",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Isekai · Espacial",
+    "icon": "🚀",
+    "desc": "Un jugador despierta al mando de una nave en su universo de ciencia ficción favorito.",
+    "note": "Crunchyroll: domingos.",
+    "source": "https://www.crunchyroll.com/es/news/latest/2026/9/12/reborn-as-a-space-mercenary-anime-fecha-estreno"
+  },
+  {
+    "id": "tank",
+    "name": "Tank Chair",
+    "alias": "tank chair",
+    "day": 6,
+    "date": "2026-10-04",
+    "platform": "Prime Video*",
+    "kind": "Estreno",
+    "genre": "Acción · Thriller",
+    "icon": "🦾",
+    "desc": "Un asesino despierta cuando siente una intención homicida contra él.",
+    "note": "Domingos confirmados en Japón; Prime Video lo emite allí. Revisa disponibilidad de tu catálogo mexicano.",
+    "source": "https://www.ppi.co.jp/news/ppinews20260812_tank-chair/?l=e"
+  },
+  {
+    "id": "goblin",
+    "name": "So What's Wrong with Getting Reborn as a Goblin?",
+    "alias": "reborn as a goblin",
+    "day": 0,
+    "date": "2026-10-05",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Isekai · Fantasía",
+    "icon": "👹",
+    "desc": "Akira renace como goblin y utiliza habilidades extraordinarias para prosperar.",
+    "note": "Crunchyroll: lunes. Algunos catálogos anticiparon el episodio el domingo.",
+    "source": "https://www.crunchyroll.com/watch/GE00384315JAJP/so-whats-wrong-with-getting-reborn-as-a-goblin"
+  },
+  {
+    "id": "chojo",
+    "name": "Super Psychic Policeman Chojo",
+    "alias": "pychic policemnan",
+    "day": 1,
+    "date": "2026-10-06",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Comedia · Policiaco",
+    "icon": "🔮",
+    "desc": "Una policía novata y un colega psíquico resuelven casos insólitos.",
+    "note": "Episodios los martes.",
+    "source": "https://www.crunchyroll.com/news/latest/2026/9/22/super-psychic-policeman-chojo-anime-theme-song-performers-new-trailer"
+  },
+  {
+    "id": "cheat",
+    "name": "The Laid-Off Cheat-Granting Mage Enjoys a Second Lease on Life",
+    "alias": "cheat granting",
+    "day": 1,
+    "date": "2026-10-06",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Fantasía · Aventuras",
+    "icon": "🧙",
+    "desc": "Un encantador despedido comienza otra vida con sus poderes.",
+    "note": "Crunchyroll: martes.",
+    "source": "https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"
+  },
+  {
+    "id": "witch",
+    "name": "The World's Strongest Witch",
+    "alias": "world strongrst wich",
+    "day": 2,
+    "date": "2026-10-07",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Isekai · Fantasía",
+    "icon": "🧹",
+    "desc": "Una habilidad llamada Internet convierte a una supuesta inútil en prodigio.",
+    "note": "Estreno 7 de octubre; día semanal: miércoles.",
+    "source": "https://www.crunchyroll.com/news/latest/2026/10/10/the-worlds-strongest-witch-anime-opening-song-music-video-honeyworks-hakoniwalily"
+  },
+  {
+    "id": "avatar",
+    "name": "Avatar: Seven Havens",
+    "alias": "avatar",
+    "day": 4,
+    "date": "2026-10-09",
+    "platform": "Paramount+",
+    "kind": "Nueva serie",
+    "genre": "Aventura · Fantasía",
+    "icon": "🌪️",
+    "desc": "Una nueva Avatar surge en un mundo que teme al ciclo del Avatar.",
+    "note": "Estrenos POR BLOQUES: 9 oct (3 episodios), 16 oct (3), 23 oct (3), 30 oct (4).",
+    "source": "https://www.paramountpressexpress.com/paramount-plus/shows/avatar-seven-havens/releases/?view=113232-in-a-world-that-fears-her-a-new-avatar-rises-paramount-avatar-seven-havens-official-trailer-is-out-now"
+  },
+  {
+    "id": "verm",
+    "name": "The Vermilion Mask",
+    "alias": "vermilion mask",
+    "day": 5,
+    "date": "2026-10-10",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Fantasía · Acción",
+    "icon": "🎭",
+    "desc": "Peru, aprendiz de un fabricante de máscaras, busca destruir las creaciones de su maestro tras una tragedia provocada por una máscara que lo poseyó.",
+    "note": "Sábados a las 3:30 a. m. CDMX. Primera parte: 12 episodios (octubre-diciembre); segunda parte anunciada para abril de 2027.",
+    "source": "https://www.crunchyroll.com/es-es/news/latest/2026/10/11/the-vermilion-mask-anime-opening-ending"
+  },
+  {
+    "id": "yoza",
+    "name": "Mission: Yozakura Family · T2, parte 2",
+    "alias": "yozakura",
+    "day": 6,
+    "date": "2026-10-11",
+    "platform": "Disney+",
+    "kind": "Continuación",
+    "genre": "Comedia · Espionaje",
+    "icon": "🌸",
+    "desc": "La peculiar familia de espías prosigue su segunda temporada.",
+    "note": "Emisión japonesa: domingos desde el 11 de octubre; confirma la hora en Disney+ México.",
+    "source": "https://www.youtube.com/watch?v=aHHTfKMdZuw"
+  },
+  {
+    "id": "dark",
+    "name": "A Certain Dark Item",
+    "alias": "dark item",
+    "day": 4,
+    "date": "2026-10-09",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Ciencia ficción · Acción",
+    "icon": "🕶️",
+    "desc": "Una unidad clandestina completa misiones peligrosas en Ciudad Academia.",
+    "note": "Nuevos episodios los viernes.",
+    "source": "https://www.crunchyroll.com/news/seasonal-lineup/2026/9/15/fall-anime-2026-crunchyroll"
+  },
+  {
+    "id": "elusive",
+    "name": "The Elusive Samurai · T2",
+    "alias": "elusive samurai",
+    "day": 4,
+    "date": "2026-10-02",
+    "platform": "Disponibilidad variable",
+    "kind": "Finalizada",
+    "genre": "Histórico · Aventura",
+    "icon": "🏹",
+    "desc": "Tokiyuki elude a sus perseguidores mientras busca recuperar su legado.",
+    "note": "Temporada de verano; el episodio 12 y final llegó el 2 de octubre. No hay entrega semanal nueva después.",
+    "source": "https://www.primevideo.com/-/es_419/detail/0R8APCIXTN39CTPNQA3FQZ3Q6G?tr=gb"
+  },
+  {
+    "id": "kaiju",
+    "name": "Kaiju Girl Caramelise",
+    "alias": "kaiju girl",
+    "day": 3,
+    "date": "2026-09-17",
+    "platform": "Crunchyroll",
+    "kind": "Finalizada",
+    "genre": "Romance · Comedia",
+    "icon": "🦖",
+    "desc": "Una chica se convierte en un kaiju cuando se alteran sus emociones.",
+    "note": "Terminó su primera temporada el jueves 17 de septiembre (12 episodios).",
+    "source": "https://www.crunchyroll.com/es-es/news/latest/2026/6/7/kaiju-girl-caramelise-2-de-julio-trailer-imagen-interpretes-musicales"
+  },
+  {
+    "id": "heavy",
+    "name": "The Exiled Heavy Knight Knows How to Game the System",
+    "alias": "heavy knight",
+    "day": 3,
+    "date": "2026-10-01",
+    "platform": "Crunchyroll",
+    "kind": "Continuación",
+    "genre": "Fantasía · Videojuegos",
+    "icon": "🛡️",
+    "desc": "Un caballero infravalorado emplea su conocimiento del juego para vencer.",
+    "note": "Comenzó en julio; el segundo bloque continúa los jueves desde octubre.",
+    "source": "https://www.crunchyroll.com/news/latest/2026/9/24/the-exiled-heavy-knight-knows-how-to-game-the-system-cour-2-anime-new-trailer-visual-theme-songs-voice-cast"
+  },
+  {
+    "id": "dandi",
+    "name": "Dandivine",
+    "alias": "dandivine",
+    "day": 2,
+    "date": "2026-10-07",
+    "platform": "Crunchyroll",
+    "kind": "Estreno",
+    "genre": "Mecha · Acción",
+    "icon": "⚡",
+    "desc": "Un estudiante pilota un robot legendario para defender Tokio.",
+    "note": "Miércoles en Crunchyroll; emisión de madrugada según el horario japonés.",
+    "source": "https://www.aniplex.co.jp/lineup/dandivine/"
+  },
+  {
+    "id": "sasaki",
+    "name": "Sasaki and Peeps · T2",
+    "alias": "sasaki and peeps",
+    "day": 2,
+    "date": "2026-10-07",
+    "platform": "Crunchyroll",
+    "kind": "Nueva temporada",
+    "genre": "Fantasía · Comedia",
+    "icon": "🐦",
+    "desc": "Un oficinista y un ave mágica viven aventuras cada vez menos discretas.",
+    "note": "Nuevos episodios los miércoles.",
+    "source": "https://www.crunchyroll.com/es/news/latest/2026/10/9/sasaki-and-peeps-2-anime-opening-ending"
+  }
+];
+
+const LEGACY_VERIFIED = {
+  avatar: {availableEpisodes: 3, totalEpisodes: 13, availableConfidence: 'confirmed', totalConfidence: 'confirmed', scheduleConfidence: 'confirmed'},
+  elusive: {availableEpisodes: 12, totalEpisodes: 12, availableConfidence: 'confirmed', totalConfidence: 'confirmed', scheduleConfidence: 'confirmed'},
+  kaiju: {availableEpisodes: 12, totalEpisodes: 12, availableConfidence: 'confirmed', totalConfidence: 'confirmed', scheduleConfidence: 'confirmed'},
+  verm: {
+    availableEpisodes: 1,
+    totalEpisodes: 12,
+    totalConfidence: 'confirmed',
+    availableConfidence: 'confirmed',
+    scheduleConfidence: 'confirmed',
+    episodeCandidates: [2, 3],
+    scheduleEvents: [{
+      date: '2026-10-17',
+      episodeCandidates: [2, 3],
+      confidence: 'contradictory',
+      timeConfidence: 'confirmed',
+      sourceTime: {date: '2026-10-17', time: '02:30', timeZone: 'America/Los_Angeles'},
+      sources: [
+        {kind: 'platform', url: 'https://www.crunchyroll.com/es/news/seasonal-lineup/2026/10/11/crunchyroll-calendario-semanal-otono-2026'},
+        {kind: 'official', url: 'https://the-vermilion-mask.com/en/news/contents/article_l8njwjhk7pkt85jr.html'}
+      ]
+    }]
+  }
+};
+
+function decorateLegacyEntry(entry) {
+  const verified = LEGACY_VERIFIED[entry.legacyId] || {};
+  const isFinished = entry.kind === 'Finalizada';
+  return {
+    ...entry,
+    ...verified,
+    weeklySchedule: !isFinished && Number.isInteger(entry.day) ? {
+      frequency: 'weekly',
+      day: entry.day,
+      startDate: entry.date,
+      confidence: 'estimated'
+    } : null,
+    sources: entry.sources
+  };
+}
+
+export const CATALOG = normalizeLegacyCatalog(LEGACY_CATALOG).map(decorateLegacyEntry);
+export const CATALOG_BY_ID = new Map(CATALOG.map((entry) => [entry.id, entry]));
