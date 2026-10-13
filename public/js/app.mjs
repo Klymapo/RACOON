@@ -1,5 +1,6 @@
 import {CATALOG} from './catalog.mjs';
 import {createDefaultState, loadState, saveState} from './storage.mjs';
+import {buildCalendarModel} from './schedule.mjs';
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -17,6 +18,18 @@ function totalFor(entry, tracking = {}) {
 
 function normalizeTracking(tracking = {}) {
   return {seen: 0, status: 'Pendiente', favorite: false, changedAt: 0, availableOverride: null, totalOverride: null, manualFields: [], ...tracking};
+}
+
+function addDays(ymd, amount) {
+  const date = new Date(`${ymd}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + amount);
+  return date.toISOString().slice(0, 10);
+}
+
+function mondayOf(ymd) {
+  const date = new Date(`${ymd}T12:00:00Z`);
+  const day = date.getUTCDay() || 7;
+  return addDays(ymd, 1 - day);
 }
 
 export function buildDashboardModel(catalog, state, today = new Date().toISOString().slice(0, 10)) {
@@ -97,9 +110,23 @@ export function createApp({document = globalThis.document, storage = globalThis.
     target.innerHTML = cards.join('') || '<div class="empty-state"><strong>Tu biblioteca está vacía</strong>Agrega tu primera serie.</div>';
   }
 
+  function renderCalendar() {
+    const today = new Date(now()).toISOString().slice(0, 10);
+    const weekStart = state.preferences.calendarWeek || mondayOf(today);
+    const selectedDay = state.preferences.selectedDay || weekStart;
+    const entries = Object.values({...Object.fromEntries(CATALOG.map((entry) => [entry.id, entry])), ...state.catalogOfficial, ...state.catalogCustom});
+    const model = buildCalendarModel(entries, state, {weekStart, selectedDay, platform: state.preferences.platform || 'all', status: state.preferences.status || 'all'});
+    const selector = elements('daySelector');
+    if (selector) selector.innerHTML = model.days.map((day, index) => `<button class="day-chip ${day.date === model.selectedDay ? 'is-active' : ''}" type="button" data-calendar-day="${day.date}" role="tab" aria-selected="${day.date === model.selectedDay}"><strong>${DAY_NAMES[index]}</strong><small>${day.entries.length} estreno${day.entries.length === 1 ? '' : 's'}</small></button>`).join('');
+    const calendar = elements('calendar');
+    if (!calendar) return;
+    calendar.innerHTML = model.days.map((day, index) => `<section class="calendar-day ${day.date === model.selectedDay ? 'is-selected' : ''}" data-calendar-panel="${day.date}"><header><h3>${DAY_NAMES[index]} · ${day.date.slice(8, 10)}/${day.date.slice(5, 7)}</h3><span>${day.entries.length}</span></header>${day.entries.length ? day.entries.map((entry) => `<article class="episode-card"><strong>${escapeHtml(entry.title || entry.name)}</strong><span>${escapeHtml(entry.episodeLabel)} · ${escapeHtml(entry.platform || 'Plataforma pendiente')}</span><span class="confidence">${escapeHtml(entry.statusLabel)}${entry.mexicoTime ? ` · ${escapeHtml(entry.mexicoTime.slice(11))} CDMX` : ''}</span></article>`).join('') : '<div class="empty-state">Sin estrenos</div>'}</section>`).join('');
+  }
+
   function render() {
     renderHome();
     renderProgress();
+    renderCalendar();
     if (document?.querySelectorAll) document.querySelectorAll('[data-view]').forEach((tab) => {
       const active = tab.dataset.view === currentView;
       tab.classList.toggle('is-active', active);
@@ -129,6 +156,22 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const viewButton = event.target.closest?.('[data-view], [data-go]');
       if (viewButton) selectView(viewButton.dataset.view || viewButton.dataset.go);
       const action = event.target.closest?.('[data-progress-action]');
+      const calendarDay = event.target.closest?.('[data-calendar-day]');
+      if (calendarDay) {
+        state.preferences.selectedDay = calendarDay.dataset.calendarDay;
+        saveState(storage, state);
+        renderCalendar();
+        return;
+      }
+      const goWeek = event.target.closest?.('[data-calendar-week]');
+      if (goWeek) {
+        const current = state.preferences.calendarWeek || mondayOf(new Date(now()).toISOString().slice(0, 10));
+        state.preferences.calendarWeek = addDays(current, Number(goWeek.dataset.calendarWeek));
+        state.preferences.selectedDay = state.preferences.calendarWeek;
+        saveState(storage, state);
+        renderCalendar();
+        return;
+      }
       if (!action) return;
       const id = action.dataset.id;
       const entry = entryMap(CATALOG, state)[id];
@@ -139,6 +182,28 @@ export function createApp({document = globalThis.document, storage = globalThis.
       if (action.dataset.progressAction === 'catchup') setTracking(id, {seen: available, status: 'Al día'});
     });
   }
+  elements('previousWeek')?.addEventListener?.('click', () => {
+    const button = {dataset: {calendarWeek: '-7'}};
+    state.preferences.calendarWeek = addDays(state.preferences.calendarWeek || mondayOf(new Date(now()).toISOString().slice(0, 10)), -7);
+    state.preferences.selectedDay = state.preferences.calendarWeek;
+    saveState(storage, state);
+    renderCalendar();
+  });
+  elements('nextWeek')?.addEventListener?.('click', () => {
+    state.preferences.calendarWeek = addDays(state.preferences.calendarWeek || mondayOf(new Date(now()).toISOString().slice(0, 10)), 7);
+    state.preferences.selectedDay = state.preferences.calendarWeek;
+    saveState(storage, state);
+    renderCalendar();
+  });
+  elements('currentWeek')?.addEventListener?.('click', () => {
+    const week = mondayOf(new Date(now()).toISOString().slice(0, 10));
+    state.preferences.calendarWeek = week;
+    state.preferences.selectedDay = week;
+    saveState(storage, state);
+    renderCalendar();
+  });
+  elements('calendarPlatform')?.addEventListener?.('change', (event) => { state.preferences.platform = event.target.value; saveState(storage, state); renderCalendar(); });
+  elements('calendarStatus')?.addEventListener?.('change', (event) => { state.preferences.status = event.target.value; saveState(storage, state); renderCalendar(); });
   render();
   return {selectView, setTracking, render, getState: () => state, getView: () => currentView, fetch};
 }
