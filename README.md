@@ -1,24 +1,19 @@
 # 🦝 RACOON · Anime Radar
+RACOON es una **PWA pública** de seguimiento de estrenos y episodios de anime. Puedes abrirla desde el navegador e instalarla en Android o escritorio.
 
-PWA con 25 animes, estrenos por día, plataformas, horarios CDMX y seguimiento de episodios. La app completa requiere **Cloudflare Access + D1** para sincronización privada; el repositorio se mantiene público.
+## Funciones
+- 25 series, calendario por día y filtros por plataforma.
+- Episodios disponibles, episodios vistos, estado y favoritos.
+- Consulta de AniList cada cuatro horas **cuando la app está abierta**; los horarios de plataformas son referencias y pueden variar.
+- Progreso guardado mediante `localStorage` **en cada navegador**.
+- Exportación e importación **JSON** para hacer respaldos o trasladar tus datos entre dispositivos; CSV de seguimiento.
 
-**Nuevo método como ATLAS: GitHub Actions → Cloudflare Pages por Wrangler sin conectar la app GitHub a Cloudflare.** El flujo se configura en `.github/workflows/racoon.yml`.
+**No se sincronizan automáticamente los dispositivos.** Si se borran datos del sitio, el progreso local puede perderse. Haz respaldos JSON periódicamente.
 
-🚀 **[Guía de publicación segura y paso a paso](docs/PUBLICACION.md)**
+## Publicación
+GitHub Actions ejecuta pruebas y publica **solo el frontend estático** de `public/` en Cloudflare Pages, sin desplegar `functions/`, Cloudflare Access ni D1.
+El workflow es [`.github/workflows/racoon.yml`](.github/workflows/racoon.yml). Las actualizaciones a `main` se publican automáticamente si hay credenciales válidas.
 
-**Estado:** el código en GitHub no significa que la app ya esté publicada. La acción arranca con una pantalla de preparación que no incluye datos. El despliegue completo se bloquea hasta activar `RACOON_ACCESS_VERIFIED=true` y comprobar redirección de producción a Access.
+Consulta [la guía de publicación](docs/PUBLICACION.md) para configurar secretos y encontrar la URL resultante.
 
-## Cómo se guardan tus episodios
-- Almacenamiento local del navegador para cambios inmediatos.
-- Cloudflare Pages Functions `/api/progress` verifica JWT de Cloudflare Access y el correo permitido.
-- Cloudflare D1 guarda los progresos por usuario.
-- Tras iniciar sesión, distintos dispositivos consultan y sincronizan progresos.
-- Si la nube está caída, los cambios permanecen locales, pendientes de reconciliar.
-
-## Actualización de episodios
-AniList cada cuatro horas **con la aplicación abierta**, con conteos estimados si no hay información fiable. No hay actualizador remoto cron todavía.
-
-## Seguridad
-El código del repositorio es público, pero **no debe usarse GitHub Pages público para exponer el progreso**. Cloudflare Access debe proteger tanto producción como previews. No subas claves o secretos al repositorio.
-
-Fuentes: https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/ · https://developers.cloudflare.com/pages/functions/bindings/
+Los archivos `functions/` y `schema.sql` se conservan únicamente como prototipo para una posible sincronización futura. No forman parte de la app publicada.

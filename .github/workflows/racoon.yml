@@ -1,102 +1,51 @@
-name: RACOON · calidad y despliegue protegido
+name: RACOON · publicar PWA pública
 on:
   push:
     branches: [main]
-  pull_request:
   workflow_dispatch:
-    inputs:
-      accion:
-        description: 'Preparar publica solo una pantalla neutra; Publicar exige Access verificado'
-        type: choice
-        options: [preparar, publicar]
-        default: preparar
 permissions:
   contents: read
-  deployments: write
 concurrency:
-  group: racoon-prod
+  group: racoon-pages
   cancel-in-progress: false
 jobs:
   calidad:
-    name: Verificar RACOON
+    name: Verificar PWA y progreso local
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Auditoría automática
-        run: node --test tests/racoon.test.mjs
-  preparar:
-    name: Crear proyecto sin exponer la app
+      - run: node --test tests/racoon.test.mjs
+  publicar:
+    name: Publicar sitio estático en Cloudflare Pages
     needs: calidad
-    if: github.event_name == 'workflow_dispatch' && inputs.accion == 'preparar'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Comprobar configuración de Cloudflare
-        env:
-          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          PROJECT: ${{ vars.RACOON_PAGES_PROJECT }}
-        run: |
-          test -n "$TOKEN" && test -n "$ACCOUNT" && test -n "$PROJECT" || { echo 'Faltan los dos secretos y RACOON_PAGES_PROJECT'; exit 1; }
-      - name: Preparar y publicar únicamente aviso neutro
+      - name: Publicar solo el frontend, sin Functions ni D1
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           PROJECT: ${{ vars.RACOON_PAGES_PROJECT }}
         run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Faltan credenciales de Cloudflare"; exit 1; }
+          PROJECT="${PROJECT:-racoon}"
+          [[ "$PROJECT" =~ ^[a-z0-9-]+$ ]] || { echo "::error::Nombre de proyecto inválido"; exit 1; }
           npm install -g wrangler@4
-          npx wrangler pages project list --json > /tmp/racoon_projects.json
-          if ! node -e "const p=require('/tmp/racoon_projects.json'); if (!p.some(x=>x.name===process.argv[1])) process.exit(1)" "$PROJECT"; then
-            npx wrangler pages project create "$PROJECT" --production-branch main
+          wrangler pages project list --json > /tmp/racoon-projects.json
+          if ! node -e "const p=require('/tmp/racoon-projects.json'); const a=Array.isArray(p)?p:(p.result||[]); process.exit(a.some(x=>x.name===process.argv[1])?0:1)" "$PROJECT"; then
+            wrangler pages project create "$PROJECT" --production-branch main
           fi
-          npx wrangler pages deploy bootstrap --project-name "$PROJECT" --branch main
-  publicar:
-    name: Desplegar app solo con protección comprobada
-    needs: calidad
-    if: >-
-      github.ref == 'refs/heads/main' &&
-      (
-        (github.event_name == 'push' && vars.RACOON_ACCESS_VERIFIED == 'true') ||
-        (github.event_name == 'workflow_dispatch' && inputs.accion == 'publicar' && vars.RACOON_ACCESS_VERIFIED == 'true')
-      )
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - name: Verificar secretos y ruta Cloudflare
-        env:
-          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          PROJECT: ${{ vars.RACOON_PAGES_PROJECT }}
-        run: |
-          test -n "$TOKEN" && test -n "$ACCOUNT" && test -n "$PROJECT" || { echo 'Configura los secretos y RACOON_PAGES_PROJECT'; exit 1; }
-          [[ "$PROJECT" =~ ^[a-z0-9-]+$ ]] || exit 1
-      - name: Comprobar Cloudflare Access ANTES del despliegue
-        env:
-          PROJECT: ${{ vars.RACOON_PAGES_PROJECT }}
-        run: |
-          URL="https://${PROJECT}.pages.dev/"
-          curl -sS --max-time 25 -D /tmp/racoon_headers -o /dev/null "$URL"
-          CODE=$(awk 'toupper($1) ~ /^HTTP/ {code=$2} END{print code}' /tmp/racoon_headers)
-          if [ "$CODE" != "302" ] && [ "$CODE" != "303" ] && [ "$CODE" != "307" ]; then
-            echo 'BLOQUEADO: la dirección de producción NO redirige a una pantalla de Cloudflare Access.'
-            exit 1
-          fi
-          if ! grep -Ei '^location:.*(cloudflareaccess\.com|/cdn-cgi/access/)' /tmp/racoon_headers >/dev/null; then
-            echo 'BLOQUEADO: no se detectó un inicio de sesión real de Cloudflare Access.'
-            exit 1
-          fi
-          echo 'Cloudflare Access exige iniciar sesión antes del despliegue.'
-      - name: Publicar app y Pages Functions en Cloudflare
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy public --project-name=${{ vars.RACOON_PAGES_PROJECT }} --branch=main
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          STATIC_DIR="$(mktemp -d)"
+          cp -R public/. "$STATIC_DIR/"
+          rm -f "$STATIC_DIR/_routes.json"
+          cd "$STATIC_DIR"
+          wrangler pages deploy . --project-name "$PROJECT" --branch main
+          echo "Publicación estática completada (sin archivos del servidor)."

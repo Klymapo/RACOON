@@ -1,5 +1,5 @@
 // PWA: navegación siempre intenta la versión reciente; caché solo como rescate sin internet.
-const CACHE='anime-radar-shell-v1';
+const CACHE='anime-radar-shell-v2';
 const ASSETS=['/','/index.html','/manifest.webmanifest','/icons/radar-192.png','/icons/radar-512.png'];
 self.addEventListener('install',evt=>{evt.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',evt=>{evt.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()]));});

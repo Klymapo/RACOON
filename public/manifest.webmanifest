@@ -1,7 +1,7 @@
 {
   "name": "RACOON · Anime Radar",
   "short_name": "RACOON",
-  "description": "Mis estrenos y progreso de anime sincronizado entre dispositivos.",
+  "description": "Mis estrenos y progreso de anime guardados en este dispositivo.",
   "lang": "es-MX",
   "start_url": "/",
   "scope": "/",
