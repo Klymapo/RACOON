@@ -1,6 +1,7 @@
 import {CATALOG} from './catalog.mjs';
 import {createDefaultState, loadState, saveState} from './storage.mjs';
 import {buildCalendarModel} from './schedule.mjs';
+import {searchAnime, fetchAnimeDetails} from './providers/anilist.mjs';
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -61,6 +62,12 @@ export function applyTrackingPatch(state, id, patch, changedAt = Date.now()) {
   };
 }
 
+export function saveCatalogEntry(state, entry, edits = {}) {
+  const saved = {...entry, ...edits, id: entry.id, savedAt: Date.now()};
+  if (entry.id.startsWith('custom:')) return {...state, catalogCustom: {...state.catalogCustom, [entry.id]: saved}};
+  return {...state, catalogOfficial: {...state.catalogOfficial, [entry.id]: saved}};
+}
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (character) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[character]));
 }
@@ -73,6 +80,8 @@ function memoryStorage() {
 export function createApp({document = globalThis.document, storage = globalThis.localStorage || memoryStorage(), fetch = globalThis.fetch, now = Date.now} = {}) {
   let {state} = loadState(storage, CATALOG);
   let currentView = state.preferences.view || 'home';
+  let searchResults = new Map();
+  let selectedSeries = null;
   const elements = (id) => document?.getElementById?.(id);
 
   function setText(id, value) {
@@ -123,6 +132,22 @@ export function createApp({document = globalThis.document, storage = globalThis.
     calendar.innerHTML = model.days.map((day, index) => `<section class="calendar-day ${day.date === model.selectedDay ? 'is-selected' : ''}" data-calendar-panel="${day.date}"><header><h3>${DAY_NAMES[index]} · ${day.date.slice(8, 10)}/${day.date.slice(5, 7)}</h3><span>${day.entries.length}</span></header>${day.entries.length ? day.entries.map((entry) => `<article class="episode-card"><strong>${escapeHtml(entry.title || entry.name)}</strong><span>${escapeHtml(entry.episodeLabel)} · ${escapeHtml(entry.platform || 'Plataforma pendiente')}</span><span class="confidence">${escapeHtml(entry.statusLabel)}${entry.mexicoTime ? ` · ${escapeHtml(entry.mexicoTime.slice(11))} CDMX` : ''}</span></article>`).join('') : '<div class="empty-state">Sin estrenos</div>'}</section>`).join('');
   }
 
+  function renderSearchResults(results = []) {
+    const target = elements('searchResults');
+    if (!target) return;
+    searchResults = new Map(results.map((entry) => [entry.sourceId || entry.id, entry]));
+    target.innerHTML = results.length ? results.map((entry) => `<article class="result-card"><div class="poster">${entry.poster ? `<img src="${escapeHtml(entry.poster)}" alt="" loading="lazy">` : escapeHtml(entry.title?.slice(0, 1) || '✦')}</div><h3>${escapeHtml(entry.title)}</h3><div class="card-meta">${escapeHtml(entry.season || 'Temporada no confirmada')} ${escapeHtml(entry.seasonYear || '')} · ${escapeHtml(entry.mediaKind)}</div><p>${escapeHtml(entry.synopsis || 'Sin sinopsis verificada.')}</p><span class="badge">ID ${escapeHtml(entry.id)}</span><div class="card-actions"><button class="mini-button" type="button" data-series-select="${escapeHtml(entry.sourceId || entry.id)}">Revisar ficha</button></div></article>`).join('') : '<div class="empty-state"><strong>No encontramos coincidencias</strong>Prueba con otro título o guarda una serie personalizada.</div>';
+  }
+
+  function renderSeriesConfirmation(entry) {
+    const target = elements('seriesConfirmation');
+    if (!target) return;
+    target.classList.remove('is-hidden');
+    target.innerHTML = `<div class="panel-heading"><h3>Confirmar serie</h3><span class="badge badge-teal">${escapeHtml(entry.id)}</span></div><h3>${escapeHtml(entry.title)}</h3><p class="muted">${escapeHtml(entry.synopsis || 'Sin sinopsis verificada.')}</p><div class="tag-row"><span class="status-pill">Temporada: ${escapeHtml(entry.season || 'Pendiente de verificar')}</span><span class="status-pill">Total: ${entry.totalEpisodes ?? 'Pendiente de verificar'}</span><span class="status-pill">Emisión: ${escapeHtml(entry.airingStatus || 'Pendiente de verificar')}</span></div><p class="muted">Fuente: <a href="${escapeHtml(entry.sources?.[0]?.url || '#')}" target="_blank" rel="noopener noreferrer">AniList ↗</a>. Puedes guardarla aunque falten datos.</p><div class="button-row"><button class="button button-primary" type="button" data-save-series="${escapeHtml(entry.id)}">Guardar en mi biblioteca</button><button class="button button-ghost" type="button" data-cancel-series>Cancelar</button></div>`;
+  }
+
+  function renderAddStatus(message = '') { setText('searchStatus', message); }
+
   function render() {
     renderHome();
     renderProgress();
@@ -155,6 +180,27 @@ export function createApp({document = globalThis.document, storage = globalThis.
     document.addEventListener('click', (event) => {
       const viewButton = event.target.closest?.('[data-view], [data-go]');
       if (viewButton) selectView(viewButton.dataset.view || viewButton.dataset.go);
+      const seriesButton = event.target.closest?.('[data-series-select]');
+      if (seriesButton) {
+        const result = searchResults.get(seriesButton.dataset.seriesSelect);
+        if (!result) return;
+        selectedSeries = result;
+        renderSeriesConfirmation(result);
+        return;
+      }
+      const saveSeries = event.target.closest?.('[data-save-series]');
+      if (saveSeries && selectedSeries?.id === saveSeries.dataset.saveSeries) {
+        state = saveCatalogEntry(state, selectedSeries);
+        saveState(storage, state);
+        render();
+        renderAddStatus('Serie guardada en tu biblioteca local.');
+        return;
+      }
+      if (event.target.closest?.('[data-cancel-series]')) {
+        selectedSeries = null;
+        elements('seriesConfirmation')?.classList.add('is-hidden');
+        return;
+      }
       const action = event.target.closest?.('[data-progress-action]');
       const calendarDay = event.target.closest?.('[data-calendar-day]');
       if (calendarDay) {
@@ -204,6 +250,19 @@ export function createApp({document = globalThis.document, storage = globalThis.
   });
   elements('calendarPlatform')?.addEventListener?.('change', (event) => { state.preferences.platform = event.target.value; saveState(storage, state); renderCalendar(); });
   elements('calendarStatus')?.addEventListener?.('change', (event) => { state.preferences.status = event.target.value; saveState(storage, state); renderCalendar(); });
+  elements('searchForm')?.addEventListener?.('submit', async (event) => {
+    event.preventDefault();
+    const query = elements('animeSearch')?.value?.trim();
+    if (!query) return renderAddStatus('Escribe un título para buscar.');
+    renderAddStatus('Consultando AniList…');
+    try {
+      const results = await searchAnime(query, {fetch});
+      renderSearchResults(results);
+      renderAddStatus(`${results.length} resultado${results.length === 1 ? '' : 's'} encontrado${results.length === 1 ? '' : 's'}.`);
+    } catch (error) {
+      renderAddStatus(`${error.message}. Puedes conservar tu biblioteca y volver a intentarlo más tarde.`);
+    }
+  });
   render();
   return {selectView, setTracking, render, getState: () => state, getView: () => currentView, fetch};
 }
