@@ -50,6 +50,7 @@ test('service worker uses versioned cache and waits for explicit activation', ()
   const sw = readFileSync('public/sw.js', 'utf8');
   assert.match(sw, /SKIP_WAITING/);
   assert.match(sw, /racoon-wizard/);
+  assert.match(sw, /\/js\/refresh\.mjs/);
   assert.match(sw, /network-first|networkFirst/i);
   assert.doesNotMatch(sw, /skipWaiting\(\)\);/);
 });

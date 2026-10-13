@@ -20,8 +20,7 @@ export function buildCalendarModel(catalog = [], state = {}, options = {}) {
   const days = Array.from({length: 7}, (_, index) => ({date: plusDays(weekStart, index), entries: []}));
   const filtered = catalog.filter((entry) => {
     const tracking = state.tracking?.[entry.id] || {seen: 0};
-    return entry.date >= weekStart && entry.date <= plusDays(weekStart, 6)
-      && (options.platform === 'all' || !options.platform || String(entry.platform || '').includes(options.platform))
+    return (options.platform === 'all' || !options.platform || String(entry.platform || '').includes(options.platform))
       && statusMatches(entry, tracking, options.status || 'all');
   }).map((entry) => {
     const tracking = state.tracking?.[entry.id] || {seen: 0};
@@ -45,7 +44,7 @@ export function buildCalendarModel(catalog = [], state = {}, options = {}) {
     };
   });
   for (const event of filtered) {
-    const day = days.find((candidate) => candidate.date === event.date);
+    const day = days.find((candidate) => candidate.date === event.mexicoDate);
     if (day) day.entries.push(event);
   }
   for (const day of days) day.entries.sort((left, right) => String(left.mexicoTime || '').localeCompare(String(right.mexicoTime || '')) || String(left.title || left.name).localeCompare(String(right.title || right.name)));

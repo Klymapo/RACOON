@@ -35,3 +35,9 @@ test('keeps announced status and converts source time to Mexico date/time', () =
   assert.equal(event.mexicoDate, '2026-10-17');
   assert.equal(event.mexicoTime, '2026-10-17 04:30');
 });
+
+test('places an event on the Mexico day after timezone conversion', () => {
+  const model = buildCalendarModel([{id: 'legacy:late', title: 'Late LA Show', date: '2026-10-17', platform: 'Crunchyroll', sourceTime: {date: '2026-10-17', time: '23:30', timeZone: 'America/Los_Angeles'}, scheduleConfidence: 'confirmed'}], {tracking: {}}, {weekStart: '2026-10-12', selectedDay: '2026-10-18'});
+  assert.equal(model.days.find((day) => day.date === '2026-10-18').entries[0].id, 'legacy:late');
+  assert.equal(model.mobileEntries[0].mexicoDate, '2026-10-18');
+});

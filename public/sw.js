@@ -1,6 +1,6 @@
 const VERSION = '2.0.0';
 const CACHE = `racoon-wizard-${VERSION}`;
-const ASSETS = ['/', '/index.html', '/styles.css', '/manifest.webmanifest', '/version.json', '/icons/racoon-wizard.svg', '/icons/racoon-wizard-192.png', '/icons/racoon-wizard-512.png', '/js/app.mjs', '/js/model.mjs', '/js/time.mjs', '/js/evidence.mjs', '/js/schedule.mjs', '/js/storage.mjs', '/js/backup.mjs', '/js/catalog.mjs', '/js/pwa.mjs', '/js/providers/anilist.mjs'];
+const ASSETS = ['/', '/index.html', '/styles.css', '/manifest.webmanifest', '/version.json', '/icons/racoon-wizard.svg', '/icons/racoon-wizard-192.png', '/icons/racoon-wizard-512.png', '/js/app.mjs', '/js/model.mjs', '/js/time.mjs', '/js/evidence.mjs', '/js/schedule.mjs', '/js/storage.mjs', '/js/backup.mjs', '/js/catalog.mjs', '/js/pwa.mjs', '/js/refresh.mjs', '/js/providers/anilist.mjs'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));
