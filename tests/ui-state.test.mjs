@@ -1,0 +1,51 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {CATALOG} from '../public/js/catalog.mjs';
+import {createDefaultState} from '../public/js/storage.mjs';
+import {buildDashboardModel, applyTrackingPatch, createApp} from '../public/js/app.mjs';
+
+class MemoryStorage {
+  values = new Map();
+  getItem(key) { return this.values.get(key) ?? null; }
+  setItem(key, value) { this.values.set(key, String(value)); }
+}
+
+function fakeElement() {
+  return {innerHTML: '', textContent: '', value: '', classList: {add() {}, remove() {}, toggle() {}}, setAttribute() {}, addEventListener() {}};
+}
+
+function fakeDocument() {
+  const nodes = new Map(['homeStats', 'pendingList', 'upcomingList', 'progressList', 'freshness', 'homeUpdated', 'backupSummary'].map((id) => [id, fakeElement()]));
+  return {getElementById: (id) => nodes.get(id) || fakeElement(), querySelectorAll: () => [], addEventListener() {}, nodes};
+}
+
+test('dashboard counts pending episodes and upcoming series from local state', () => {
+  const state = createDefaultState(CATALOG);
+  state.catalogOfficial['legacy:verm'].availableEpisodes = 3;
+  state.tracking['legacy:verm'] = {seen: 1, status: 'Viendo', favorite: false, changedAt: 10, availableOverride: null, totalOverride: 12, manualFields: []};
+  const model = buildDashboardModel(CATALOG, state, '2026-10-13');
+  assert.equal(model.stats.tracked, 1);
+  assert.equal(model.stats.pendingEpisodes, 2);
+  assert.equal(model.pending[0].id, 'legacy:verm');
+  assert.equal(model.pending[0].remaining, 2);
+});
+
+test('tracking patches preserve manual progress when catalog metadata changes', () => {
+  const state = createDefaultState(CATALOG);
+  state.tracking['legacy:verm'] = {seen: 2, status: 'Viendo', favorite: true, changedAt: 10, availableOverride: 2, totalOverride: 12, manualFields: ['availableOverride']};
+  const next = applyTrackingPatch(state, 'legacy:verm', {availableOverride: 5}, 20);
+  const remote = {...next, catalogOfficial: {...next.catalogOfficial, 'legacy:verm': {...next.catalogOfficial['legacy:verm'], availableEpisodes: 9}}};
+  assert.equal(remote.tracking['legacy:verm'].seen, 2);
+  assert.equal(remote.tracking['legacy:verm'].availableOverride, 5);
+  assert.equal(remote.tracking['legacy:verm'].favorite, true);
+});
+
+test('app controller persists local tracking actions without a server', () => {
+  const storage = new MemoryStorage();
+  const app = createApp({document: fakeDocument(), storage, fetch: async () => { throw new Error('network should not be used'); }, now: () => 50});
+  app.setTracking('legacy:verm', {seen: 1, status: 'Viendo'});
+  assert.equal(app.getState().tracking['legacy:verm'].seen, 1);
+  assert.ok(storage.getItem('racoon-v2-state'));
+  app.selectView('progress');
+  assert.equal(app.getView(), 'progress');
+});
