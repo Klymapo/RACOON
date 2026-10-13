@@ -1,16 +1,36 @@
 # RACOON · publicación pública, sin cuentas
-**Modo actual: estático y local.** No requiere Cloudflare Access, D1 ni sesiones de usuario.
 
-## Despliegue automático
-1. En GitHub > RACOON > Settings > Secrets and variables > Actions > Secrets, conserva `CLOUDFLARE_API_TOKEN` (permiso Cloudflare Pages: Edit) y `CLOUDFLARE_ACCOUNT_ID` de la **misma cuenta**. No compartas el token en chats.
-2. Opcional: en Variables, `RACOON_PAGES_PROJECT=racoon`. Si no está definido, el workflow usa `racoon`.
-3. En GitHub > Actions > «RACOON · publicar PWA pública», ejecuta «Run workflow», o sube un cambio a `main`.
-4. El workflow ejecuta las pruebas, localiza o crea el proyecto Pages y sube únicamente `public/`. Busca la URL efectiva `*.pages.dev` en el registro del job «Publicar sitio estático».
-5. Abre el enlace desde una sesión privada: debe mostrar directamente el radar, sin pantalla de Cloudflare Access. Si hay una política Access anterior, desactívala desde la cuenta Cloudflare adecuada.
-6. En Chrome Android: menú ⋮ > «Agregar a pantalla principal» o «Instalar app», según el dispositivo.
+RACOON v2 sigue siendo un sitio estático. Cloudflare Pages utiliza el proyecto existente `racoon-radar-klymapo`; no se debe crear otro proyecto ni activar Functions/D1 para esta aplicación.
 
-**Protección de datos:** todo el seguimiento permanece en el `localStorage` de ese navegador/origen. Usa «↓ Copia JSON» para hacer un respaldo; «↑ Importar JSON» para restaurar o moverlo a otro dispositivo. No se solicita login ni se envían datos del progreso al servidor.
+## Antes de publicar
 
-La carpeta `functions/` y `schema.sql` están archivadas en el repositorio como prototipo; el workflow los excluye expresamente del despliegue al trabajar desde una carpeta temporal fuera del repo.
+1. Trabaja en una rama y abre Pull Request; no publiques directamente desde una rama de trabajo.
+2. Ejecuta `node --test tests/*.test.mjs` y revisa las capturas de QA.
+3. En GitHub > Settings > Secrets and variables > Actions > Secrets, conserva `CLOUDFLARE_API_TOKEN` con permiso Pages: Edit y `CLOUDFLARE_ACCOUNT_ID` de la misma cuenta. Nunca copies valores de secretos al código o a una captura.
+4. Opcionalmente define la variable `RACOON_PAGES_PROJECT`. El workflow corrige el nombre histórico `racoon` al proyecto `racoon-radar-klymapo` y usa ese valor por defecto.
 
-**Actualizaciones:** cada push a `main` despliega la app pública. AniList se consulta cada cuatro horas mientras esté abierta; no existe un cron remoto ni actualización de títulos automática.
+## Despliegue
+
+Después de fusionar el Pull Request en `main`, el workflow:
+
+- instala Wrangler en el runner;
+- ejecuta todas las pruebas `tests/*.test.mjs`;
+- copia sólo `public/` a una carpeta temporal;
+- comprueba que no existan `functions/` ni `schema.sql` en esa carpeta;
+- publica en el proyecto Pages existente.
+
+También se puede lanzar desde GitHub Actions > «RACOON · publicar PWA pública» > «Run workflow». La URL efectiva aparece en el registro de Wrangler. El sitio no debe mostrar una pantalla de Cloudflare Access.
+
+## Uso y restauración
+
+El progreso se guarda en el navegador. En Respaldos, usa «Exportar JSON» antes de cambiar de equipo o limpiar datos del sitio. La importación muestra conteos y permite fusionar o reemplazar con confirmación. CSV sirve para análisis, no para restaurar la biblioteca.
+
+## Actualizaciones y reversión
+
+`public/version.json` y el Service Worker permiten que la aplicación anuncie una versión nueva sin recargar de forma inesperada. «Más tarde» deja el worker esperando; «Actualizar ahora» lo activa. Si una publicación falla, corrige el Pull Request y vuelve a ejecutar las pruebas antes de fusionar.
+
+Para revertir una versión publicada, revierte el commit fusionado mediante un nuevo Pull Request y deja que Actions publique la revisión. Los datos locales no se eliminan; si se necesita volver a una versión anterior, restaura el JSON exportado en esa versión.
+
+## Límites conocidos
+
+No existe sincronización entre dispositivos ni un cron remoto que fabrique datos. La revisión automática ocurre al iniciar, al volver a la pestaña y cada cuatro horas mientras la aplicación está abierta. Si AniList o una fuente oficial falla, se conserva el último dato disponible. Horarios regionales sin fuente pública fiable se muestran como «Sin verificar».

@@ -51,5 +51,6 @@ export async function registerPwa({navigator = globalThis.navigator, window = gl
       if (worker.state === 'installed' && serviceWorker.controller) onUpdate({available: true, version: currentVersion, changes: [], waiting: registration.waiting});
     });
   });
+  await checkNow();
   return {registration, checkNow, applyUpdate: () => activateWaitingWorker(registration, window)};
 }

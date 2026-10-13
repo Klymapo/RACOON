@@ -37,7 +37,13 @@ test('registers the service worker and exposes a manual version check', async ()
   const controller = await registerPwa({navigator: navigatorLike, window: windowLike, currentVersion: '2.0.0', fetch: async () => response({version: '2.0.1', changes: []}), onUpdate: (info) => callbacks.push(info)});
   const info = await controller.checkNow();
   assert.equal(info.available, true);
-  assert.equal(callbacks.length, 1);
+  assert.equal(callbacks.length, 2);
+});
+
+test('checks the published version when registration starts', async () => {
+  let updates = 0;
+  await registerPwa({navigator: {serviceWorker: {register: async () => ({addEventListener() {}})}}, window: {addEventListener() {}}, currentVersion: '2.0.0', fetch: async () => response({version: '2.0.1', changes: []}), onUpdate: () => { updates += 1; }});
+  assert.equal(updates, 1);
 });
 
 test('service worker uses versioned cache and waits for explicit activation', () => {
