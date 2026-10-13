@@ -2,6 +2,9 @@ import {CATALOG} from './catalog.mjs';
 import {createDefaultState, loadState, saveState} from './storage.mjs';
 import {buildCalendarModel} from './schedule.mjs';
 import {searchAnime, fetchAnimeDetails} from './providers/anilist.mjs';
+import {registerPwa} from './pwa.mjs';
+
+const RACOON_VERSION = '2.0.0';
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -82,6 +85,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   let currentView = state.preferences.view || 'home';
   let searchResults = new Map();
   let selectedSeries = null;
+  let pwaController = null;
   const elements = (id) => document?.getElementById?.(id);
 
   function setText(id, value) {
@@ -263,6 +267,20 @@ export function createApp({document = globalThis.document, storage = globalThis.
       renderAddStatus(`${error.message}. Puedes conservar tu biblioteca y volver a intentarlo más tarde.`);
     }
   });
+  const showUpdate = (info) => {
+    const message = elements('updateMessage');
+    if (message) message.textContent = `Versión ${info.version} disponible. ${info.changes?.join(' · ') || 'Incluye mejoras de estabilidad.'}`;
+    setText('updateStatus', `Versión ${info.version} disponible para instalar.`);
+    const dialog = elements('updateDialog');
+    if (dialog?.showModal && !dialog.open) dialog.showModal();
+  };
+  elements('dismissUpdate')?.addEventListener?.('click', () => elements('updateDialog')?.close?.());
+  elements('applyUpdate')?.addEventListener?.('click', () => { elements('updateDialog')?.close?.(); pwaController?.applyUpdate?.(); });
+  elements('checkUpdate')?.addEventListener?.('click', async () => { setText('updateStatus', 'Comprobando versión…'); await pwaController?.checkNow?.(); });
+  elements('appVersion') && (elements('appVersion').textContent = `RACOON v${RACOON_VERSION}`);
+  if (typeof window !== 'undefined' && globalThis.navigator?.serviceWorker) {
+    registerPwa({navigator: globalThis.navigator, window, fetch, currentVersion: RACOON_VERSION, onUpdate: showUpdate}).then((controller) => { pwaController = controller; });
+  }
   render();
   return {selectView, setTracking, render, getState: () => state, getView: () => currentView, fetch};
 }
