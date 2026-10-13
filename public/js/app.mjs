@@ -3,6 +3,8 @@ import {createDefaultState, loadState, saveState} from './storage.mjs';
 import {buildCalendarModel} from './schedule.mjs';
 import {searchAnime, fetchAnimeDetails} from './providers/anilist.mjs';
 import {registerPwa} from './pwa.mjs';
+import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} from './backup.mjs';
+import {shouldRefresh, refreshCatalog, FOUR_HOURS} from './refresh.mjs';
 
 const RACOON_VERSION = '2.0.0';
 
@@ -86,6 +88,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   let searchResults = new Map();
   let selectedSeries = null;
   let pwaController = null;
+  let pendingImport = null;
   const elements = (id) => document?.getElementById?.(id);
 
   function setText(id, value) {
@@ -151,6 +154,43 @@ export function createApp({document = globalThis.document, storage = globalThis.
   }
 
   function renderAddStatus(message = '') { setText('searchStatus', message); }
+
+  function allEntries() {
+    return Object.values({...Object.fromEntries(CATALOG.map((entry) => [entry.id, entry])), ...state.catalogOfficial, ...state.catalogCustom});
+  }
+
+  function renderBackupSummary() {
+    const summary = elements('backupSummary');
+    if (summary) summary.textContent = `${allEntries().length} series · ${Object.keys(state.tracking).length} con seguimiento`;
+  }
+
+  function downloadFile(name, content, type) {
+    if (typeof document === 'undefined' || typeof Blob === 'undefined') return;
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([content], {type}));
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }
+
+  async function refreshRemote(manual = false) {
+    setText('freshness', manual ? 'Actualizando fuentes…' : 'Comprobando fuentes…');
+    const known = Object.values(state.catalogOfficial).filter((entry) => String(entry.id).startsWith('anilist:')).slice(0, 20);
+    const result = await refreshCatalog(state, async () => {
+      const entries = [];
+      for (const entry of known) {
+        try { entries.push(await fetchAnimeDetails(entry.sourceId || entry.id.split(':')[1], {fetch})); } catch { /* conserva el último dato confirmado */ }
+      }
+      return entries;
+    }, now());
+    state = result.state;
+    saveState(storage, state);
+    setText('freshness', result.status === 'completed' ? 'Fuentes revisadas · datos locales intactos' : 'Fuentes sin conexión · último dato conservado');
+    render();
+    return result;
+  }
 
   function render() {
     renderHome();
@@ -277,11 +317,50 @@ export function createApp({document = globalThis.document, storage = globalThis.
   elements('dismissUpdate')?.addEventListener?.('click', () => elements('updateDialog')?.close?.());
   elements('applyUpdate')?.addEventListener?.('click', () => { elements('updateDialog')?.close?.(); pwaController?.applyUpdate?.(); });
   elements('checkUpdate')?.addEventListener?.('click', async () => { setText('updateStatus', 'Comprobando versión…'); await pwaController?.checkNow?.(); });
+  elements('quickRefresh')?.addEventListener?.('click', () => refreshRemote(true));
+  elements('exportBackup')?.addEventListener?.('click', () => downloadFile('racoon-respaldo.json', JSON.stringify(createBackup(state), null, 2), 'application/json;charset=utf-8'));
+  elements('exportCsv')?.addEventListener?.('click', () => downloadFile('racoon-progreso.csv', stateToCsv(state, allEntries()), 'text/csv;charset=utf-8'));
+  elements('importBackup')?.addEventListener?.('click', () => elements('backupFile')?.click?.());
+  elements('backupFile')?.addEventListener?.('change', async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      pendingImport = parseBackup(JSON.parse(await file.text()));
+      const details = elements('importDetails');
+      if (details) details.innerHTML = `<p class="muted">${pendingImport.counts.series} series · ${pendingImport.counts.tracking} seguimientos · ${pendingImport.invalidRecords} registros inválidos.</p>`;
+      elements('importDialog')?.showModal?.();
+    } catch { setText('backupPreview', 'No se pudo leer el archivo JSON.'); }
+    event.target.value = '';
+  });
+  elements('mergeImport')?.addEventListener?.('click', () => {
+    if (!pendingImport || !globalThis.confirm?.('¿Fusionar este respaldo con tu biblioteca actual?')) return;
+    state = mergeBackup(state, pendingImport.state);
+    saveState(storage, state);
+    elements('importDialog')?.close?.();
+    pendingImport = null;
+    render();
+  });
+  elements('replaceImport')?.addEventListener?.('click', () => {
+    if (!pendingImport || !globalThis.confirm?.('¿Reemplazar toda tu biblioteca? Esta acción requiere un respaldo para deshacerla.')) return;
+    state = replaceWithBackup(pendingImport.state);
+    saveState(storage, state);
+    elements('importDialog')?.close?.();
+    pendingImport = null;
+    render();
+  });
+  elements('cancelImport')?.addEventListener?.('click', () => elements('importDialog')?.close?.());
   elements('appVersion') && (elements('appVersion').textContent = `RACOON v${RACOON_VERSION}`);
   if (typeof window !== 'undefined' && globalThis.navigator?.serviceWorker) {
     registerPwa({navigator: globalThis.navigator, window, fetch, currentVersion: RACOON_VERSION, onUpdate: showUpdate}).then((controller) => { pwaController = controller; });
   }
   render();
+  renderBackupSummary();
+  if (typeof window !== 'undefined') {
+    const refreshIfDue = () => { if (shouldRefresh(state.updateMeta, now())) refreshRemote(false); };
+    refreshIfDue();
+    window.setInterval?.(refreshIfDue, Math.min(FOUR_HOURS, 60 * 1000));
+    document.addEventListener?.('visibilitychange', () => { if (!document.hidden) refreshIfDue(); });
+  }
   return {selectView, setTracking, render, getState: () => state, getView: () => currentView, fetch};
 }
 
