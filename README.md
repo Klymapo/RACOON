@@ -12,13 +12,13 @@ RACOON es una PWA pública y local-first para descubrir series, consultar su age
 - Migración de `anime-radar-otono-2026-v1` sin borrar la clave anterior.
 - Exportación JSON completa, importación con vista previa, fusión/reemplazo y CSV.
 - Actualizaciones PWA diferidas: RACOON avisa y la persona decide cuándo activar la nueva versión.
-- v2.1 corrige slots semanales recurrentes, refresca el catálogo estacional completo y distingue sin novedades, fallo y contradicción.
+- v2.1.1 muestra únicamente la semana original respaldada por la fuente integrada (12–18 de octubre). AniList aporta fechas japonesas y próximos episodios previstos, con procedencia visible. La consulta estacional recorre todas las páginas disponibles y omite coincidencias ambiguas.
 
 ## Datos personales y límites
 
 El progreso, favoritos, series personalizadas, preferencias y caché se guardan sólo en `localStorage` de este origen. No hay sincronización automática entre dispositivos. Exporta un JSON con frecuencia si el navegador puede borrar los datos del sitio.
 
-Los horarios regionales no se inventan: emisión japonesa, disponibilidad en México, anuncios y episodios efectivamente publicados son campos distintos. AniList se consulta sin credenciales; las páginas de plataformas se conservan como fuentes, pero no se hace scraping indiscriminado. Una fuente caída conserva el último dato conocido y muestra su antigüedad.
+Los horarios regionales no se inventan: emisión japonesa, disponibilidad en México, anuncios y episodios efectivamente publicados son campos distintos. AniList se consulta sin credenciales; sus horarios japoneses no verifican la hora de publicación en una plataforma mexicana. Las páginas de plataformas se conservan como fuentes, pero no se hace scraping indiscriminado. Una fuente caída conserva el último dato conocido y muestra su antigüedad. Si no existe una programación publicada para una semana nueva, el calendario puede quedar vacío.
 
 ## Desarrollo local
 

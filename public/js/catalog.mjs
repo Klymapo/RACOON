@@ -367,10 +367,11 @@ const LEGACY_VERIFIED = {
       date: '2026-10-17',
       episodeCandidates: [2, 3],
       confidence: 'contradictory',
-      sourceTime: {date: '2026-10-17', time: '03:30', timeZone: 'America/Los_Angeles'},
+      timeConfidence: 'confirmed',
+      sourceTime: {date: '2026-10-17', time: '02:30', timeZone: 'America/Los_Angeles'},
       sources: [
-        {kind: 'official', url: 'https://the-vermilion-mask.com/en/news/contents/article_l8njwjhk7pkt85jr.html'},
-        {kind: 'platform', url: 'https://www.crunchyroll.com/es/news/seasonal-lineup/2026/10/11/crunchyroll-calendario-semanal-otono-2026'}
+        {kind: 'platform', url: 'https://www.crunchyroll.com/es/news/seasonal-lineup/2026/10/11/crunchyroll-calendario-semanal-otono-2026'},
+        {kind: 'official', url: 'https://the-vermilion-mask.com/en/news/contents/article_l8njwjhk7pkt85jr.html'}
       ]
     }]
   }
@@ -386,7 +387,8 @@ function decorateLegacyEntry(entry) {
       frequency: 'weekly',
       day: entry.day,
       startDate: entry.date,
-      confidence: verified.scheduleConfidence || 'announced'
+      endDate: '2026-10-18',
+      confidence: 'estimated'
     } : null,
     sources: entry.sources
   };

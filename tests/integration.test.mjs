@@ -41,6 +41,14 @@ test('an empty successful provider result is recorded as no update', async () =>
   assert.equal(result.state.updateMeta.lastChecked, 300);
 });
 
+test('partial provider result keeps updates and records incomplete coverage', async () => {
+  const state = createDefaultState(CATALOG);
+  const result = await refreshCatalog(state, async () => ({entries: [{...CATALOG[0], title: 'New title'}], incomplete: true}), 400);
+  assert.equal(result.status, 'partial');
+  assert.equal(result.state.updateMeta.providers.catalog.status, 'partial');
+  assert.equal(result.state.catalogOfficial[CATALOG[0].id].title, 'New title');
+});
+
 test('workflow remains static-only and guarded against server artifacts', () => {
   const workflow = readFileSync('.github/workflows/racoon.yml', 'utf8');
   assert.match(workflow, /cp -R public\/.+STATIC_DIR/);

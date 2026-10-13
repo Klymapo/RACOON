@@ -13,10 +13,11 @@ function copyState(state) {
 export async function refreshCatalog(state, loader, now = Date.now()) {
   const next = copyState(state);
   try {
-    const entries = await loader();
+    const loaded = await loader();
+    const entries = Array.isArray(loaded) ? loaded : loaded?.entries;
     if (!Array.isArray(entries)) throw new Error('Respuesta de catálogo inválida');
     for (const entry of entries.filter((item) => item?.id)) next.catalogOfficial[entry.id] = entry;
-    const status = entries.length ? 'completed' : 'no-update';
+    const status = loaded?.incomplete ? 'partial' : entries.length ? 'completed' : 'no-update';
     next.updateMeta = {...next.updateMeta, lastChecked: now, providers: {...next.updateMeta.providers, catalog: {status, lastChecked: now, error: null}}};
     return {state: next, status, entries: entries.length};
   } catch (error) {

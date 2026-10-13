@@ -67,3 +67,26 @@ test('a storage write failure does not throw or replace the in-memory state', ()
   assert.doesNotThrow(() => saveState(new FailingStorage(), state));
   assert.equal(state.tracking['legacy:verm'].seen, 3);
 });
+
+test('reload keeps fetched legacy metadata while taking corrected bundled schedule', () => {
+  const storage = new MemoryStorage();
+  const previous = createDefaultState(CATALOG);
+  previous.catalogOfficial['legacy:verm'] = {...previous.catalogOfficial['legacy:verm'], anilistSourceId: '123', totalEpisodes: 12, nextAiring: {episode: 4, airingAt: 1790000000}, scheduleEvents: [{date: '2026-10-17', sourceTime: {date: '2026-10-17', time: '03:30', timeZone: 'America/Los_Angeles'}}]};
+  storage.setItem(STATE_KEY, JSON.stringify(previous));
+  const loaded = loadState(storage, CATALOG).state.catalogOfficial['legacy:verm'];
+  assert.equal(loaded.anilistSourceId, '123');
+  assert.equal(loaded.nextAiring.episode, 4);
+  assert.equal(loaded.scheduleEvents[0].sourceTime.time, '02:30');
+});
+
+test('reload removes old inferred availability but retains confirmed local progress', () => {
+  const storage = new MemoryStorage();
+  const previous = createDefaultState(CATALOG);
+  previous.catalogOfficial['legacy:verm'] = {...previous.catalogOfficial['legacy:verm'], availableEpisodes: 3, availableConfidence: 'estimated'};
+  previous.tracking['legacy:verm'] = {seen: 2, availableOverride: 2, totalOverride: 12, status: 'Viendo'};
+  storage.setItem(STATE_KEY, JSON.stringify(previous));
+  const loaded = loadState(storage, CATALOG).state;
+  assert.equal(loaded.catalogOfficial['legacy:verm'].availableEpisodes, 1);
+  assert.equal(loaded.tracking['legacy:verm'].seen, 2);
+  assert.equal(loaded.tracking['legacy:verm'].availableOverride, 2);
+});

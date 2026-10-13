@@ -81,7 +81,23 @@ function parseStorage(storage, key) {
 
 function withCatalog(state, catalog) {
   const next = validateState(state);
-  for (const entry of catalog.filter(Boolean)) next.catalogOfficial[entry.id] = entry;
+  for (const entry of catalog.filter(Boolean)) {
+    const stored = next.catalogOfficial[entry.id];
+    if (!stored) { next.catalogOfficial[entry.id] = entry; continue; }
+    next.catalogOfficial[entry.id] = {
+      ...entry,
+      ...stored,
+      title: entry.title,
+      name: entry.name,
+      platform: entry.platform,
+      weeklySchedule: entry.weeklySchedule,
+      scheduleEvents: entry.scheduleEvents ?? stored.scheduleEvents,
+      scheduleConfidence: entry.scheduleConfidence ?? stored.scheduleConfidence,
+      episodeCandidates: entry.episodeCandidates ?? stored.episodeCandidates,
+      availableEpisodes: stored.availableConfidence === 'estimated' ? entry.availableEpisodes : stored.availableEpisodes,
+      availableConfidence: stored.availableConfidence === 'estimated' ? entry.availableConfidence : stored.availableConfidence
+    };
+  }
   return next;
 }
 

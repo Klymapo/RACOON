@@ -35,6 +35,14 @@ test('dashboard uses the next weekly slot instead of only the premiere date', ()
   assert.ok(model.upcoming.some((entry) => entry.id === 'legacy:witch' && entry.date === '2026-10-14'));
 });
 
+test('dashboard labels an added series next airing as Japanese even with a platform set', () => {
+  const state = createDefaultState(CATALOG);
+  state.catalogOfficial['anilist:4321'] = {id: 'anilist:4321', title: 'Added', platform: 'Crunchyroll', nextAiring: {episode: 3, airingAt: Date.parse('2026-10-18T02:00:00Z') / 1000}};
+  const upcoming = buildDashboardModel(CATALOG, state, '2026-10-13').upcoming.find(({id}) => id === 'anilist:4321');
+  assert.equal(upcoming.date, '2026-10-17');
+  assert.match(upcoming.platformLabel, /japonesa/);
+});
+
 test('tracking patches preserve manual progress when catalog metadata changes', () => {
   const state = createDefaultState(CATALOG);
   state.tracking['legacy:verm'] = {seen: 2, status: 'Viendo', favorite: true, changedAt: 10, availableOverride: 2, totalOverride: 12, manualFields: ['availableOverride']};

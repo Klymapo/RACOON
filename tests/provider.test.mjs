@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizeAniListMedia, searchAnime, fetchAnimeDetails, fetchSeasonalAnime} from '../public/js/providers/anilist.mjs';
+import {normalizeAniListMedia, searchAnime, fetchAnimeDetails, fetchSeasonalAnime, matchLegacyAnime} from '../public/js/providers/anilist.mjs';
 import {saveCatalogEntry} from '../public/js/app.mjs';
 import {createDefaultState} from '../public/js/storage.mjs';
 
@@ -35,6 +35,8 @@ test('normalizes AniList media with a permanent ID and unverified missing total'
   assert.equal(entry.totalEpisodes, null);
   assert.equal(entry.sources[0].url, 'https://anilist.co/anime/123');
   assert.equal(entry.evidence.totalEpisodes[0].confidence, 'unverified');
+  assert.ok(entry.evidence.premiereDate[0].queriedAt);
+  assert.equal(normalizeAniListMedia({...media, startDate: {year: 2026}}).premiereDate, null);
 });
 
 test('search sends only public AniList GraphQL fields and normalizes results', async () => {
@@ -64,6 +66,25 @@ test('seasonal refresh uses one public query without credentials', async () => {
   assert.equal(request.options.headers.Authorization, undefined);
   assert.match(request.options.body, /FALL/);
   assert.match(request.options.body, /2026/);
+});
+
+test('seasonal refresh follows all available pages', async () => {
+  const pages = [];
+  const results = await fetchSeasonalAnime({season: 'FALL', year: 2026, fetch: async (_url, options) => {
+    const {variables} = JSON.parse(options.body);
+    pages.push(variables.page);
+    return response({data: {Page: {pageInfo: {hasNextPage: variables.page < 2}, media: [{...media, id: variables.page}]}}});
+  }});
+  assert.deepEqual(pages, [1, 2]);
+  assert.deepEqual(results.map(({id}) => id), ['anilist:1', 'anilist:2']);
+});
+
+test('legacy matching rejects ambiguous titles and uses a previously verified AniList ID', () => {
+  const candidates = [normalizeAniListMedia({...media, id: 123}), normalizeAniListMedia({...media, id: 456})];
+  const local = {id: 'legacy:frieren', title: "Frieren: Beyond Journey's End", date: '2026-04-03'};
+  assert.equal(matchLegacyAnime(local, candidates), null);
+  assert.equal(matchLegacyAnime({...local, anilistSourceId: '456'}, candidates).id, 'anilist:456');
+  assert.equal(matchLegacyAnime({...local, title: 'Frieren'}, [candidates[0]]), null);
 });
 
 test('saves a result with missing fields by permanent ID without duplicating it', () => {
