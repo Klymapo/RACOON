@@ -1,0 +1,111 @@
+import {STATUS_VALUES} from './model.mjs';
+
+export const LEGACY_STATE_KEY = 'anime-radar-otono-2026-v1';
+export const STATE_KEY = 'racoon-v2-state';
+export const STATE_SCHEMA_VERSION = 3;
+const MAX_EPISODES = 9999;
+
+function objectOrEmpty(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function nonNegativeInteger(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isSafeInteger(number) ? Math.min(MAX_EPISODES, Math.max(0, number)) : fallback;
+}
+
+function optionalInteger(value) {
+  if (value === null || value === undefined || value === '') return null;
+  return nonNegativeInteger(value, null);
+}
+
+function cleanTrackingEntry(raw = {}) {
+  const input = objectOrEmpty(raw);
+  const status = STATUS_VALUES.includes(input.status) ? input.status : STATUS_VALUES.includes(input.grade) ? input.grade : 'Pendiente';
+  const availableOverride = optionalInteger(input.availableOverride ?? input.aired);
+  const totalOverride = optionalInteger(input.totalOverride ?? input.total);
+  const manualFields = Array.isArray(input.manualFields) ? [...new Set(input.manualFields.filter((field) => ['seen', 'availableOverride', 'totalOverride', 'status'].includes(field)))] : [];
+  return {
+    seen: nonNegativeInteger(input.seen),
+    status,
+    favorite: input.favorite === true,
+    changedAt: Number.isSafeInteger(Number(input.changedAt)) && Number(input.changedAt) > 0 ? Number(input.changedAt) : 0,
+    availableOverride,
+    totalOverride,
+    manualFields
+  };
+}
+
+export function createDefaultState(catalog = []) {
+  return {
+    schemaVersion: STATE_SCHEMA_VERSION,
+    catalogOfficial: Object.fromEntries(catalog.filter(Boolean).map((entry) => [entry.id, entry])),
+    catalogCustom: {},
+    tracking: {},
+    preferences: {view: 'home', calendarWeek: null, selectedDay: null, platform: 'all', status: 'all', sort: 'title'},
+    sourceCache: {},
+    updateMeta: {lastChecked: 0, providers: {}}
+  };
+}
+
+export function validateState(value) {
+  const input = objectOrEmpty(value);
+  const state = createDefaultState();
+  state.catalogOfficial = objectOrEmpty(input.catalogOfficial);
+  state.catalogCustom = objectOrEmpty(input.catalogCustom);
+  state.preferences = {...state.preferences, ...objectOrEmpty(input.preferences)};
+  state.sourceCache = objectOrEmpty(input.sourceCache);
+  state.updateMeta = {...state.updateMeta, ...objectOrEmpty(input.updateMeta)};
+  for (const [id, raw] of Object.entries(objectOrEmpty(input.tracking))) state.tracking[id] = cleanTrackingEntry(raw);
+  return state;
+}
+
+export function migrateLegacyTrack(track, catalog = []) {
+  const state = createDefaultState(catalog);
+  const source = objectOrEmpty(track?.track ?? track);
+  for (const [legacyId, raw] of Object.entries(source)) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+    state.tracking[`legacy:${legacyId}`] = cleanTrackingEntry(raw);
+  }
+  return state;
+}
+
+function parseStorage(storage, key) {
+  try {
+    const raw = storage?.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function withCatalog(state, catalog) {
+  const next = validateState(state);
+  for (const entry of catalog.filter(Boolean)) next.catalogOfficial[entry.id] = entry;
+  return next;
+}
+
+export function loadState(storage, catalog = []) {
+  const stored = parseStorage(storage, STATE_KEY);
+  if (stored && typeof stored === 'object' && stored.schemaVersion === STATE_SCHEMA_VERSION) {
+    return {state: withCatalog(stored, catalog), migrated: false, repaired: false};
+  }
+  const legacy = parseStorage(storage, LEGACY_STATE_KEY);
+  if (legacy && typeof legacy === 'object') {
+    const state = migrateLegacyTrack(legacy, catalog);
+    saveState(storage, state);
+    return {state, migrated: true, repaired: false};
+  }
+  return {state: createDefaultState(catalog), migrated: false, repaired: Boolean(stored)};
+}
+
+export function saveState(storage, state) {
+  const clean = validateState(state);
+  try {
+    const previous = storage.getItem(STATE_KEY);
+    if (previous) storage.setItem(`${STATE_KEY}:previous`, previous);
+    storage.setItem(STATE_KEY, JSON.stringify(clean));
+  } catch {
+    // The caller keeps the validated in-memory state; quota errors must not erase it.
+  }
+}
