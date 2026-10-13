@@ -4,7 +4,7 @@ Fecha: 2026-10-13 UTC. Rama: `codex/racoon-v2-wizard`. PR: #1. Sin fusión ni de
 
 ## Resultado comprobado
 
-- `node --test tests/*.test.mjs`: 10 archivos pasan, 0 fallos (volver a ejecutar antes del push).
+- `node --test tests/*.test.mjs`: 10 archivos, 71 pruebas pasan, 0 fallos. GitHub Actions PR run `38436668698` pasó el mismo comando en Node 22; el job de publicación se omitió.
 - `node scripts/qa-browser.mjs`: Chromium real en vistas 390×844 y 1440×1000. Flujo de AniList simulado de búsqueda → detalles → corrección → guardado → Inicio/calendario/progreso → favorito y +1 → recarga → refresco remoto → exportación/importación JSON → restauración. El progreso no cambió tras el refresco.
 - En el mismo navegador: crear, editar y eliminar una ficha manual; proyección con zona CDMX y fuente; filtro de plataforma; navegación hasta noviembre; actualización PWA 2.2.0 → 2.2.1 diferida y aplicada voluntariamente; recarga sin conexión con progreso intacto. Sin errores de página ni desbordamiento horizontal en ambos tamaños.
 - Las pruebas puras cubren cuatro semanas consecutivas, cambio de mes, pausas, temporada finalizada, cruce de semana por huso, DST del Pacífico, episodio 1 confirmado frente a contradicción episodio 2/3 de The Vermilion Mask y su hora 03:30 CDMX. Las previsiones no aumentan episodios disponibles.
