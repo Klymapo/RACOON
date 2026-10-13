@@ -21,8 +21,7 @@ test('Los módulos JavaScript tienen sintaxis válida',()=>{
  const modules=readdirSync('public/js',{recursive:true}).filter(file=>String(file).endsWith('.mjs'));
  assert.ok(modules.length);
  for(const file of modules){
-  const code=readFileSync(`public/js/${file}`,'utf8');
-  const r=spawnSync(process.execPath,['--check'],{input:code,encoding:'utf8'});
+  const r=spawnSync(process.execPath,['--check',`public/js/${file}`],{encoding:'utf8'});
   assert.equal(r.status,0,r.stderr);
  }
 });
