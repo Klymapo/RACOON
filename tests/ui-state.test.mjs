@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CATALOG} from '../public/js/catalog.mjs';
-import {createDefaultState} from '../public/js/storage.mjs';
+import {createDefaultState, STATE_KEY} from '../public/js/storage.mjs';
 import {buildDashboardModel, applyTrackingPatch, filterProgressEntries, progressPercentage, createApp} from '../public/js/app.mjs';
 
 class MemoryStorage {
@@ -98,4 +98,67 @@ test('editing progress while AniList is in flight cannot be rolled back by its r
   await pending;
   assert.equal(app.getState().tracking['legacy:verm'].seen, 2);
   assert.equal(app.getState().tracking['legacy:verm'].favorite, true);
+});
+
+test('editing and deleting added series during a refresh survive its late response', async () => {
+  const storage = new MemoryStorage();
+  const initial = createDefaultState(CATALOG);
+  initial.catalogOfficial['anilist:123'] = {id: 'anilist:123', sourceId: '123', title: 'Old title'};
+  initial.catalogOfficial['anilist:456'] = {id: 'anilist:456', sourceId: '456', title: 'To delete'};
+  initial.tracking['anilist:456'] = {seen: 2, favorite: true};
+  storage.setItem(STATE_KEY, JSON.stringify(initial));
+
+  const handlers = new Map();
+  const document = {...fakeDocument(), addEventListener(name, handler) { handlers.set(name, handler); }};
+  const fields = [
+    {dataset: {seriesField: 'title'}, value: 'My corrected title'},
+    {dataset: {seriesField: 'weeklyDay'}, value: ''}
+  ];
+  document.querySelectorAll = (selector) => selector === '[data-series-field]' ? fields : [];
+  document.getElementById = (id) => document.nodes.get(id) || {...fakeElement(), querySelector: () => null};
+  const click = (attribute, id) => handlers.get('click')({target: {
+    closest(selector) { return selector.includes(`[${attribute}]`) ? {dataset: {[attribute.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())]: id}} : null; }
+  }});
+
+  let finishRequest;
+  let detailStarted;
+  const requested = [];
+  const waitingForDetail = new Promise((resolve) => { detailStarted = resolve; });
+  const media = (id) => ({id, title: {romaji: `Remote ${id}`}, siteUrl: `https://anilist.co/anime/${id}`});
+  const fetch = async (_url, options) => {
+    const variables = JSON.parse(options.body).variables;
+    requested.push(variables);
+    if (variables.page) return {ok: true, json: async () => ({data: {Page: {pageInfo: {hasNextPage: false}, media: []}}})};
+    if (variables.id === 123) return new Promise((resolve) => { finishRequest = resolve; detailStarted(); });
+    return {ok: true, json: async () => ({data: {Media: media(variables.id)}})};
+  };
+  const app = createApp({document, storage, fetch, now: () => Date.parse('2026-10-13T12:00:00Z')});
+  const pending = app.refreshRemote(true);
+  let timeout;
+  try {
+    await Promise.race([waitingForDetail, new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error(`Detail request not started: ${JSON.stringify(requested)}`)), 1000); })]);
+  } finally { clearTimeout(timeout); }
+  click('data-series-edit', 'anilist:123');
+  click('data-save-series', 'anilist:123');
+  const priorConfirm = globalThis.confirm;
+  globalThis.confirm = () => true;
+  try { click('data-series-delete', 'anilist:456'); }
+  finally { globalThis.confirm = priorConfirm; }
+  finishRequest({ok: true, json: async () => ({data: {Media: media(123)}})});
+  await pending;
+
+  const persisted = JSON.parse(storage.getItem(STATE_KEY));
+  assert.deepEqual({
+    editedTitle: app.getState().catalogOfficial['anilist:123']?.title,
+    deletedAbsent: !('anilist:456' in app.getState().catalogOfficial),
+    deletedTrackingAbsent: !('anilist:456' in app.getState().tracking),
+    persistedTitle: persisted.catalogOfficial['anilist:123']?.title,
+    persistedDeletion: !('anilist:456' in persisted.catalogOfficial)
+  }, {
+    editedTitle: 'My corrected title',
+    deletedAbsent: true,
+    deletedTrackingAbsent: true,
+    persistedTitle: 'My corrected title',
+    persistedDeletion: true
+  });
 });

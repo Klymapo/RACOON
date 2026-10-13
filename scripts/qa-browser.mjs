@@ -10,14 +10,16 @@ try { playwright = (await import(process.env.PLAYWRIGHT_MODULE || 'playwright'))
 catch { playwright = (await import('/opt/codex/runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.js')).default; }
 const root = new URL('../public/', import.meta.url).pathname;
 const mime = {'.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png'};
-let servedVersion = '2.2.0';
+const baseVersion = JSON.parse(await readFile(join(root, 'version.json'))).version;
+const nextVersion = baseVersion.replace(/\d+$/, (patch) => String(Number(patch) + 1));
+let servedVersion = baseVersion;
 const server = createServer(async (request, response) => {
   const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
   const path = join(root, normalize(pathname).replace(/^\/+/, '') || 'index.html');
   if (!path.startsWith(root)) { response.writeHead(403).end(); return; }
   try {
     let body = await readFile(path.endsWith('/') ? join(path, 'index.html') : path);
-    if (servedVersion !== '2.2.0' && ['/sw.js', '/js/app.mjs', '/version.json'].includes(pathname)) body = Buffer.from(body.toString().replaceAll('2.2.0', servedVersion));
+    if (servedVersion !== baseVersion && ['/sw.js', '/js/app.mjs', '/version.json'].includes(pathname)) body = Buffer.from(body.toString().replaceAll(baseVersion, servedVersion));
     response.writeHead(200, {'Content-Type': mime[extname(path)] || 'application/octet-stream', 'Cache-Control': 'no-store'}).end(body);
   } catch { response.writeHead(404).end(); }
 });
@@ -120,14 +122,14 @@ try {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await page.locator('[data-view="backups"]').click();
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
-  servedVersion = '2.2.1';
+  servedVersion = nextVersion;
   await page.locator('#checkUpdate').click();
   await page.locator('#updateDialog').waitFor({state: 'visible'});
   await page.locator('#dismissUpdate').click();
   assert.equal(await page.locator('#updateDialog').isVisible(), false);
   await page.locator('#checkUpdate').click();
   await page.locator('#applyUpdate').click();
-  await page.waitForFunction(() => document.querySelector('#appVersion')?.textContent?.includes('2.2.1'), {timeout: 15000});
+  await page.waitForFunction((version) => document.querySelector('#appVersion')?.textContent?.includes(version), nextVersion, {timeout: 15000});
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('racoon-v2-state')).tracking['anilist:987654'].seen), 1);
   await context.setOffline(true);
   await page.reload();

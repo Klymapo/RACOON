@@ -1,9 +1,9 @@
 {
-  "version": "2.2.0",
-  "publishedAt": "2026-10-13T16:58:17Z",
+  "version": "2.2.1",
+  "publishedAt": "2026-10-13T17:27:47Z",
   "changes": [
-    "Calendario continuo con previsiones diferenciadas de emisiones confirmadas",
-    "Series añadidas y fichas manuales integradas con progreso y respaldos",
-    "Actualizaciones y Service Worker comprobados de extremo a extremo"
+    "Ediciones y eliminaciones de series protegidas durante consultas a AniList",
+    "La actualización conserva el catálogo local y el progreso personal",
+    "Caché de la PWA renovada sin borrar datos locales"
   ]
 }

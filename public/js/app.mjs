@@ -5,10 +5,10 @@ import {mexicoDate} from './time.mjs';
 import {searchAnime, fetchAnimeDetails, fetchSeasonalAnime, matchLegacyAnime, seasonForEntry} from './providers/anilist.mjs';
 import {registerPwa} from './pwa.mjs';
 import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} from './backup.mjs';
-import {shouldRefresh, refreshCatalog, FOUR_HOURS} from './refresh.mjs';
+import {shouldRefresh, refreshCatalog, mergeCatalogObservation, FOUR_HOURS} from './refresh.mjs';
 import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '2.2.0';
+const RACOON_VERSION = '2.2.1';
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -298,15 +298,17 @@ export function createApp({document = globalThis.document, storage = globalThis.
 
   async function runRefresh(manual) {
     setText('freshness', manual ? 'Actualizando fuentes…' : 'Comprobando fuentes…');
-    const known = Object.values(state.catalogOfficial).filter((entry) => String(entry.id).startsWith('anilist:') || (String(entry.id).startsWith('legacy:') && entry.anilistSourceId));
+    const catalogBeforeRefresh = state.catalogOfficial;
+    const known = Object.values(catalogBeforeRefresh).filter((entry) => String(entry.id).startsWith('anilist:') || (String(entry.id).startsWith('legacy:') && entry.anilistSourceId));
     const cursor = Number(state.updateMeta?.anilistCursor) || 0;
     const batch = Array.from({length: Math.min(20, known.length)}, (_, index) => known[(cursor + index) % known.length]);
     let processedKnown = 0;
+    let refreshedIds = [];
     const result = await refreshCatalog(state, async () => {
       const entries = [];
       const failures = [];
       let rateLimited = false;
-      const legacy = Object.values(state.catalogOfficial).filter((entry) => String(entry.id).startsWith('legacy:') && !entry.anilistSourceId);
+      const legacy = Object.values(catalogBeforeRefresh).filter((entry) => String(entry.id).startsWith('legacy:') && !entry.anilistSourceId);
       const groups = new Map();
       for (const local of legacy) {
         const season = seasonForEntry(local);
@@ -341,11 +343,29 @@ export function createApp({document = globalThis.document, storage = globalThis.
         } catch (error) { failures.push(error); if (/429/.test(String(error))) break; processedKnown += 1; /* conserva el último dato confirmado */ }
       }
       if (!entries.length && failures.length) throw failures[0];
+      refreshedIds = [...new Set(entries.map((entry) => entry.id))];
       return {entries, incomplete: failures.length > 0};
     }, now());
-    // A person may edit progress while the network request is in flight.
-    // Apply only remote-owned layers to the latest live state.
-    state = {...state, catalogOfficial: result.state.catalogOfficial, updateMeta: result.state.updateMeta};
+    // Rebase observations onto live data: an in-flight request must not revive
+    // deletions or replace fields the person edited after the request began.
+    const catalogOfficial = {...state.catalogOfficial};
+    for (const id of refreshedIds) {
+      if (!Object.hasOwn(catalogOfficial, id) || !result.state.catalogOfficial[id]) continue;
+      const before = catalogBeforeRefresh[id] || {};
+      const current = catalogOfficial[id];
+      const merged = mergeCatalogObservation(current, result.state.catalogOfficial[id]);
+      for (const field of new Set([...Object.keys(before), ...Object.keys(current)])) {
+        if (JSON.stringify(before[field]) === JSON.stringify(current[field])) continue;
+        if (Object.hasOwn(current, field)) merged[field] = current[field];
+        else delete merged[field];
+      }
+      catalogOfficial[id] = merged;
+    }
+    state = {...state, catalogOfficial, updateMeta: {
+      ...state.updateMeta,
+      lastChecked: result.state.updateMeta.lastChecked,
+      providers: {...state.updateMeta.providers, catalog: result.state.updateMeta.providers.catalog}
+    }};
     if (result.status !== 'failed' && known.length) state.updateMeta.anilistCursor = (cursor + processedKnown) % known.length;
     saveState(storage, state);
     setText('freshness', result.status === 'completed' ? `Fuentes actualizadas · ${new Date(now()).toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit'})}` : result.status === 'no-update' ? 'Fuentes revisadas · sin novedades' : result.status === 'partial' ? 'Consulta parcial · algunos datos conservados' : 'Fuentes sin conexión · último dato conservado');

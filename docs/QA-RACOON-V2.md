@@ -1,6 +1,13 @@
-# QA RACOON v2.2.0 · auditoría de coherencia
+# QA RACOON v2.2.1 · auditoría de coherencia
 
 Fecha: 2026-10-13 UTC. Rama: `codex/racoon-v2-wizard`. PR: #1. Sin fusión ni despliegue desde esta rama.
+
+## Verificación incremental v2.2.1
+
+- La nueva regresión dispara una consulta AniList retenida, edita una serie y elimina otra mediante los controles de la aplicación, libera la respuesta y comprueba memoria y `localStorage`. Antes del arreglo falló con el título remoto restaurado y la serie eliminada reaparecida; después pasó. El seguimiento eliminado no vuelve.
+- `node --test tests/*.test.mjs`: 72 pruebas en 10 archivos, sin fallos. `node scripts/qa-browser.mjs`: flujo completo en Chromium, incluido Service Worker 2.2.1 → 2.2.2 y funcionamiento sin conexión, pasó. El ensayo de actualización falló primero al cambiar la versión porque el script fijaba 2.2.0; ahora deriva la versión de `version.json`.
+- Los archivos visuales enlazados abajo son la evidencia original de v2.2.0. La prueba de navegador volvió a ejecutar las vistas de 390×844 y 1440×1000 con v2.2.1 sin desbordamiento, pero no se atribuyen nuevas capturas publicadas a esta revisión.
+- El check externo de Workers sigue fallando incluso en el commit de documentación `b896458`; su resumen indica `Script: racoon`, cero anotaciones y no ofrece el log del build. No es el job de Pages ni explica su causa interna. Véase [PUBLICACION.md](PUBLICACION.md).
 
 ## Resultado comprobado
 
