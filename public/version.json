@@ -1,9 +1,9 @@
 {
-  "version": "2.1.1",
-  "publishedAt": "2026-10-13T16:23:00Z",
+  "version": "2.2.0",
+  "publishedAt": "2026-10-13T16:58:17Z",
   "changes": [
-    "The Vermilion Mask: horario corregido a 03:30 CDMX",
-    "Series añadidas visibles en el calendario con emisión japonesa diferenciada",
-    "Agenda acotada a fuentes publicadas y consulta AniList paginada"
+    "Calendario continuo con previsiones diferenciadas de emisiones confirmadas",
+    "Series añadidas y fichas manuales integradas con progreso y respaldos",
+    "Actualizaciones y Service Worker comprobados de extremo a extremo"
   ]
 }

@@ -39,18 +39,18 @@
       </section>
 
       <nav class="primary-nav" aria-label="Secciones principales" role="tablist">
-        <button class="nav-tab is-active" type="button" role="tab" data-view="home" aria-controls="homeView" aria-selected="true"><span>⌂</span>Inicio</button>
-        <button class="nav-tab" type="button" role="tab" data-view="calendar" aria-controls="calendarView" aria-selected="false"><span>▦</span>Calendario</button>
-        <button class="nav-tab" type="button" role="tab" data-view="progress" aria-controls="progressView" aria-selected="false"><span>◒</span>Mi progreso</button>
-        <button class="nav-tab" type="button" role="tab" data-view="add" aria-controls="addView" aria-selected="false"><span>＋</span>Agregar series</button>
-        <button class="nav-tab" type="button" role="tab" data-view="backups" aria-controls="backupsView" aria-selected="false"><span>▣</span>Respaldos</button>
+        <button id="homeTab" class="nav-tab is-active" type="button" role="tab" data-view="home" aria-controls="homeView" aria-selected="true"><span>⌂</span>Inicio</button>
+        <button id="calendarTab" class="nav-tab" type="button" role="tab" data-view="calendar" aria-controls="calendarView" aria-selected="false"><span>▦</span>Calendario</button>
+        <button id="progressTab" class="nav-tab" type="button" role="tab" data-view="progress" aria-controls="progressView" aria-selected="false"><span>◒</span>Mi progreso</button>
+        <button id="addTab" class="nav-tab" type="button" role="tab" data-view="add" aria-controls="addView" aria-selected="false"><span>＋</span>Agregar series</button>
+        <button id="backupsTab" class="nav-tab" type="button" role="tab" data-view="backups" aria-controls="backupsView" aria-selected="false"><span>▣</span>Respaldos</button>
       </nav>
 
       <div id="liveRegion" class="sr-only" aria-live="polite"></div>
       <section id="homeView" class="view-panel" role="tabpanel" aria-labelledby="homeTab">
         <div class="section-heading"><div><p class="eyebrow">Tu biblioteca</p><h2>Buenos días, mago del anime</h2></div><span class="view-note" id="homeUpdated">Sincronización local activa</span></div>
         <div class="stat-grid" id="homeStats"></div>
-        <div class="dashboard-grid"><article class="panel-card" id="homePending"><div class="panel-heading"><h3>Episodios pendientes</h3><button class="text-button" type="button" data-go="progress">Ver todo →</button></div><div class="stack-list" id="pendingList"></div></article><article class="panel-card" id="homeUpcoming"><div class="panel-heading"><h3>Próximos estrenos</h3><button class="text-button" type="button" data-go="calendar">Calendario →</button></div><div class="stack-list" id="upcomingList"></div></article></div>
+        <div class="dashboard-grid"><article class="panel-card" id="homePending"><div class="panel-heading"><h3>Episodios pendientes</h3><button class="text-button" type="button" data-go="progress">Ver todo →</button></div><div class="stack-list" id="pendingList"></div></article><article class="panel-card" id="homeUpcoming"><div class="panel-heading"><h3>Próximas emisiones</h3><button class="text-button" type="button" data-go="calendar">Calendario →</button></div><div class="stack-list" id="upcomingList"></div></article></div>
       </section>
 
       <section id="calendarView" class="view-panel is-hidden" role="tabpanel" aria-labelledby="calendarTab">
@@ -67,6 +67,7 @@
       <section id="addView" class="view-panel is-hidden" role="tabpanel" aria-labelledby="addTab">
         <div class="section-heading"><div><p class="eyebrow">Catálogo ampliable</p><h2>Agregar series</h2><p>Busca en AniList y revisa la ficha antes de guardarla.</p></div></div>
         <form id="searchForm" class="search-bar"><label class="sr-only" for="animeSearch">Buscar anime</label><input class="search-input" id="animeSearch" type="search" autocomplete="off" placeholder="Ej. Frieren, One Piece…"><button class="button button-primary" type="submit">Buscar</button></form>
+        <button class="button button-soft" id="createManualSeries" type="button">＋ Crear ficha manual sin AniList</button>
         <div id="searchStatus" class="inline-status" aria-live="polite"></div><div id="searchResults" class="result-grid"></div><div id="seriesConfirmation" class="panel-card is-hidden"></div>
       </section>
 

@@ -1,5 +1,7 @@
 name: RACOON · publicar PWA pública
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
@@ -21,7 +23,7 @@ jobs:
   publicar:
     name: Publicar sitio estático en Cloudflare Pages
     needs: calidad
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

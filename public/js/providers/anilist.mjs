@@ -26,7 +26,9 @@ export function normalizeAniListMedia(media) {
   const title = media.title?.english || media.title?.romaji || media.title?.native || `Anime ${media.id}`;
   const alternativeTitles = [media.title?.romaji, media.title?.native, ...(media.synonyms || [])].filter((value, index, all) => value && value !== title && all.indexOf(value) === index);
   const source = {kind: 'api', name: 'AniList', url: media.siteUrl || `https://anilist.co/anime/${media.id}`};
-  const totalConfidence = Number.isInteger(media.episodes) ? 'confirmed' : 'unverified';
+  // AniList exposes a catalog total, but it is not an official platform
+  // publication count for Mexico and may change during split cours.
+  const totalConfidence = Number.isInteger(media.episodes) ? 'estimated' : 'unverified';
   const premiereDate = dateFromParts(media.startDate);
   const queriedAt = new Date().toISOString();
   return {
@@ -42,6 +44,7 @@ export function normalizeAniListMedia(media) {
     seasonYear: media.seasonYear || null,
     premiereDate,
     totalEpisodes: Number.isInteger(media.episodes) ? media.episodes : null,
+    totalConfidence,
     airingStatus: media.status || 'UNKNOWN',
     nextAiring: media.nextAiringEpisode ? {episode: media.nextAiringEpisode.episode, airingAt: media.nextAiringEpisode.airingAt} : null,
     sources: [{...source, queriedAt}],
@@ -59,12 +62,14 @@ async function request(query, variables, {fetch, signal, timeoutMs = 12000} = {}
   if (typeof requester !== 'function') throw new Error('AniList no está disponible en este entorno');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  if (signal?.aborted) controller.abort();
+  else signal?.addEventListener?.('abort', () => controller.abort(), {once: true});
   try {
     const response = await requester(ANILIST_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/json', Accept: 'application/json'},
       body: JSON.stringify({query, variables}),
-      signal: signal || controller.signal
+      signal: controller.signal
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
@@ -98,6 +103,14 @@ export async function fetchSeasonalAnime({season = 'FALL', year = 2026, maxPages
     if (!data.Page.pageInfo?.hasNextPage) return results;
   }
   throw new Error('El catálogo estacional supera el límite de páginas; no se aplicó una actualización parcial');
+}
+
+export function seasonForEntry(entry) {
+  if (['WINTER', 'SPRING', 'SUMMER', 'FALL'].includes(entry.season) && Number.isInteger(Number(entry.seasonYear))) return {season: entry.season, year: Number(entry.seasonYear)};
+  const date = entry.premiereDate || entry.date;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return null;
+  const month = Number(date.slice(5, 7));
+  return {season: ['WINTER', 'SPRING', 'SUMMER', 'FALL'][Math.floor((month - 1) / 3)], year: Number(date.slice(0, 4))};
 }
 
 function normalizeTitle(value) {

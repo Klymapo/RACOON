@@ -1,0 +1,145 @@
+// Optional browser QA: run with `node scripts/qa-browser.mjs` when Chromium and
+// Playwright are available. No dependency is needed by the deployed PWA.
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {createServer} from 'node:http';
+import {extname, join, normalize} from 'node:path';
+
+let playwright;
+try { playwright = (await import(process.env.PLAYWRIGHT_MODULE || 'playwright')).default; }
+catch { playwright = (await import('/opt/codex/runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.js')).default; }
+const root = new URL('../public/', import.meta.url).pathname;
+const mime = {'.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png'};
+let servedVersion = '2.2.0';
+const server = createServer(async (request, response) => {
+  const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+  const path = join(root, normalize(pathname).replace(/^\/+/, '') || 'index.html');
+  if (!path.startsWith(root)) { response.writeHead(403).end(); return; }
+  try {
+    let body = await readFile(path.endsWith('/') ? join(path, 'index.html') : path);
+    if (servedVersion !== '2.2.0' && ['/sw.js', '/js/app.mjs', '/version.json'].includes(pathname)) body = Buffer.from(body.toString().replaceAll('2.2.0', servedVersion));
+    response.writeHead(200, {'Content-Type': mime[extname(path)] || 'application/octet-stream', 'Cache-Control': 'no-store'}).end(body);
+  } catch { response.writeHead(404).end(); }
+});
+await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+const port = server.address().port;
+const browser = await playwright.chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox']});
+const media = {id: 987654, type: 'ANIME', format: 'TV', season: 'FALL', seasonYear: 2026, title: {english: 'Coherence Show', romaji: 'Coherence Show'}, synonyms: [], description: 'Prueba de integración', genres: ['Fantasy'], episodes: 12, status: 'RELEASING', coverImage: {large: null}, startDate: {year: 2026, month: 10, day: 10}, nextAiringEpisode: {episode: 2, airingAt: Date.parse('2026-10-17T02:00:00Z') / 1000}, siteUrl: 'https://anilist.co/anime/987654'};
+try {
+  const context = await browser.newContext({viewport: {width: 390, height: 844}, acceptDownloads: true, serviceWorkers: 'allow'});
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.route('https://graphql.anilist.co/**', async (route) => {
+    const query = route.request().postDataJSON()?.query || '';
+    const data = query.includes('Media(id:') ? {Media: media} : {Page: {pageInfo: {hasNextPage: false}, media: query.includes('search:') ? [media] : []}};
+    await route.fulfill({json: {data}});
+  });
+  await page.goto(`http://127.0.0.1:${port}/`);
+  await page.locator('[data-view="add"]').click();
+  await page.locator('#animeSearch').fill('Coherence Show');
+  await page.locator('#searchForm button').click();
+  await page.locator('[data-series-select="987654"]').click();
+  await page.locator('[data-series-field="title"]').waitFor();
+  await page.locator('[data-series-field="title"]').fill('Coherence Show MX');
+  await page.locator('[data-series-field="platform"]').fill('Crunchyroll');
+  await page.locator('[data-save-series]').click();
+  await page.locator('[data-view="progress"]').click();
+  const card = page.locator('[data-library-id="anilist:987654"]');
+  await card.waitFor();
+  await card.locator('[data-progress-action="favorite"]').click();
+  await card.locator('[data-progress-action="plus"]').click();
+  await page.locator('#progressFilter').selectOption('favorites');
+  assert.equal(await page.locator('[data-library-id="anilist:987654"]').count(), 1);
+  await page.locator('#progressFilter').selectOption('all');
+  await page.locator('[data-view="calendar"]').click();
+  const next = page.locator('#nextWeek');
+  for (let index = 0; index < 2 && !await page.locator('.episode-card:has-text("Coherence Show")').count(); index += 1) await next.click();
+  const eventDay = await page.locator('.episode-card:has-text("Coherence Show")').first().locator('xpath=ancestor::section[@data-calendar-panel]').getAttribute('data-calendar-panel');
+  await page.locator(`[data-calendar-day="${eventDay}"]`).click();
+  assert.match(await page.locator('#calendar').innerText(), /Coherence Show/);
+  await page.locator('[data-view="home"]').click();
+  assert.match(await page.locator('#homeStats').innerText(), /1\s+Series en seguimiento/);
+  await page.reload();
+  await page.locator('[data-view="progress"]').click();
+  assert.match(await page.locator('[data-library-id="anilist:987654"]').innerText(), /1 vistos/);
+  media.episodes = 13;
+  await page.locator('#quickRefresh').click();
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('racoon-v2-state'))?.catalogOfficial?.['anilist:987654']?.totalEpisodes === 13);
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('racoon-v2-state')).tracking['anilist:987654'].seen), 1);
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('racoon-v2-state')).catalogOfficial['anilist:987654'].title), 'Coherence Show MX');
+  await page.locator('[data-view="backups"]').click();
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('#exportBackup').click();
+  const download = await downloadPromise;
+  const backup = await readFile(await download.path());
+  assert.equal(JSON.parse(backup).tracking['anilist:987654'].favorite, true);
+  assert.match(await page.locator('#backupSummary').innerText(), /respaldo \d{4}-\d{2}-\d{2}/);
+  await page.locator('[data-view="progress"]').click();
+  await page.locator('[data-library-id="anilist:987654"] [data-progress-action="minus"]').click();
+  await page.locator('[data-view="backups"]').click();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator('#backupFile').setInputFiles({name: 'racoon-backup.json', mimeType: 'application/json', buffer: backup});
+  await page.locator('#replaceImport').click();
+  await page.locator('[data-view="progress"]').click();
+  assert.match(await page.locator('[data-library-id="anilist:987654"]').innerText(), /1 vistos/);
+  await page.locator('[data-view="add"]').click();
+  await page.locator('#createManualSeries').click();
+  await page.locator('[data-series-field="title"]').fill('Manual Continuity');
+  await page.locator('[data-series-field="premiereDate"]').fill('2026-10-10');
+  await page.locator('[data-series-field="weeklyDay"]').selectOption('5');
+  await page.locator('[data-series-field="sourceHour"]').fill('02:30');
+  await page.locator('[data-series-field="platform"]').fill('Local');
+  await page.locator('[data-series-field="patternUrl"]').fill('https://example.org/schedule');
+  await page.locator('[data-save-series]').click();
+  const customId = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('racoon-v2-state')).catalogCustom)[0]);
+  await page.locator('[data-view="progress"]').click();
+  await page.locator(`[data-library-id="${customId}"] [data-series-edit]`).click();
+  await page.locator('[data-series-field="title"]').fill('Manual Continuity Edited');
+  await page.locator('[data-save-series]').click();
+  await page.reload();
+  await page.locator('[data-view="progress"]').click();
+  assert.match(await page.locator(`[data-library-id="${customId}"]`).innerText(), /Manual Continuity Edited/);
+  await page.locator('[data-view="calendar"]').click();
+  await page.locator('[data-calendar-day="2026-10-17"]').click();
+  assert.match(await page.locator('#calendar').innerText(), /Manual Continuity Edited/);
+  assert.match(await page.locator('#calendar').innerText(), /02:30 CDMX/);
+  await page.locator('#calendarPlatform').selectOption('Crunchyroll');
+  assert.doesNotMatch(await page.locator('#calendar').innerText(), /Manual Continuity Edited/);
+  await page.locator('#calendarPlatform').selectOption('all');
+  for (let index = 0; index < 3; index += 1) await page.locator('#nextWeek').click();
+  await page.locator('[data-calendar-day="2026-11-07"]').click();
+  assert.match(await page.locator('#calendar').innerText(), /The Vermilion Mask/);
+  assert.match(await page.locator('#calendar').innerText(), /Previsto/);
+  await page.locator('#currentWeek').click();
+  await page.locator('[data-calendar-day="2026-10-17"]').click();
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  await page.screenshot({path: 'artifacts/qa/racoon-mobile-coherence.png', fullPage: true});
+  await page.setViewportSize({width: 1440, height: 1000});
+  await page.screenshot({path: 'artifacts/qa/racoon-desktop-coherence.png', fullPage: true});
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  await page.locator('[data-view="backups"]').click();
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+  servedVersion = '2.2.1';
+  await page.locator('#checkUpdate').click();
+  await page.locator('#updateDialog').waitFor({state: 'visible'});
+  await page.locator('#dismissUpdate').click();
+  assert.equal(await page.locator('#updateDialog').isVisible(), false);
+  await page.locator('#checkUpdate').click();
+  await page.locator('#applyUpdate').click();
+  await page.waitForFunction(() => document.querySelector('#appVersion')?.textContent?.includes('2.2.1'), {timeout: 15000});
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('racoon-v2-state')).tracking['anilist:987654'].seen), 1);
+  await context.setOffline(true);
+  await page.reload();
+  await page.locator('[data-view="progress"]').click();
+  assert.match(await page.locator('[data-library-id="anilist:987654"]').innerText(), /1 vistos/);
+  await context.setOffline(false);
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator(`[data-library-id="${customId}"] [data-series-delete]`).click();
+  assert.equal(await page.locator(`[data-library-id="${customId}"]`).count(), 0);
+  assert.deepEqual(errors, []);
+  console.log('Browser E2E: búsqueda → ficha → guardado → progreso/favoritos → calendario/Inicio → recarga → refresco → respaldo/restauración → ficha manual/edición/eliminación → actualización PWA voluntaria: OK');
+} finally {
+  await browser.close();
+  server.close();
+}

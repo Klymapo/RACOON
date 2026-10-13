@@ -18,6 +18,6 @@ export function normalizeLegacyCatalog(raw = []) {
   }));
 }
 
-export function createCustomId(random = globalThis.crypto?.randomUUID) {
+export function createCustomId(random = globalThis.crypto?.randomUUID ? () => globalThis.crypto.randomUUID() : null) {
   return stableId('custom', random ? random() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
 }

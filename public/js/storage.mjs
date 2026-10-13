@@ -84,15 +84,22 @@ function withCatalog(state, catalog) {
   for (const entry of catalog.filter(Boolean)) {
     const stored = next.catalogOfficial[entry.id];
     if (!stored) { next.catalogOfficial[entry.id] = entry; continue; }
+    const weeklySchedule = stored.weeklySchedule && entry.weeklySchedule ? {...entry.weeklySchedule, ...stored.weeklySchedule} : stored.weeklySchedule ?? entry.weeklySchedule;
+    // v2.1.1 used this date as an artificial visibility cap, not as evidence.
+    if (weeklySchedule?.endDate === '2026-10-18' && weeklySchedule.confidence === 'estimated') delete weeklySchedule.endDate;
+    const events = new Map((entry.scheduleEvents || []).map((event) => [event.date, event]));
+    for (const event of stored.scheduleEvents || []) {
+      if (!events.has(event.date) || event.sources?.some((source) => source.queriedAt)) events.set(event.date, event);
+    }
     next.catalogOfficial[entry.id] = {
       ...entry,
       ...stored,
       title: entry.title,
       name: entry.name,
       platform: entry.platform,
-      weeklySchedule: entry.weeklySchedule,
-      scheduleEvents: entry.scheduleEvents ?? stored.scheduleEvents,
-      scheduleConfidence: entry.scheduleConfidence ?? stored.scheduleConfidence,
+      weeklySchedule,
+      scheduleEvents: [...events.values()],
+      scheduleConfidence: entry.id === 'legacy:verm' && stored.scheduleConfidence === 'contradictory' ? 'confirmed' : stored.scheduleConfidence ?? entry.scheduleConfidence,
       episodeCandidates: entry.episodeCandidates ?? stored.episodeCandidates,
       availableEpisodes: stored.availableConfidence === 'estimated' ? entry.availableEpisodes : stored.availableEpisodes,
       availableConfidence: stored.availableConfidence === 'estimated' ? entry.availableConfidence : stored.availableConfidence

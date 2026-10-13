@@ -23,16 +23,24 @@ export async function checkPublishedVersion({fetch = globalThis.fetch, currentVe
   }
 }
 
-export function activateWaitingWorker(registration, windowLike = globalThis.window) {
-  if (!registration?.waiting) return false;
+export function activateWaitingWorker(registration, windowLike = globalThis.window, serviceWorker = globalThis.navigator?.serviceWorker, storage = globalThis.localStorage) {
+  const worker = registration?.waiting;
+  if (!worker || !serviceWorker?.addEventListener) return false;
+  try {
+    const saved = storage?.getItem?.('racoon-v2-state');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+    }
+  } catch { return false; }
   let reloaded = false;
   const onControllerChange = () => {
     if (reloaded) return;
     reloaded = true;
     windowLike?.location?.reload?.();
   };
-  windowLike?.addEventListener?.('controllerchange', onControllerChange, {once: true});
-  registration.waiting.postMessage({type: 'SKIP_WAITING'});
+  serviceWorker.addEventListener('controllerchange', onControllerChange, {once: true});
+  worker.postMessage({type: 'SKIP_WAITING'});
   return true;
 }
 
@@ -41,24 +49,29 @@ async function waitForInstallingWorker(registration) {
   if (!worker) return registration?.waiting || null;
   if (worker.state === 'installed') return registration.waiting || worker;
   return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), 12000);
     worker.addEventListener?.('statechange', () => {
-      if (worker.state === 'installed') resolve(registration.waiting || worker);
+      if (worker.state === 'installed' || worker.state === 'redundant') {
+        clearTimeout(timer);
+        resolve(worker.state === 'installed' ? registration.waiting || worker : null);
+      }
     });
   });
 }
 
-export async function activateLatestWorker(registration, windowLike = globalThis.window) {
+export async function activateLatestWorker(registration, windowLike = globalThis.window, serviceWorker = globalThis.navigator?.serviceWorker, storage = globalThis.localStorage) {
   if (!registration) return false;
   try { await registration.update?.(); } catch { /* continúa con el worker ya instalado */ }
   const worker = registration.waiting || await waitForInstallingWorker(registration);
   if (!worker) return false;
-  if (!registration.waiting) registration.waiting = worker;
-  return activateWaitingWorker(registration, windowLike);
+  return activateWaitingWorker({waiting: worker}, windowLike, serviceWorker, storage);
 }
 
 export async function registerPwa({navigator = globalThis.navigator, window = globalThis.window, fetch = globalThis.fetch, currentVersion = '0.0.0', onUpdate = () => {}} = {}) {
   const serviceWorker = navigator?.serviceWorker;
-  const registration = serviceWorker?.register ? await serviceWorker.register('/sw.js') : null;
+  let registration = null;
+  try { registration = serviceWorker?.register ? await serviceWorker.register('/sw.js') : null; }
+  catch { /* El radar y el progreso siguen disponibles sin instalación. */ }
   const checkNow = async () => {
     const result = await checkPublishedVersion({fetch, currentVersion});
     if (result.available) onUpdate(result);
@@ -72,5 +85,5 @@ export async function registerPwa({navigator = globalThis.navigator, window = gl
     });
   });
   await checkNow();
-  return {registration, checkNow, applyUpdate: () => activateLatestWorker(registration, window)};
+  return {registration, checkNow, applyUpdate: () => activateLatestWorker(registration, window, serviceWorker)};
 }

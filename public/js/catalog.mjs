@@ -354,14 +354,15 @@ const LEGACY_CATALOG = [
 ];
 
 const LEGACY_VERIFIED = {
-  avatar: {availableEpisodes: 3, totalEpisodes: 13, availableConfidence: 'confirmed', scheduleConfidence: 'confirmed'},
-  elusive: {availableEpisodes: 12, totalEpisodes: 12, availableConfidence: 'confirmed', scheduleConfidence: 'confirmed'},
-  kaiju: {availableEpisodes: 12, totalEpisodes: 12, availableConfidence: 'confirmed', scheduleConfidence: 'confirmed'},
+  avatar: {availableEpisodes: 3, totalEpisodes: 13, availableConfidence: 'confirmed', totalConfidence: 'confirmed', scheduleConfidence: 'confirmed'},
+  elusive: {availableEpisodes: 12, totalEpisodes: 12, availableConfidence: 'confirmed', totalConfidence: 'confirmed', scheduleConfidence: 'confirmed'},
+  kaiju: {availableEpisodes: 12, totalEpisodes: 12, availableConfidence: 'confirmed', totalConfidence: 'confirmed', scheduleConfidence: 'confirmed'},
   verm: {
     availableEpisodes: 1,
     totalEpisodes: 12,
+    totalConfidence: 'confirmed',
     availableConfidence: 'confirmed',
-    scheduleConfidence: 'contradictory',
+    scheduleConfidence: 'confirmed',
     episodeCandidates: [2, 3],
     scheduleEvents: [{
       date: '2026-10-17',
@@ -387,7 +388,6 @@ function decorateLegacyEntry(entry) {
       frequency: 'weekly',
       day: entry.day,
       startDate: entry.date,
-      endDate: '2026-10-18',
       confidence: 'estimated'
     } : null,
     sources: entry.sources

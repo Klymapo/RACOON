@@ -23,11 +23,18 @@ test('same or unreachable version does not offer an update', async () => {
 test('activation is user-controlled and sends SKIP_WAITING only on request', () => {
   const messages = [];
   const listeners = {};
+  let reloads = 0;
   const registration = {waiting: {postMessage: (message) => messages.push(message)}};
-  const windowLike = {addEventListener: (name, fn) => {listeners[name] = fn;}, location: {reload() {}}};
-  assert.equal(activateWaitingWorker(registration, windowLike), true);
+  const windowLike = {location: {reload() { reloads += 1; }}};
+  const serviceWorker = {addEventListener: (name, fn) => {listeners[name] = fn;}};
+  assert.equal(activateWaitingWorker(registration, windowLike, serviceWorker, {getItem: () => '{"schemaVersion":3}'}), true);
   assert.deepEqual(messages, [{type: 'SKIP_WAITING'}]);
   assert.equal(typeof listeners.controllerchange, 'function');
+  listeners.controllerchange();
+  listeners.controllerchange();
+  assert.equal(reloads, 1);
+  assert.equal(activateWaitingWorker(registration, windowLike, serviceWorker, {getItem: () => '{broken'}), false);
+  assert.equal(messages.length, 1);
 });
 
 test('applyUpdate refreshes the registration before activating a newly found worker', async () => {
@@ -41,7 +48,7 @@ test('applyUpdate refreshes the registration before activating a newly found wor
     }
   };
   const result = await (await registerPwa({
-    navigator: {serviceWorker: {register: async () => registration}},
+    navigator: {serviceWorker: {register: async () => registration, addEventListener() {}}},
     window: {addEventListener() {}},
     currentVersion: '2.0.0',
     fetch: async () => response({version: '2.0.1', changes: []})
@@ -59,6 +66,13 @@ test('registers the service worker and exposes a manual version check', async ()
   const info = await controller.checkNow();
   assert.equal(info.available, true);
   assert.equal(callbacks.length, 2);
+});
+
+test('failed worker registration does not prevent version checks or local app use', async () => {
+  const controller = await registerPwa({navigator: {serviceWorker: {register: async () => { throw new Error('blocked'); }}}, window: {addEventListener() {}}, currentVersion: '2.0.0', fetch: async () => response({version: '2.0.0'})});
+  assert.equal(controller.registration, null);
+  assert.equal((await controller.checkNow()).error, false);
+  assert.equal(await controller.applyUpdate(), false);
 });
 
 test('checks the published version when registration starts', async () => {

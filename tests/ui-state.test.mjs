@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CATALOG} from '../public/js/catalog.mjs';
 import {createDefaultState} from '../public/js/storage.mjs';
-import {buildDashboardModel, applyTrackingPatch, filterProgressEntries, createApp} from '../public/js/app.mjs';
+import {buildDashboardModel, applyTrackingPatch, filterProgressEntries, progressPercentage, createApp} from '../public/js/app.mjs';
 
 class MemoryStorage {
   values = new Map();
@@ -69,4 +69,33 @@ test('progress filters connect search, status, and favorites to the library mode
   state.tracking['legacy:over'] = {seen: 4, availableOverride: 4, status: 'Al día', favorite: false};
   assert.deepEqual(filterProgressEntries(CATALOG, state, {query: 'vermilion', filter: 'favorites'}).map(({entry}) => entry.id), ['legacy:verm']);
   assert.deepEqual(filterProgressEntries(CATALOG, state, {filter: 'uptodate'}).map(({entry}) => entry.id), ['legacy:over']);
+});
+
+test('progress percentage uses confirmed season total, not just the episodes already available', () => {
+  assert.equal(progressPercentage({totalEpisodes: 12, availableEpisodes: 1}, {seen: 1}), 8);
+  assert.equal(progressPercentage({totalEpisodes: null, availableEpisodes: 2}, {seen: 1}), 50);
+  assert.equal(progressPercentage({totalEpisodes: null, availableEpisodes: null}, {seen: 1}), 0);
+});
+
+test('discarded titles do not inflate the dashboard following count or upcoming slots', () => {
+  const state = createDefaultState(CATALOG);
+  state.tracking['legacy:verm'] = {seen: 0, status: 'Descartada', availableOverride: 1};
+  const model = buildDashboardModel(CATALOG, state, '2026-10-13');
+  assert.equal(model.stats.tracked, 0);
+  assert.equal(model.pending.some(({id}) => id === 'legacy:verm'), false);
+  assert.equal(model.upcoming.some(({id}) => id === 'legacy:verm'), false);
+});
+
+test('editing progress while AniList is in flight cannot be rolled back by its response', async () => {
+  let finishRequest;
+  let requests = 0;
+  const response = {ok: true, json: async () => ({data: {Page: {pageInfo: {hasNextPage: false}, media: []}}})};
+  const fetch = async () => ++requests === 1 ? new Promise((resolve) => { finishRequest = resolve; }) : response;
+  const app = createApp({document: fakeDocument(), storage: new MemoryStorage(), fetch, now: () => 1000});
+  const pending = app.refreshRemote(true);
+  app.setTracking('legacy:verm', {seen: 2, favorite: true, status: 'Viendo'});
+  finishRequest(response);
+  await pending;
+  assert.equal(app.getState().tracking['legacy:verm'].seen, 2);
+  assert.equal(app.getState().tracking['legacy:verm'].favorite, true);
 });

@@ -64,9 +64,19 @@ test('The Vermilion Mask slot is 02:30 PT and 03:30 in Mexico City', () => {
   assert.equal(model.mobileEntries[0].statusLabel, 'Contradictorio');
 });
 
-test('the original weekly timetable ends with the published source week', () => {
+test('The Vermilion Mask first episode is not confused with the later contradictory slot', () => {
+  const entry = CATALOG.find(({id}) => id === 'legacy:verm');
+  const first = buildCalendarModel([entry], {tracking: {}}, {weekStart: '2026-10-05', selectedDay: '2026-10-10'}).mobileEntries[0];
+  assert.equal(first.statusLabel, 'Confirmado');
+  const second = buildCalendarModel([entry], {tracking: {}}, {weekStart: '2026-10-12', selectedDay: '2026-10-17'}).mobileEntries[0];
+  assert.equal(second.statusLabel, 'Contradictorio');
+});
+
+test('original weekly timetable continues as clearly labelled forecasts', () => {
   const upcoming = buildCalendarModel(CATALOG, {tracking: {}}, {weekStart: '2026-10-19', selectedDay: '2026-10-24'});
-  assert.equal(upcoming.days.flatMap(({entries}) => entries).filter(({id}) => id.startsWith('legacy:')).length, 0);
+  const projected = upcoming.days.flatMap(({entries}) => entries).filter(({id}) => id.startsWith('legacy:'));
+  assert.equal(projected.length, 23);
+  assert.ok(projected.every(({statusLabel}) => statusLabel === 'Previsto'));
   const current = buildCalendarModel(CATALOG, {tracking: {}}, {weekStart: '2026-10-12', selectedDay: '2026-10-17'});
   assert.equal(current.days[5].entries.find(({id}) => id === 'legacy:saint').statusLabel, 'Previsto');
 });

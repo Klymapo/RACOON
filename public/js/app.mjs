@@ -2,12 +2,13 @@ import {CATALOG} from './catalog.mjs';
 import {createDefaultState, loadState, saveState} from './storage.mjs';
 import {buildCalendarModel} from './schedule.mjs';
 import {mexicoDate} from './time.mjs';
-import {searchAnime, fetchAnimeDetails, fetchSeasonalAnime, matchLegacyAnime} from './providers/anilist.mjs';
+import {searchAnime, fetchAnimeDetails, fetchSeasonalAnime, matchLegacyAnime, seasonForEntry} from './providers/anilist.mjs';
 import {registerPwa} from './pwa.mjs';
 import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} from './backup.mjs';
 import {shouldRefresh, refreshCatalog, FOUR_HOURS} from './refresh.mjs';
+import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '2.1.1';
+const RACOON_VERSION = '2.2.0';
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -50,36 +51,26 @@ function mondayOf(ymd) {
 }
 
 function nextWeeklyDate(entry, today) {
-  if (entry.kind === 'Finalizada') return null;
-  const candidates = [];
-  if (entry.date && entry.date >= today) candidates.push({date: entry.date, platformLabel: entry.platform || 'Plataforma pendiente'});
-  if (entry.premiereDate && entry.premiereDate !== entry.date && entry.premiereDate >= today) candidates.push({date: entry.premiereDate, platformLabel: 'Fecha de estreno · AniList (Japón)'});
-  const airingAt = Number(entry.nextAiring?.airingAt) * 1000;
-  if (Number.isFinite(airingAt) && airingAt > 0) {
-    const date = mexicoDate(airingAt);
-    if (date >= today) candidates.push({date, platformLabel: 'Emisión japonesa · AniList'});
+  const firstWeek = mondayOf(today);
+  for (let offset = 0; offset < 5; offset += 1) {
+    const weekStart = addDays(firstWeek, offset * 7);
+    const events = buildCalendarModel([entry], {tracking: {}}, {weekStart}).days.flatMap(({entries}) => entries)
+      .filter((event) => event.mexicoDate >= today)
+      .sort((left, right) => String(left.mexicoTime || left.mexicoDate).localeCompare(String(right.mexicoTime || right.mexicoDate)));
+    if (events.length) return {date: events[0].mexicoDate, platformLabel: events[0].platformLabel, statusLabel: events[0].statusLabel};
   }
-  const schedule = entry.weeklySchedule;
-  if (!schedule || !Number.isInteger(schedule.day) || !schedule.endDate) return candidates.sort((left, right) => left.date.localeCompare(right.date))[0] || null;
-  const start = entry.date && entry.date > today ? entry.date : today;
-  for (let offset = 0; offset < 14; offset += 1) {
-    const candidate = addDays(start, offset);
-    const day = new Date(`${candidate}T12:00:00Z`).getUTCDay();
-    const mondayIndex = day === 0 ? 6 : day - 1;
-    if (mondayIndex === schedule.day && (!schedule.startDate || candidate >= schedule.startDate) && candidate <= schedule.endDate) candidates.push({date: candidate, platformLabel: entry.platform || 'Plataforma pendiente'});
-  }
-  return candidates.sort((left, right) => left.date.localeCompare(right.date))[0] || null;
+  return null;
 }
 
 export function buildDashboardModel(catalog, state, today = mexicoDate(Date.now())) {
   const entries = entryMap(catalog, state);
   const tracked = Object.entries(state.tracking)
     .map(([id, raw]) => ({id, entry: entries[id], tracking: normalizeTracking(raw)}))
-    .filter(({entry}) => entry);
+    .filter(({entry, tracking}) => entry && !['Terminada', 'Descartada'].includes(tracking.status));
   const pending = tracked.map(({id, entry, tracking}) => ({id, entry, tracking, available: availableFor(entry, tracking), remaining: Math.max(0, availableFor(entry, tracking) - tracking.seen)}))
     .filter((item) => item.remaining > 0)
     .sort((left, right) => right.remaining - left.remaining || String(left.entry.title || left.entry.name).localeCompare(String(right.entry.title || right.entry.name)));
-  const upcoming = Object.values(entries).map((entry) => {
+  const upcoming = Object.values(entries).filter((entry) => !['Terminada', 'Descartada'].includes(state.tracking[entry.id]?.status)).map((entry) => {
     const event = nextWeeklyDate(entry, today);
     return event ? {...entry, ...event} : null;
   }).filter(Boolean).sort((left, right) => {
@@ -108,9 +99,12 @@ export function applyTrackingPatch(state, id, patch, changedAt = Date.now()) {
 }
 
 export function saveCatalogEntry(state, entry, edits = {}) {
-  const saved = {...entry, ...edits, id: entry.id, savedAt: Date.now()};
-  if (entry.id.startsWith('custom:')) return {...state, catalogCustom: {...state.catalogCustom, [entry.id]: saved}};
-  return {...state, catalogOfficial: {...state.catalogOfficial, [entry.id]: saved}};
+  const previous = state.catalogOfficial[entry.id] || state.catalogCustom[entry.id] || {};
+  const changedFields = Object.keys(edits).filter((field) => JSON.stringify(edits[field]) !== JSON.stringify(entry[field] ?? null));
+  const saved = {...previous, ...entry, ...edits, id: entry.id, savedAt: Date.now(), manualCatalogFields: [...new Set([...(previous.manualCatalogFields || []), ...changedFields])]};
+  const tracking = state.tracking[entry.id] ? state.tracking : {...state.tracking, [entry.id]: normalizeTracking()};
+  if (entry.id.startsWith('custom:')) return {...state, tracking, catalogCustom: {...state.catalogCustom, [entry.id]: saved}};
+  return {...state, tracking, catalogOfficial: {...state.catalogOfficial, [entry.id]: saved}};
 }
 
 export function filterProgressEntries(catalog, state, {query = '', filter = 'all', sort = 'title'} = {}) {
@@ -140,8 +134,20 @@ export function filterProgressEntries(catalog, state, {query = '', filter = 'all
   return entries;
 }
 
+export function progressPercentage(entry, tracking = {}) {
+  const denominator = tracking.totalOverride ?? entry.totalEpisodes ?? tracking.availableOverride ?? entry.availableEpisodes;
+  return denominator > 0 ? Math.min(100, Math.round(((tracking.seen || 0) / denominator) * 100)) : 0;
+}
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (character) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[character]));
+}
+
+function safeHttpUrl(value) {
+  try {
+    const url = new URL(String(value));
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
+  } catch { return null; }
 }
 
 function memoryStorage() {
@@ -156,6 +162,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   let selectedSeries = null;
   let pwaController = null;
   let pendingImport = null;
+  let refreshInFlight = null;
   const elements = (id) => document?.getElementById?.(id);
 
   function setText(id, value) {
@@ -170,12 +177,12 @@ export function createApp({document = globalThis.document, storage = globalThis.
       ['tracked', model.stats.tracked, 'Series en seguimiento'],
       ['pending', model.stats.pendingEpisodes, 'Episodios pendientes'],
       ['current', model.stats.upToDate, 'Series al corriente'],
-      ['upcoming', model.upcoming.length, 'Próximos estrenos']
+      ['upcoming', model.upcoming.length, 'Próximas emisiones']
     ].map(([, value, label]) => `<article class="stat-card"><strong>${value}</strong><span>${label}</span></article>`).join('');
     const pending = elements('pendingList');
-    if (pending) pending.innerHTML = model.pending.length ? model.pending.slice(0, 4).map((item) => `<div class="stack-item"><div class="stack-icon">${escapeHtml(item.entry.icon || '✦')}</div><div class="stack-copy"><strong>${escapeHtml(item.entry.title || item.entry.name)}</strong><span>${item.remaining} episodio${item.remaining === 1 ? '' : 's'} pendiente${item.remaining === 1 ? '' : 's'}</span></div></div>`).join('') : '<div class="empty-state"><strong>Todo en calma</strong>No tienes episodios pendientes.</div>';
+    if (pending) pending.innerHTML = model.pending.length ? model.pending.slice(0, 4).map((item) => `<div class="stack-item"><div class="stack-icon">${escapeHtml(item.entry.icon || '✦')}</div><div class="stack-copy"><strong>${escapeHtml(item.entry.title || item.entry.name)}</strong><span>${item.remaining} episodio${item.remaining === 1 ? '' : 's'} pendiente${item.remaining === 1 ? '' : 's'}</span></div><button class="mini-button" type="button" data-progress-action="plus" data-id="${escapeHtml(item.id)}" aria-label="Marcar un episodio visto de ${escapeHtml(item.entry.title || item.entry.name)}">+1</button></div>`).join('') : '<div class="empty-state"><strong>Todo en calma</strong>No tienes episodios pendientes.</div>';
     const upcoming = elements('upcomingList');
-    if (upcoming) upcoming.innerHTML = model.upcoming.length ? model.upcoming.slice(0, 4).map((entry) => `<div class="stack-item"><div class="stack-icon">${escapeHtml(entry.icon || '✦')}</div><div class="stack-copy"><strong>${escapeHtml(entry.title || entry.name)}</strong><span>${escapeHtml(entry.date)} · ${escapeHtml(entry.platformLabel || 'Fuente pendiente')}</span></div></div>`).join('') : '<div class="empty-state"><strong>Sin próximos estrenos</strong>Agrega una serie para verla aquí.</div>';
+    if (upcoming) upcoming.innerHTML = model.upcoming.length ? model.upcoming.slice(0, 4).map((entry) => `<div class="stack-item"><div class="stack-icon">${escapeHtml(entry.icon || '✦')}</div><div class="stack-copy"><strong>${escapeHtml(entry.title || entry.name)}</strong><span>${escapeHtml(entry.date)} · ${escapeHtml(entry.platformLabel || 'Fuente pendiente')} · ${escapeHtml(entry.statusLabel)}</span></div></div>`).join('') : '<div class="empty-state"><strong>Sin próximas emisiones</strong>Agrega una serie para verla aquí.</div>';
     const checked = Number(state.updateMeta?.lastChecked);
     const provider = state.updateMeta?.providers?.catalog;
     const freshness = checked ? `Fuentes: ${provider?.status === 'failed' ? 'sin conexión' : 'revisadas'} · ${new Date(checked).toLocaleString('es-MX', {dateStyle: 'short', timeStyle: 'short'})}` : 'Fuentes pendientes de primera revisión';
@@ -189,12 +196,31 @@ export function createApp({document = globalThis.document, storage = globalThis.
     const cards = entries.map(({entry, tracking, available}) => {
       const id = entry.id;
       const total = totalFor(entry, tracking);
-      const percent = available ? Math.min(100, Math.round((tracking.seen / available) * 100)) : 0;
-      const poster = entry.poster ? `<img src="${escapeHtml(entry.poster)}" alt="" loading="lazy">` : escapeHtml(entry.icon || '✦');
+      const percent = progressPercentage(entry, tracking);
+      const poster = safeHttpUrl(entry.poster) ? `<img src="${escapeHtml(entry.poster)}" alt="" loading="lazy">` : escapeHtml(entry.icon || '✦');
       const availableLabel = available === null ? 'pendiente' : available;
-      return `<article class="library-card" data-library-id="${escapeHtml(id)}"><div class="poster">${poster}</div><div class="card-content"><div class="card-topline"><span class="status-pill">${escapeHtml(tracking.status)}</span><button class="favorite-button ${tracking.favorite ? 'is-favorite' : ''}" type="button" data-progress-action="favorite" data-id="${escapeHtml(id)}" aria-label="${tracking.favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}">${tracking.favorite ? '★' : '☆'}</button></div><h3>${escapeHtml(entry.title || entry.name)}</h3><div class="card-meta"><span>${tracking.seen} vistos · ${availableLabel} disponibles · ${total ?? '?'} total</span></div><div class="progress-line"><span style="width:${percent}%"></span></div><div class="progress-edit-grid"><label>Vistos<input type="number" min="0" max="9999" value="${tracking.seen}" data-progress-field="seen" data-id="${escapeHtml(id)}"></label><label>Disponibles<input type="number" min="0" max="9999" value="${available ?? ''}" placeholder="?" data-progress-field="availableOverride" data-id="${escapeHtml(id)}"></label><label>Total<input type="number" min="0" max="9999" value="${total ?? ''}" placeholder="?" data-progress-field="totalOverride" data-id="${escapeHtml(id)}"></label></div><div class="card-actions"><button class="mini-button" type="button" data-progress-action="minus" data-id="${escapeHtml(id)}">−1</button><button class="mini-button" type="button" data-progress-action="plus" data-id="${escapeHtml(id)}">＋1</button><button class="mini-button" type="button" data-progress-action="catchup" data-id="${escapeHtml(id)}"${available === null ? ' disabled' : ''}>Al corriente</button></div></div></article>`;
+      return `<article class="library-card" data-library-id="${escapeHtml(id)}"><div class="poster">${poster}</div><div class="card-content"><div class="card-topline"><select class="status-select" data-progress-field="status" data-id="${escapeHtml(id)}" aria-label="Estado de ${escapeHtml(entry.title || entry.name)}">${['Pendiente', 'Viendo', 'Al día', 'Terminada', 'Descartada'].map((value) => `<option value="${value}"${tracking.status === value ? ' selected' : ''}>${value}</option>`).join('')}</select><button class="favorite-button ${tracking.favorite ? 'is-favorite' : ''}" type="button" data-progress-action="favorite" data-id="${escapeHtml(id)}" aria-label="${tracking.favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}">${tracking.favorite ? '★' : '☆'}</button></div><h3>${escapeHtml(entry.title || entry.name)}</h3><div class="card-meta"><span>${tracking.seen} vistos · ${availableLabel} disponibles · ${total ?? '?'} total</span></div><div class="progress-line"><span style="width:${percent}%"></span></div><div class="progress-edit-grid"><label>Vistos<input type="number" min="0" max="9999" value="${tracking.seen}" data-progress-field="seen" data-id="${escapeHtml(id)}"></label><label>Disponibles<input type="number" min="0" max="9999" value="${available ?? ''}" placeholder="?" data-progress-field="availableOverride" data-id="${escapeHtml(id)}"></label><label>Total<input type="number" min="0" max="9999" value="${total ?? ''}" placeholder="?" data-progress-field="totalOverride" data-id="${escapeHtml(id)}"></label></div><div class="card-actions"><button class="mini-button" type="button" data-progress-action="minus" data-id="${escapeHtml(id)}">−1</button><button class="mini-button" type="button" data-progress-action="plus" data-id="${escapeHtml(id)}">＋1</button><button class="mini-button" type="button" data-progress-action="catchup" data-id="${escapeHtml(id)}"${available === null ? ' disabled' : ''}>Al corriente</button></div></div></article>`;
     });
     target.innerHTML = cards.join('') || '<div class="empty-state"><strong>Tu biblioteca está vacía</strong>Agrega tu primera serie.</div>';
+    target.querySelectorAll?.('[data-library-id]')?.forEach((card) => {
+      const id = card.dataset.libraryId;
+      const entry = entryMap(CATALOG, state)[id];
+      const tracking = normalizeTracking(state.tracking[id]);
+      const denominator = totalFor(entry, tracking) ?? availableValue(entry, tracking);
+      card.querySelector('.card-meta')?.insertAdjacentHTML('beforeend', `<span> · ${denominator > 0 ? `${progressPercentage(entry, tracking)}% de ${totalFor(entry, tracking) ? 'la temporada' : 'lo disponible'}` : 'porcentaje pendiente'}</span>`);
+      const availabilityTrust = tracking.availableOverride !== null ? 'disponibles: ajuste local' : entry.availableConfidence === 'confirmed' ? 'disponibles: confirmado' : 'disponibles: sin verificar';
+      const totalTrust = tracking.totalOverride !== null ? 'total: ajuste local' : entry.totalConfidence === 'confirmed' ? 'total: confirmado' : entry.totalEpisodes !== null && entry.totalEpisodes !== undefined ? 'total: previsto' : 'total: sin verificar';
+      card.querySelector('.card-meta')?.insertAdjacentHTML('beforeend', `<small>${availabilityTrust} · ${totalTrust}</small>`);
+      if (id.startsWith('legacy:')) return;
+      card.querySelector('.card-actions')?.insertAdjacentHTML('beforeend', `<button class="mini-button" type="button" data-series-edit="${escapeHtml(id)}">Editar ficha</button><button class="mini-button" type="button" data-series-delete="${escapeHtml(id)}">Eliminar</button>`);
+    });
+  }
+
+  function renderCalendarEntry(entry) {
+    const source = entry.sources?.[0];
+    const sourceAge = source?.queriedAt ? `consultada ${escapeHtml(source.queriedAt.slice(0, 10))}` : 'revisión sin fecha registrada';
+    const timeStatus = entry.timeConfidence === 'confirmed' ? ' · hora confirmada' : '';
+    return `<article class="episode-card">${safeHttpUrl(entry.poster) ? `<img class="episode-poster" src="${escapeHtml(entry.poster)}" alt="" loading="lazy">` : ''}<strong>${escapeHtml(entry.title || entry.name)}</strong><span>${escapeHtml(entry.episodeLabel)} · ${escapeHtml(entry.platformLabel || entry.platform || 'Plataforma pendiente')}</span><span class="confidence">${escapeHtml(entry.statusLabel)}${timeStatus}${entry.mexicoTime ? ` · ${escapeHtml(entry.mexicoTime.slice(11))} CDMX` : ''}</span>${entry.projectionNote ? `<small>${escapeHtml(entry.projectionNote)}</small>` : ''}${safeHttpUrl(source?.url) ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">Ver fuente · ${sourceAge}</a>` : '<small>Fuente pendiente de verificar</small>'}</article>`;
   }
 
   function renderCalendar() {
@@ -206,17 +232,18 @@ export function createApp({document = globalThis.document, storage = globalThis.
     const selectedPlatform = state.preferences.platform || 'all';
     let effectivePlatform = selectedPlatform;
     if (platformSelect) {
-      const platforms = [...new Set(Object.values(entries).flatMap((entry) => entry.platforms || entry.platform ? [entry.platform || entry.platforms?.[0]] : []).filter(Boolean))].sort((left, right) => left.localeCompare(right, 'es'));
+      const platforms = [...new Set(Object.values(entries).flatMap((entry) => [entry.platform, ...(entry.platforms || [])]).filter(Boolean))].sort((left, right) => left.localeCompare(right, 'es'));
       platformSelect.innerHTML = ['<option value="all">Todas las plataformas</option>', ...platforms.map((platform) => `<option value="${escapeHtml(platform)}">${escapeHtml(platform)}</option>`)].join('');
       effectivePlatform = platforms.includes(selectedPlatform) ? selectedPlatform : 'all';
       platformSelect.value = effectivePlatform;
     }
     const model = buildCalendarModel(entries, state, {weekStart, selectedDay, platform: effectivePlatform, status: state.preferences.status || 'all'});
+    if (elements('calendarStatus')) elements('calendarStatus').value = state.preferences.status || 'all';
     const selector = elements('daySelector');
-    if (selector) selector.innerHTML = model.days.map((day, index) => `<button class="day-chip ${day.date === model.selectedDay ? 'is-active' : ''}" type="button" data-calendar-day="${day.date}" role="tab" aria-selected="${day.date === model.selectedDay}"><strong>${DAY_NAMES[index]}</strong><small>${day.entries.length} estreno${day.entries.length === 1 ? '' : 's'}</small></button>`).join('');
+    if (selector) selector.innerHTML = model.days.map((day, index) => `<button class="day-chip ${day.date === model.selectedDay ? 'is-active' : ''}" type="button" data-calendar-day="${day.date}" role="tab" aria-selected="${day.date === model.selectedDay}"><strong>${DAY_NAMES[index]} ${day.date.slice(8, 10)}</strong><small>${day.entries.length} evento${day.entries.length === 1 ? '' : 's'}</small></button>`).join('');
     const calendar = elements('calendar');
     if (!calendar) return;
-    calendar.innerHTML = model.days.map((day, index) => `<section class="calendar-day ${day.date === model.selectedDay ? 'is-selected' : ''}" data-calendar-panel="${day.date}"><header><h3>${DAY_NAMES[index]} · ${day.date.slice(8, 10)}/${day.date.slice(5, 7)}</h3><span>${day.entries.length}</span></header>${day.entries.length ? day.entries.map((entry) => `<article class="episode-card"><strong>${escapeHtml(entry.title || entry.name)}</strong><span>${escapeHtml(entry.episodeLabel)} · ${escapeHtml(entry.platformLabel || entry.platform || 'Plataforma pendiente')}</span><span class="confidence">${escapeHtml(entry.statusLabel)}${entry.mexicoTime ? ` · ${escapeHtml(entry.mexicoTime.slice(11))} CDMX` : ''}</span>${entry.sources?.[0]?.url ? `<a href="${escapeHtml(entry.sources[0].url)}" target="_blank" rel="noopener noreferrer">Ver fuente</a>` : ''}</article>`).join('') : '<div class="empty-state">Sin emisiones verificadas para este día</div>'}</section>`).join('');
+    calendar.innerHTML = model.days.map((day, index) => `<section class="calendar-day ${day.date === model.selectedDay ? 'is-selected' : ''}" data-calendar-panel="${day.date}"><header><h3>${DAY_NAMES[index]} · ${day.date.slice(8, 10)}/${day.date.slice(5, 7)}</h3><span>${day.entries.length}</span></header>${day.entries.length ? day.entries.map(renderCalendarEntry).join('') : '<div class="empty-state">Sin eventos para este día. Puedes revisar otra semana.</div>'}</section>`).join('');
   }
 
   function renderSearchResults(results = []) {
@@ -231,6 +258,14 @@ export function createApp({document = globalThis.document, storage = globalThis.
     if (!target) return;
     target.classList.remove('is-hidden');
     target.innerHTML = `<div class="panel-heading"><h3>Confirmar serie</h3><span class="badge badge-teal">${escapeHtml(entry.id)}</span></div><div class="series-form"><label>Título<input data-series-field="title" value="${escapeHtml(entry.title || '')}"></label><label>Títulos alternativos<input data-series-field="alternativeTitles" value="${escapeHtml((entry.alternativeTitles || []).join(', '))}"></label><label>Sinopsis<textarea data-series-field="synopsis" rows="4">${escapeHtml(entry.synopsis || '')}</textarea></label><div class="form-grid"><label>Géneros<input data-series-field="genres" value="${escapeHtml((entry.genres || []).join(', '))}" placeholder="Pendiente de verificar"></label><label>Temporada<input data-series-field="season" value="${escapeHtml(entry.season || '')}" placeholder="Pendiente"></label><label>Año<input type="number" data-series-field="seasonYear" value="${entry.seasonYear ?? ''}" placeholder="Pendiente"></label><label>Estreno<input type="date" data-series-field="premiereDate" value="${escapeHtml(entry.premiereDate || '')}"></label><label>Total de episodios<input type="number" min="0" data-series-field="totalEpisodes" value="${entry.totalEpisodes ?? ''}" placeholder="Pendiente"></label><label>Estado de emisión<input data-series-field="airingStatus" value="${escapeHtml(entry.airingStatus || '')}" placeholder="Pendiente"></label><label>Plataforma<input data-series-field="platform" value="${escapeHtml(entry.platform || entry.platforms?.[0] || '')}" placeholder="Pendiente de verificar"></label><label>Disponibilidad México<input data-series-field="regionalAvailability" value="${escapeHtml(entry.regionalAvailability || '')}" placeholder="Pendiente de verificar"></label></div></div><div class="tag-row"><span class="status-pill">ID permanente: ${escapeHtml(entry.id)}</span><span class="status-pill">Fuente consultada: AniList</span></div><p class="muted">Fuente: <a href="${escapeHtml(entry.sources?.[0]?.url || '#')}" target="_blank" rel="noopener noreferrer">AniList ↗</a>. Los campos regionales quedan sin verificar hasta confirmar una fuente mexicana.</p><div class="button-row"><button class="button button-primary" type="button" data-save-series="${escapeHtml(entry.id)}">Guardar en mi biblioteca</button><button class="button button-ghost" type="button" data-cancel-series>Cancelar</button></div>`;
+    const sourceLink = target.querySelector('.tag-row + p.muted a');
+    if (sourceLink && !safeHttpUrl(entry.sources?.[0]?.url)) sourceLink.removeAttribute('href');
+    target.querySelector('.series-form')?.insertAdjacentHTML('beforeend', `<p class="muted">Patrón semanal manual de la plataforma: es una previsión, nunca confirma episodios disponibles. Déjalo vacío si no lo conoces.</p><div class="form-grid"><label>Día semanal<select data-series-field="weeklyDay"><option value="">Sin patrón</option>${DAY_NAMES.map((name, index) => `<option value="${index}"${entry.weeklySchedule?.day === index ? ' selected' : ''}>${name}</option>`).join('')}</select></label><label>Hora de plataforma<input type="time" data-series-field="sourceHour" value="${escapeHtml(entry.sourceTime?.time || '')}"></label><label>Zona de esa hora<select data-series-field="sourceZone"><option value="America/Mexico_City">Ciudad de México</option><option value="America/Los_Angeles">Pacífico de EE. UU.</option><option value="Asia/Tokyo">Japón</option></select></label><label>URL fuente del patrón<input type="url" data-series-field="patternUrl" value="${escapeHtml(entry.patternUrl || '')}" placeholder="https://…"></label></div>`);
+    if (target.querySelector('[data-series-field="sourceZone"]')) target.querySelector('[data-series-field="sourceZone"]').value = entry.sourceTime?.timeZone || 'America/Mexico_City';
+    if (entry.id.startsWith('custom:')) {
+      target.querySelector('.tag-row .status-pill:last-child').textContent = 'Ficha manual · sin fuente automática';
+      target.querySelector('.tag-row + p.muted')?.remove();
+    }
   }
 
   function renderAddStatus(message = '') { setText('searchStatus', message); }
@@ -241,7 +276,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
 
   function renderBackupSummary() {
     const summary = elements('backupSummary');
-    if (summary) summary.textContent = `${allEntries().length} series · ${Object.keys(state.tracking).length} con seguimiento`;
+    if (summary) summary.textContent = `${allEntries().length} series · ${Object.keys(state.tracking).length} con seguimiento · ${state.updateMeta?.lastBackupAt ? `respaldo ${String(state.updateMeta.lastBackupAt).slice(0, 10)}` : 'sin respaldo reciente'}`;
   }
 
   function downloadFile(name, content, type) {
@@ -256,19 +291,35 @@ export function createApp({document = globalThis.document, storage = globalThis.
   }
 
   async function refreshRemote(manual = false) {
+    if (refreshInFlight) return refreshInFlight;
+    refreshInFlight = runRefresh(manual).finally(() => { refreshInFlight = null; });
+    return refreshInFlight;
+  }
+
+  async function runRefresh(manual) {
     setText('freshness', manual ? 'Actualizando fuentes…' : 'Comprobando fuentes…');
-    const known = Object.values(state.catalogOfficial).filter((entry) => String(entry.id).startsWith('anilist:'));
+    const known = Object.values(state.catalogOfficial).filter((entry) => String(entry.id).startsWith('anilist:') || (String(entry.id).startsWith('legacy:') && entry.anilistSourceId));
     const cursor = Number(state.updateMeta?.anilistCursor) || 0;
     const batch = Array.from({length: Math.min(20, known.length)}, (_, index) => known[(cursor + index) % known.length]);
+    let processedKnown = 0;
     const result = await refreshCatalog(state, async () => {
       const entries = [];
       const failures = [];
-      const legacy = Object.values(state.catalogOfficial).filter((entry) => String(entry.id).startsWith('legacy:'));
-      if (legacy.length) {
+      let rateLimited = false;
+      const legacy = Object.values(state.catalogOfficial).filter((entry) => String(entry.id).startsWith('legacy:') && !entry.anilistSourceId);
+      const groups = new Map();
+      for (const local of legacy) {
+        const season = seasonForEntry(local);
+        if (!season) continue;
+        const key = `${season.season}:${season.year}`;
+        if (!groups.has(key)) groups.set(key, {season, locals: []});
+        groups.get(key).locals.push(local);
+      }
+      for (const {season, locals} of groups.values()) {
         try {
-          const seasonal = await fetchSeasonalAnime({season: 'FALL', year: 2026, fetch});
+          const seasonal = await fetchSeasonalAnime({...season, fetch});
           const used = new Set();
-          for (const local of legacy) {
+          for (const local of locals) {
             const remote = matchLegacyAnime(local, seasonal);
             if (!remote || used.has(remote.id)) continue;
             used.add(remote.id);
@@ -280,16 +331,22 @@ export function createApp({document = globalThis.document, storage = globalThis.
             next.availableConfidence = local.availableConfidence;
             entries.push(next);
           }
-        } catch (error) { failures.push(error); }
+        } catch (error) { failures.push(error); if (/429/.test(String(error))) { rateLimited = true; break; } }
       }
-      for (const entry of batch) {
-        try { entries.push({...entry, ...(await fetchAnimeDetails(entry.sourceId || entry.id.split(':')[1], {fetch}))}); } catch (error) { failures.push(error); /* conserva el último dato confirmado */ }
+      for (const entry of rateLimited ? [] : batch) {
+        try {
+          const remote = await fetchAnimeDetails(entry.anilistSourceId || entry.sourceId || entry.id.split(':')[1], {fetch});
+          entries.push(entry.id.startsWith('legacy:') ? {...remote, id: entry.id, anilistSourceId: remote.sourceId, platform: entry.platform, weeklySchedule: entry.weeklySchedule, scheduleEvents: entry.scheduleEvents, availableEpisodes: entry.availableEpisodes, availableConfidence: entry.availableConfidence} : remote);
+          processedKnown += 1;
+        } catch (error) { failures.push(error); if (/429/.test(String(error))) break; processedKnown += 1; /* conserva el último dato confirmado */ }
       }
       if (!entries.length && failures.length) throw failures[0];
       return {entries, incomplete: failures.length > 0};
     }, now());
-    state = result.state;
-    if (result.status !== 'failed' && known.length) state.updateMeta.anilistCursor = (cursor + batch.length) % known.length;
+    // A person may edit progress while the network request is in flight.
+    // Apply only remote-owned layers to the latest live state.
+    state = {...state, catalogOfficial: result.state.catalogOfficial, updateMeta: result.state.updateMeta};
+    if (result.status !== 'failed' && known.length) state.updateMeta.anilistCursor = (cursor + processedKnown) % known.length;
     saveState(storage, state);
     setText('freshness', result.status === 'completed' ? `Fuentes actualizadas · ${new Date(now()).toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit'})}` : result.status === 'no-update' ? 'Fuentes revisadas · sin novedades' : result.status === 'partial' ? 'Consulta parcial · algunos datos conservados' : 'Fuentes sin conexión · último dato conservado');
     render();
@@ -300,6 +357,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
     renderHome();
     renderProgress();
     renderCalendar();
+    renderBackupSummary();
     if (document?.querySelectorAll) document.querySelectorAll('[data-view]').forEach((tab) => {
       const active = tab.dataset.view === currentView;
       tab.classList.toggle('is-active', active);
@@ -311,9 +369,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   function selectView(viewId) {
     if (!['home', 'calendar', 'progress', 'add', 'backups'].includes(viewId)) return;
     currentView = viewId;
-    state = applyTrackingPatch({...state, preferences: {...state.preferences, view: viewId}}, '__view__', {}, now());
-    delete state.tracking.__view__;
-    state.preferences.view = viewId;
+    state = {...state, preferences: {...state.preferences, view: viewId}};
     saveState(storage, state);
     render();
   }
@@ -333,18 +389,46 @@ export function createApp({document = globalThis.document, storage = globalThis.
         const result = searchResults.get(seriesButton.dataset.seriesSelect);
         if (!result) return;
         selectedSeries = result;
-        renderSeriesConfirmation(result);
+        renderAddStatus('Consultando la ficha completa…');
         if (result.sourceId) fetchAnimeDetails(result.sourceId, {fetch}).then((details) => {
-          selectedSeries = {...selectedSeries, ...details, platform: selectedSeries.platform, regionalAvailability: selectedSeries.regionalAvailability};
+          if (selectedSeries?.id !== result.id) return;
+          selectedSeries = {...result, ...details};
           renderSeriesConfirmation(selectedSeries);
-        }).catch(() => { /* la ficha de búsqueda sigue siendo guardable sin enriquecer */ });
+          renderAddStatus('Revisa y corrige la ficha antes de guardarla.');
+        }).catch(() => { if (selectedSeries?.id === result.id) { renderSeriesConfirmation(result); renderAddStatus('La ficha completa no respondió; puedes guardar los datos disponibles.'); } });
+        else renderSeriesConfirmation(result);
+        return;
+      }
+      const editSeries = event.target.closest?.('[data-series-edit]');
+      if (editSeries) {
+        selectedSeries = entryMap(CATALOG, state)[editSeries.dataset.seriesEdit] || null;
+        if (selectedSeries) { selectView('add'); renderSeriesConfirmation(selectedSeries); renderAddStatus('Edita la ficha y guarda los cambios.'); }
+        return;
+      }
+      const deleteSeries = event.target.closest?.('[data-series-delete]');
+      if (deleteSeries) {
+        const id = deleteSeries.dataset.seriesDelete;
+        const entry = entryMap(CATALOG, state)[id];
+        if (!entry || id.startsWith('legacy:') || !globalThis.confirm?.(`¿Eliminar ${entry.title || entry.name} y su progreso local? Exporta un respaldo si quieres poder recuperarlo.`)) return;
+        const catalogOfficial = {...state.catalogOfficial};
+        const catalogCustom = {...state.catalogCustom};
+        const tracking = {...state.tracking};
+        delete catalogOfficial[id]; delete catalogCustom[id]; delete tracking[id];
+        state = {...state, catalogOfficial, catalogCustom, tracking};
+        saveState(storage, state);
+        render();
         return;
       }
       const saveSeries = event.target.closest?.('[data-save-series]');
       if (saveSeries && selectedSeries?.id === saveSeries.dataset.saveSeries) {
         const fields = Object.fromEntries([...document.querySelectorAll?.('[data-series-field]') || []].map((field) => [field.dataset.seriesField, field.value]));
+        if (!fields.title?.trim()) { renderAddStatus('Escribe un título antes de guardar.'); return; }
+        if (fields.weeklyDay !== '' && !fields.premiereDate) { renderAddStatus('Para proyectar un día semanal, indica primero una fecha de estreno.'); return; }
+        const patternUrl = /^https?:\/\//i.test(fields.patternUrl || '') ? fields.patternUrl.trim() : null;
+        if (fields.patternUrl && !patternUrl) { renderAddStatus('La fuente del patrón debe ser una URL http o https.'); return; }
+        const weeklyDay = fields.weeklyDay === '' ? null : Number(fields.weeklyDay);
+        const schedule = Number.isInteger(weeklyDay) && weeklyDay >= 0 && weeklyDay < 7 ? {frequency: 'weekly', day: weeklyDay, startDate: fields.premiereDate, confidence: 'estimated'} : null;
         const edited = {
-          ...selectedSeries,
           title: fields.title?.trim() || selectedSeries.title,
           alternativeTitles: fields.alternativeTitles?.split(',').map((value) => value.trim()).filter(Boolean) || selectedSeries.alternativeTitles || [],
           synopsis: fields.synopsis?.trim() || '',
@@ -357,12 +441,20 @@ export function createApp({document = globalThis.document, storage = globalThis.
           platform: fields.platform?.trim() || null,
           platforms: fields.platform?.trim() ? [fields.platform.trim()] : [],
           regionalAvailability: fields.regionalAvailability?.trim() || null,
-          regionalAvailabilityConfidence: fields.regionalAvailability?.trim() ? 'unverified' : 'unverified'
+          regionalAvailabilityConfidence: 'unverified',
+          weeklySchedule: schedule,
+          scheduleConfidence: 'estimated',
+          sourceTime: schedule && fields.sourceHour ? {date: fields.premiereDate, time: fields.sourceHour, timeZone: fields.sourceZone || 'America/Mexico_City'} : null,
+          patternUrl,
+          patternSource: patternUrl ? {kind: 'secondary', name: 'Fuente indicada por usuario', url: patternUrl, queriedAt: new Date(now()).toISOString()} : selectedSeries.patternSource || null,
+          sources: patternUrl ? [...(selectedSeries.sources || []), {kind: 'secondary', name: 'Fuente indicada por usuario', url: patternUrl, queriedAt: new Date(now()).toISOString()}] : selectedSeries.sources || []
         };
-        state = saveCatalogEntry(state, edited);
+        state = saveCatalogEntry(state, selectedSeries, edited);
         saveState(storage, state);
         render();
         renderAddStatus('Serie guardada en tu biblioteca local.');
+        selectedSeries = null;
+        elements('seriesConfirmation')?.classList.add('is-hidden');
         return;
       }
       if (event.target.closest?.('[data-cancel-series]')) {
@@ -392,19 +484,22 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const entry = entryMap(CATALOG, state)[id];
       const tracking = normalizeTracking(state.tracking[id]);
       const available = availableFor(entry, tracking);
-      if (action.dataset.progressAction === 'plus') setTracking(id, {seen: Math.min(available || Number.MAX_SAFE_INTEGER, tracking.seen + 1), status: 'Viendo'});
-      if (action.dataset.progressAction === 'minus') setTracking(id, {seen: Math.max(0, tracking.seen - 1), status: tracking.seen <= 1 ? 'Pendiente' : 'Viendo'});
-      if (action.dataset.progressAction === 'catchup' && available > 0) setTracking(id, {seen: available, status: 'Al día'});
+      const manualStatus = tracking.manualFields.includes('status');
+      if (action.dataset.progressAction === 'plus') setTracking(id, {seen: Math.min(9999, tracking.seen + 1), ...(manualStatus ? {} : {status: 'Viendo'})});
+      if (action.dataset.progressAction === 'minus') setTracking(id, {seen: Math.max(0, tracking.seen - 1), ...(manualStatus ? {} : {status: tracking.seen <= 1 ? 'Pendiente' : 'Viendo'})});
+      if (action.dataset.progressAction === 'catchup' && available > 0) setTracking(id, {seen: Math.max(tracking.seen, available), ...(manualStatus ? {} : {status: 'Al día'})});
       if (action.dataset.progressAction === 'favorite') setTracking(id, {favorite: !tracking.favorite});
     });
     document.addEventListener('change', (event) => {
       const field = event.target.closest?.('[data-progress-field]');
       if (!field) return;
       const id = field.dataset.id;
-      const value = field.value === '' ? null : Math.max(0, Number(field.value));
+      const value = field.dataset.progressField === 'status' ? field.value : field.dataset.progressField === 'seen' && field.value === '' ? 0 : optionalFormInteger(field.value);
+      if (field.dataset.progressField === 'status' && !['Pendiente', 'Viendo', 'Al día', 'Terminada', 'Descartada'].includes(value)) return;
+      if (field.dataset.progressField !== 'status' && field.value !== '' && value === null) return;
       const manualFields = new Set(normalizeTracking(state.tracking[id]).manualFields);
       manualFields.add(field.dataset.progressField);
-      setTracking(id, {[field.dataset.progressField]: Number.isFinite(value) ? value : null, manualFields: [...manualFields]});
+      setTracking(id, {[field.dataset.progressField]: value, manualFields: [...manualFields]});
     });
   }
   elements('previousWeek')?.addEventListener?.('click', () => {
@@ -432,6 +527,11 @@ export function createApp({document = globalThis.document, storage = globalThis.
   elements('progressSearch')?.addEventListener?.('input', () => renderProgress());
   elements('progressFilter')?.addEventListener?.('change', () => renderProgress());
   elements('progressSort')?.addEventListener?.('change', (event) => { state.preferences.sort = event.target.value; saveState(storage, state); renderProgress(); });
+  elements('createManualSeries')?.addEventListener?.('click', () => {
+    selectedSeries = {id: createCustomId(), title: '', mediaKind: 'series', sources: [], airingStatus: 'UNKNOWN', totalEpisodes: null, availableEpisodes: null};
+    renderSeriesConfirmation(selectedSeries);
+    renderAddStatus('Ficha manual: completa al menos el título. Los datos sin fuente seguirán sin verificar.');
+  });
   elements('searchForm')?.addEventListener?.('submit', async (event) => {
     event.preventDefault();
     const query = elements('animeSearch')?.value?.trim();
@@ -454,9 +554,19 @@ export function createApp({document = globalThis.document, storage = globalThis.
   };
   elements('dismissUpdate')?.addEventListener?.('click', () => elements('updateDialog')?.close?.());
   elements('applyUpdate')?.addEventListener?.('click', async () => { setText('updateStatus', 'Preparando actualización segura…'); const applied = await pwaController?.applyUpdate?.(); if (!applied) setText('updateStatus', 'La actualización aún no está lista; puedes intentarlo de nuevo.'); else elements('updateDialog')?.close?.(); });
-  elements('checkUpdate')?.addEventListener?.('click', async () => { setText('updateStatus', 'Comprobando versión…'); await pwaController?.checkNow?.(); });
+  elements('checkUpdate')?.addEventListener?.('click', async () => {
+    setText('updateStatus', 'Comprobando versión…');
+    const result = await pwaController?.checkNow?.();
+    if (!result?.available) setText('updateStatus', result?.error ? 'No se pudo comprobar la versión; inténtalo más tarde.' : 'Tienes la versión más reciente.');
+  });
   elements('quickRefresh')?.addEventListener?.('click', () => refreshRemote(true));
-  elements('exportBackup')?.addEventListener?.('click', () => downloadFile('racoon-respaldo.json', JSON.stringify(createBackup(state), null, 2), 'application/json;charset=utf-8'));
+  elements('exportBackup')?.addEventListener?.('click', () => {
+    const exportedAt = new Date(now()).toISOString();
+    state = {...state, updateMeta: {...state.updateMeta, lastBackupAt: exportedAt}};
+    saveState(storage, state);
+    downloadFile('racoon-respaldo.json', JSON.stringify(createBackup(state, exportedAt), null, 2), 'application/json;charset=utf-8');
+    renderBackupSummary();
+  });
   elements('exportCsv')?.addEventListener?.('click', () => downloadFile('racoon-progreso.csv', stateToCsv(state, allEntries()), 'text/csv;charset=utf-8'));
   elements('importBackup')?.addEventListener?.('click', () => elements('backupFile')?.click?.());
   elements('backupFile')?.addEventListener?.('change', async (event) => {
@@ -464,15 +574,18 @@ export function createApp({document = globalThis.document, storage = globalThis.
     if (!file) return;
     try {
       pendingImport = parseBackup(JSON.parse(await file.text()));
+      pendingImport.conflicts = Object.keys(pendingImport.state.tracking).filter((id) => state.tracking[id]);
       const details = elements('importDetails');
-      if (details) details.innerHTML = `<p class="muted">${pendingImport.counts.series} series · ${pendingImport.counts.tracking} seguimientos · ${pendingImport.invalidRecords} registros inválidos.</p>`;
+      if (details) details.innerHTML = `<p class="muted">Respaldo: ${escapeHtml(pendingImport.exportedAt || 'sin fecha')} · ${pendingImport.counts.series} series · ${pendingImport.counts.tracking} seguimientos · ${pendingImport.invalidRecords} registros inválidos · ${pendingImport.conflicts.length} progresos ya existentes.</p>${pendingImport.invalidRecords ? '<p class="error-state">Hay identificadores inválidos. No se importará este archivo.</p>' : ''}`;
+      elements('mergeImport').disabled = !pendingImport.valid;
+      elements('replaceImport').disabled = !pendingImport.valid;
       elements('importDialog')?.showModal?.();
     } catch { setText('backupPreview', 'No se pudo leer el archivo JSON.'); }
     event.target.value = '';
   });
   elements('mergeImport')?.addEventListener?.('click', () => {
     if (!pendingImport || !globalThis.confirm?.('¿Fusionar este respaldo con tu biblioteca actual?')) return;
-    state = mergeBackup(state, pendingImport.state);
+    state = mergeBackup(state, pendingImport);
     saveState(storage, state);
     elements('importDialog')?.close?.();
     pendingImport = null;
@@ -480,7 +593,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   });
   elements('replaceImport')?.addEventListener?.('click', () => {
     if (!pendingImport || !globalThis.confirm?.('¿Reemplazar toda tu biblioteca? Esta acción requiere un respaldo para deshacerla.')) return;
-    state = replaceWithBackup(pendingImport.state);
+    state = replaceWithBackup(pendingImport);
     saveState(storage, state);
     elements('importDialog')?.close?.();
     pendingImport = null;
@@ -499,7 +612,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
     window.setInterval?.(refreshIfDue, 60 * 1000);
     document.addEventListener?.('visibilitychange', () => { if (!document.hidden) refreshIfDue(); });
   }
-  return {selectView, setTracking, render, getState: () => state, getView: () => currentView, fetch};
+  return {selectView, setTracking, render, refreshRemote, getState: () => state, getView: () => currentView, fetch};
 }
 
 if (typeof document !== 'undefined') createApp();

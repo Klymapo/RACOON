@@ -62,3 +62,19 @@ test('replacement is explicit and CSV escapes user titles', () => {
   assert.equal(invalid.valid, false);
   assert.equal(invalid.invalidRecords, 1);
 });
+
+test('unrelated or empty JSON cannot silently replace a personal library', () => {
+  assert.throws(() => parseBackup({}), /respaldo/i);
+  assert.throws(() => parseBackup({hello: 'world'}), /respaldo/i);
+  assert.throws(() => replaceWithBackup({}), /respaldo/i);
+});
+
+test('merging a v1 backup retains local preferences and does not discard favorites', () => {
+  const current = sampleState();
+  current.preferences.view = 'calendar';
+  const imported = parseBackup({fx: {seen: 3, favorite: true, changedAt: 300}});
+  const merged = mergeBackup(current, imported);
+  assert.equal(merged.preferences.view, 'calendar');
+  assert.equal(merged.tracking['legacy:fx'].seen, 3);
+  assert.equal(merged.tracking['legacy:fx'].favorite, true);
+});

@@ -6,15 +6,15 @@ function plusDays(ymd, amount) {
   return date.toISOString().slice(0, 10);
 }
 
-function recurringDate(entry, weekStart, index) {
-  if (entry.kind === 'Finalizada') return null;
+function recurringDate(entry, date) {
+  if (entry.kind === 'Finalizada' || entry.airingStatus === 'FINISHED' || entry.airingStatus === 'CANCELLED' || entry.airingStatus === 'HIATUS') return null;
   const schedule = entry.weeklySchedule;
-  if (!schedule || schedule.frequency === 'once' || !Number.isInteger(schedule.day) || !schedule.endDate) return null;
-  const date = plusDays(weekStart, index);
+  if (!schedule || schedule.frequency !== 'weekly' || !Number.isInteger(schedule.day)) return null;
   const startDate = schedule.startDate || entry.date;
   if (startDate && date < startDate) return null;
   if (schedule.endDate && date > schedule.endDate) return null;
-  return schedule.day === index ? date : null;
+  const weekday = new Date(`${date}T12:00:00Z`).getUTCDay();
+  return schedule.day === (weekday + 6) % 7 ? date : null;
 }
 
 function sourceTimeFor(entry, date) {
@@ -24,6 +24,11 @@ function sourceTimeFor(entry, date) {
 
 function explicitEvent(entry, date) {
   return (entry.scheduleEvents || []).find((event) => event.date === date) || null;
+}
+
+function animeApiSources(entry) {
+  const found = (entry.sources || []).filter((source) => source.name === 'AniList' || /^https:\/\/anilist\.co\//.test(source.url || ''));
+  return found.length ? found : entry.sources || [];
 }
 
 function statusLabel(confidence) {
@@ -51,14 +56,17 @@ export function buildCalendarModel(catalog = [], state = {}, options = {}) {
     return statusMatches(entry, tracking, options.status || 'all');
   }).flatMap((entry) => {
     const tracking = state.tracking?.[entry.id] || {seen: 0};
-    const planned = days.map((day, index) => {
-      const recurring = recurringDate(entry, weekStart, index);
-      const explicit = explicitEvent(entry, day.date);
-      const initialDate = entry.date === day.date || entry.premiereDate === day.date ? day.date : null;
+    // Include source-side boundary days: conversion may place an event on the
+    // preceding or following Mexico day, especially near Sunday/Monday.
+    const planned = Array.from({length: 9}, (_, index) => plusDays(weekStart, index - 1)).map((date) => {
+      const recurring = recurringDate(entry, date);
+      const explicit = explicitEvent(entry, date);
+      if (explicit?.status === 'paused' || explicit?.status === 'cancelled' || explicit?.status === 'delayed') return null;
+      const initialDate = entry.date === date || entry.premiereDate === date ? date : null;
       if (!recurring && !explicit && !initialDate) return null;
       if (!recurring && entry.kind === 'Finalizada' && !explicit && !initialDate) return null;
       const eventDate = explicit?.date || recurring || initialDate;
-      const japanPremiere = entry.premiereDate === day.date && entry.date !== day.date && !explicit;
+      const japanPremiere = entry.premiereDate === date && entry.date !== date && !explicit && (entry.id?.startsWith('anilist:') || entry.sources?.some((source) => source.name === 'AniList'));
       const eventTime = explicit?.sourceTime || (recurring ? sourceTimeFor(entry, eventDate) : entry.sourceTime);
       let mexicoDate = eventDate;
       let mexicoTime = null;
@@ -82,7 +90,10 @@ export function buildCalendarModel(catalog = [], state = {}, options = {}) {
         mexicoTime,
         episodeLabel,
         platformLabel: japanPremiere ? 'Emisión japonesa · AniList' : entry.platform || 'Plataforma pendiente',
-        eventKind: japanPremiere ? 'japan-premiere' : 'platform'
+        eventKind: japanPremiere ? 'japan-premiere' : 'platform',
+        sources: explicit?.sources || (japanPremiere ? animeApiSources(entry) : isProjected && entry.patternSource ? [entry.patternSource, ...(entry.sources || [])] : entry.sources || []),
+        projected: isProjected,
+        projectionNote: isProjected ? 'Patrón semanal orientativo; puede cambiar y no confirma disponibilidad.' : null
       };
     }).filter(Boolean);
     const airingAt = Number(entry.nextAiring?.airingAt) * 1000;
@@ -92,10 +103,10 @@ export function buildCalendarModel(catalog = [], state = {}, options = {}) {
       if (days.some(({date}) => date === mexicoDate)) {
         const existingPremiere = planned.findIndex((event) => event.mexicoDate === mexicoDate && event.episodeLabel === 'Estreno japonés · fecha AniList');
         if (existingPremiere >= 0) planned.splice(existingPremiere, 1);
-        planned.push({...entry, tracking, mexicoDate, mexicoTime, confidence: 'estimated', statusLabel: 'Previsto', episodeLabel: `Episodio ${entry.nextAiring.episode}`, platformLabel: 'Emisión japonesa · AniList', eventKind: 'japan-airing', sources: entry.sources || []});
+        planned.push({...entry, tracking, mexicoDate, mexicoTime, confidence: 'estimated', statusLabel: 'Previsto', episodeLabel: `Episodio ${entry.nextAiring.episode}`, platformLabel: 'Emisión japonesa · AniList', eventKind: 'japan-airing', sources: animeApiSources(entry)});
       }
     }
-    return planned.filter((event) => !options.platform || options.platform === 'all' || (event.eventKind === 'platform' && String(event.platform || '').includes(options.platform)));
+    return planned.filter((event) => !options.platform || options.platform === 'all' || (event.eventKind === 'platform' && [event.platform, ...(event.platforms || [])].includes(options.platform)));
   });
   for (const event of filtered) {
     const day = days.find((candidate) => candidate.date === event.mexicoDate);

@@ -57,7 +57,13 @@ export function createBackup(state, exportedAt = new Date().toISOString()) {
 }
 
 export function parseBackup(input) {
-  const candidate = sourceState(objectOrEmpty(input));
+  const raw = objectOrEmpty(input);
+  const payload = objectOrEmpty(raw.state || raw);
+  const full = payload.schemaVersion === BACKUP_SCHEMA_VERSION && ['tracking', 'catalogOfficial', 'catalogCustom'].some((field) => Object.hasOwn(payload, field));
+  const wrappedLegacy = raw.track && typeof raw.track === 'object' && !Array.isArray(raw.track);
+  const directLegacy = Object.keys(raw).length > 0 && Object.values(raw).every((value) => value && typeof value === 'object' && !Array.isArray(value) && ['seen', 'aired', 'total', 'grade', 'favorite', 'status'].some((field) => Object.hasOwn(value, field)));
+  if (!full && !wrappedLegacy && !directLegacy) throw new Error('Formato de respaldo RACOON no reconocido');
+  const candidate = sourceState(raw);
   const {state, invalid} = sanitizeState(candidate);
   return {
     valid: invalid.length === 0,
@@ -72,16 +78,19 @@ export function parseBackup(input) {
 
 export function mergeBackup(current, incoming) {
   const base = validateState(current);
-  const next = parseBackup(incoming).state;
+  const preview = parseBackup(incoming);
+  const next = preview.state;
   base.catalogOfficial = {...base.catalogOfficial, ...next.catalogOfficial};
   base.catalogCustom = {...base.catalogCustom, ...next.catalogCustom};
   for (const [id, value] of Object.entries(next.tracking)) {
     const previous = base.tracking[id];
     if (!previous || Number(value.changedAt) >= Number(previous.changedAt)) base.tracking[id] = value;
   }
-  base.preferences = {...base.preferences, ...next.preferences};
-  base.sourceCache = {...base.sourceCache, ...next.sourceCache};
-  base.updateMeta = {...base.updateMeta, ...next.updateMeta};
+  if (preview.version >= BACKUP_SCHEMA_VERSION) {
+    base.preferences = {...base.preferences, ...next.preferences};
+    base.sourceCache = {...base.sourceCache, ...next.sourceCache};
+    base.updateMeta = {...base.updateMeta, ...next.updateMeta};
+  }
   return base;
 }
 

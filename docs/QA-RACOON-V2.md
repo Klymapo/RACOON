@@ -1,50 +1,39 @@
-# QA RACOON v2 · evidencia de la rama Wizard
+# QA RACOON v2.2.0 · auditoría de coherencia
 
-Fecha de verificación: 2026-10-13 16:26 UTC
-Rama: `codex/racoon-v2-wizard`
-Versión PWA preparada: `2.1.1`
+Fecha: 2026-10-13 UTC. Rama: `codex/racoon-v2-wizard`. PR: #1. Sin fusión ni despliegue desde esta rama.
 
-## Pruebas automatizadas
+## Resultado comprobado
 
-Comando ejecutado:
+- `node --test tests/*.test.mjs`: 10 archivos pasan, 0 fallos (volver a ejecutar antes del push).
+- `node scripts/qa-browser.mjs`: Chromium real en vistas 390×844 y 1440×1000. Flujo de AniList simulado de búsqueda → detalles → corrección → guardado → Inicio/calendario/progreso → favorito y +1 → recarga → refresco remoto → exportación/importación JSON → restauración. El progreso no cambió tras el refresco.
+- En el mismo navegador: crear, editar y eliminar una ficha manual; proyección con zona CDMX y fuente; filtro de plataforma; navegación hasta noviembre; actualización PWA 2.2.0 → 2.2.1 diferida y aplicada voluntariamente; recarga sin conexión con progreso intacto. Sin errores de página ni desbordamiento horizontal en ambos tamaños.
+- Las pruebas puras cubren cuatro semanas consecutivas, cambio de mes, pausas, temporada finalizada, cruce de semana por huso, DST del Pacífico, episodio 1 confirmado frente a contradicción episodio 2/3 de The Vermilion Mask y su hora 03:30 CDMX. Las previsiones no aumentan episodios disponibles.
+- Migración: se elimina solo el tope artificial `2026-10-18` guardado por v2.1.1; se conservan interrupciones posteriores con fuente y el seguimiento personal. Respaldos v1/v2/v3 continúan importables. Un JSON ajeno o vacío se rechaza.
 
-```text
-node --test tests/*.test.mjs
-```
+## Evidencia visual real
 
-Resultado observado: **9 archivos de prueba pasaron, 0 fallos**.
+- [Móvil v2.2.0, calendario con serie manual y AniList](../artifacts/qa/racoon-mobile-coherence.png) — viewport Chromium 390×844.
+- [Escritorio v2.2.0, semana de siete columnas](../artifacts/qa/racoon-desktop-coherence.png) — viewport Chromium 1440×1000.
+- [Móvil antes, v2.1.1](../artifacts/qa/racoon-mobile-calendar-211.png).
+- [Escritorio antes, v2.1.1](../artifacts/qa/racoon-desktop-calendar-211.png).
 
-La suite cubre migración v1, backups v1/v2/v3, zonas horarias y DST, calendario acotado, paginación AniList, coincidencias ambiguas, persistencia de metadatos, contradicciones de The Vermilion Mask, refresco con fallo parcial, actualización PWA segura, filtros de progreso y estructura estática del workflow.
+Comparación: antes la agenda se detenía el 18 de octubre y las semanas posteriores quedaban vacías; ahora continúa con tarjetas «Previsto», fuente y aviso de incertidumbre. Inicio toma sus próximas emisiones del mismo motor. La interfaz conserva los cinco apartados y mejora la lectura del hero móvil, estados manuales y origen de datos.
 
-También pasaron `git diff --check` y la comprobación de que el workflow copia únicamente `public/` y excluye `functions/`/`schema.sql`.
+## Auditoría transversal
 
-## Verificación de navegador
+| Función | Efecto comprobado en otras vistas/datos |
+| --- | --- |
+| Agregar serie | ID estable, calendario si hay fecha/patrón, Inicio, progreso, respaldo y recarga. |
+| Progreso y favoritos | Filtros, estado editable, +1/−1, dashboard, persistencia y restauración; el refresco concurrente no retrocede el avance. |
+| Calendario | Semana actual/siguientes y noviembre, filtro de plataforma, fuente, Japón separado de México, pausa explícita, previsiones sin publicación ficticia. |
+| Fuente remota | Paginación y temporada/año por título; coincidencias ambiguas no se unen; última información conservada si falla. |
+| PWA | Manifest/iconos, Service Worker, nueva versión, «Más tarde», «Actualizar ahora», recarga y uso sin conexión sin perder localStorage. |
+| Respaldos | Fecha/cantidades/conflictos en vista previa, bloqueo de IDs inválidos, rechazo de JSON ajeno, fusión y reemplazo confirmados. |
 
-Se sirvió `public/` con un servidor HTTP local y Chromium headless:
+## Cobertura y límites honestos
 
-- Escritorio: 1440×1000; cinco pestañas, navegación entre vistas, Service Worker registrado y sin overflow horizontal.
-- Móvil: 390×844; navegación, vista Calendario y selector horizontal de días visibles, sin overflow horizontal.
-- El manifest y la versión PWA cargaron correctamente.
-- Los estados vacíos del dashboard son legibles cuando no existe seguimiento local.
-- El calendario mostró The Vermilion Mask con `02:30 PT → 03:30 CDMX`, conservando la discrepancia `Episodio 2/3` como `Contradictorio`.
-- Una serie AniList simulada se guardó, sobrevivió una recarga y apareció el sábado 17 como `Emisión japonesa · AniList`, `Previsto · 20:00 CDMX`; su disponibilidad regional quedó `null`.
-- Al navegar a la semana 19–25 de octubre, no aparecieron las 23 emisiones recurrentes originales sin respaldo de una nueva fuente.
-- El dashboard mostró próximos slots respaldados por la semana integrada.
-- La biblioteca mostró filtros, ordenamiento, favoritos y edición manual de cantidades.
-
-Capturas reales:
-
-- [Móvil, calendario con serie AniList simulada](../artifacts/qa/racoon-mobile-calendar-211.png)
-- [Escritorio, calendario con serie AniList simulada](../artifacts/qa/racoon-desktop-calendar-211.png)
-
-## Comparación visual
-
-La versión anterior concentraba calendario, biblioteca, filtros, progreso y respaldos en una sola página oscura con layout comprimido. RACOON v2 separa las cinco tareas en pestañas, usa tokens morados Wizard, tarjetas con estados, navegación móvil horizontal y una mascota SVG propia con iconos PWA 192/512.
-
-## Límites verificados
-
-- AniList es una fuente pública de búsqueda/enriquecimiento, no una garantía de disponibilidad mexicana.
-- No se hace scraping universal de Crunchyroll ni se inventan horarios o contadores cuando las fuentes contradicen.
-- Las actualizaciones automáticas consultan el catálogo estacional público de AniList con paginación y las series agregadas por lotes de 20; conservan el último resultado si falla la red. Los títulos originales se enriquecen sólo con una coincidencia única y exacta, o con un ID AniList previamente vinculado.
-- AniList no confirma horarios mexicanos ni episodios realmente publicados en plataformas regionales; esos contadores y horarios siguen pendientes cuando no existe una fuente pública adecuada.
-- El progreso continúa siendo por navegador; no hay cuentas ni sincronización remota.
+- AniList proporciona próximos horarios japoneses, metadatos y estado de emisión; no verifica automáticamente el minuto de publicación ni el catálogo disponible en México para cada plataforma. Crunchyroll publica calendarios y páginas de episodios, pero esta PWA no dispone de una API pública gratuita documentada de disponibilidad regional verificable. Esos campos quedan sin verificar o dependen de una corrección manual con URL. No se hace scraping prohibido.
+- Una recurrencia «Previsto» expresa un patrón, no una promesa de episodio. Si la fuente no confirma pausa o finalización y la app permanece sin red durante meses, el patrón seguirá visible con su etiqueta de incertidumbre. La persona debe consultar la fuente si requiere certeza.
+- No hay backend ni cron de consulta con la app cerrada. Actualización al abrir o volver y cada cuatro horas mientras permanece abierta. Los contadores de las series originales sin fuente de episodios publicados permanecen pendientes; no se calculan por semanas.
+- La prueba móvil fue con viewport 390×844 en Chromium, **no en un teléfono Android físico**. La instalación efectiva desde Android y la lectura táctil en dispositivo físico requieren comprobación del propietario antes de publicar.
+- El check externo `Workers Builds: racoon` de la GitHub App de Cloudflare apunta a un Worker distinto del proyecto Pages estático. GitHub solo muestra fallo y enlace al dashboard, sin log/annotations. Véase [PUBLICACION.md](PUBLICACION.md).

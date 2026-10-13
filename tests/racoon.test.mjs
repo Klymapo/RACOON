@@ -13,7 +13,7 @@ test('RACOON muestra 25 animes sin duplicados',()=>{
  assert.equal(new Set(CATALOG.map(x=>x.id)).size,25);
  for(const x of CATALOG)for(const f of ['title','platform','date'])assert.ok(x[f]);
  assert.equal(CATALOG.find((entry)=>entry.id==='legacy:verm').availableEpisodes,1);
- assert.equal(CATALOG.find((entry)=>entry.id==='legacy:verm').scheduleConfidence,'contradictory');
+ assert.equal(CATALOG.find((entry)=>entry.id==='legacy:verm').scheduleEvents[0].confidence,'contradictory');
  assert.equal(CATALOG.filter((entry)=>entry.weeklySchedule?.frequency==='weekly').length,23);
 });
 
@@ -32,6 +32,12 @@ test('PWA instalable',()=>{
  assert.equal(manifest.display,'standalone');
  for(const icon of manifest.icons)assert.ok(existsSync('public'+icon.src));
  assert.ok(existsSync('public/sw.js'));
+});
+
+test('published version metadata, application and service worker stay in sync',()=>{
+ const version=JSON.parse(readFileSync('public/version.json','utf8')).version;
+ assert.match(readFileSync('public/js/app.mjs','utf8'),new RegExp(`RACOON_VERSION = '${version}'`));
+ assert.match(readFileSync('public/sw.js','utf8'),new RegExp(`VERSION = '${version}'`));
 });
 
 test('Progreso local y traslado mediante JSON',()=>{
