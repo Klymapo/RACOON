@@ -25,7 +25,7 @@ export async function createStorageRuntime({storage, openDatabase = openRacoonDa
     try {setMode('local');} catch { /* Al reiniciar se detectará la discrepancia. */ }
     notify('fallback');
   }
-  let startupRaw = null;
+  let startupRaw = null, startupSourceRaw = null;
   if (storage.getItem(MODE_KEY) === 'indexeddb') {
     // Sin espejo legible no arrancar con un estado vacío ni sobrescribir la base.
     const raw = storage.getItem(STATE_KEY);
@@ -33,7 +33,9 @@ export async function createStorageRuntime({storage, openDatabase = openRacoonDa
     try {
       const indexed = await withDatabase(readIndexedSnapshot);
       if (!indexed || JSON.stringify(indexed) !== JSON.stringify(local)) throw Error('Copias distintas');
+      if (storage.getItem(STATE_KEY) !== raw) throw Error('El origen cambió durante el arranque');
       startupRaw = JSON.stringify(indexed);
+      startupSourceRaw = raw;
       mode = 'indexeddb';
       notify('ready');
     } catch {fallback();}
@@ -41,7 +43,11 @@ export async function createStorageRuntime({storage, openDatabase = openRacoonDa
   const facade = {
     getItem(key) {
       if (key === STATE_KEY && startupRaw !== null) {
-        const value = startupRaw; startupRaw = null; return value;
+        const value = startupRaw; startupRaw = null;
+        if (storage.getItem(STATE_KEY) !== startupSourceRaw) {
+          fallback(); return storage.getItem(STATE_KEY);
+        }
+        return value;
       }
       return storage.getItem(key);
     },

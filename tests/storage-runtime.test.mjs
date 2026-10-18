@@ -77,3 +77,17 @@ test('the original checkpoint survives rollback and a second activation',async()
   assert.equal(f.storage.getItem(runtime.MIGRATION_KEY),original);
   assert.equal((await readIndexedSnapshot(f.db)).tracking.x.seen,11);
 });
+test('a concurrent edit during IndexedDB startup wins over the snapshot read',async()=>{
+  const f=fixture(),r=await runtime.createStorageRuntime(f);await r.activate();
+  const next=JSON.parse(f.storage.getItem(STATE_KEY));next.tracking.x.seen=12;
+  const reopened=await runtime.createStorageRuntime({...f,openDatabase:async()=>{f.storage.setItem(STATE_KEY,JSON.stringify(next));return f.db;}});
+  assert.equal(reopened.mode,'local');
+  assert.equal(JSON.parse(reopened.storage.getItem(STATE_KEY)).tracking.x.seen,12);
+});
+test('an edit between runtime readiness and app load is not overwritten by cached startup data',async()=>{
+  const f=fixture(),r=await runtime.createStorageRuntime(f);await r.activate();
+  const reopened=await runtime.createStorageRuntime(f);
+  const next=JSON.parse(f.storage.getItem(STATE_KEY));next.tracking.x.seen=13;f.storage.setItem(STATE_KEY,JSON.stringify(next));
+  assert.equal(JSON.parse(reopened.storage.getItem(STATE_KEY)).tracking.x.seen,13);
+  assert.equal(reopened.mode,'local');
+});

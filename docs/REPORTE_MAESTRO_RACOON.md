@@ -219,5 +219,9 @@ Validación remota 07C: ejecución 39132381549, Node 121/121 y QA general Chromi
 - Arranque con espejo ilegible se detiene sin sobrescribir fuentes. No se inventa una biblioteca vacía sobre datos dañados.
 - Versiones de app, SW y metadatos alpha.7; módulos nuevos en caché offline. No hay migración automática, servidor ni servicios de pago.
 - Límite deliberado: el espejo sigue requiriendo espacio localStorage; esta entrega no aumenta la capacidad efectiva ni ofrece sincronización de pestañas/dispositivos. Android físico requiere aceptación de Admin.
-- Añadidas 11 pruebas Node y ampliado QA IndexedDB con activación, respaldo, edición real, recarga, fallo de escritura, recuperación, reversión y offline. Suite local: 132 aprobadas; diff limpio. QA de esta entrega se comprueba en CI antes de declararlo aprobado.
+- Añadidas 13 pruebas Node y ampliado QA IndexedDB con activación, respaldo, edición real, recarga, fallo de escritura, recuperación, reversión y offline. Suite local: 134 aprobadas; diff limpio. QA de esta entrega se comprueba en CI antes de declararlo aprobado.
 - Revisión por el propio autor; sin revisión independiente. Sin fusión ni despliegue. Bloque 1 sigue en validación de esta entrega, no se cuenta como cerrado antes de CI.
+
+Revisión de 07D: reproducidos dos riesgos de arranque concurrente (cambio durante lectura IDB y entre preparación del runtime/carga de app). Ambas regresiones fallaron antes del arreglo y pasan tras comprobar nuevamente el espejo local; el dato reciente gana y se abandona la copia obsoleta. Suite 134/134; diff limpio. Esto protege la transición de arranque y no constituye sincronización completa entre pestañas.
+
+CI 07D inicial (64c74d1), run 39133242646: 132 pruebas Node, QA general y QA IndexedDB ampliado aprobados; publicación omitida. Incluye copia, respaldo descargado, activación, edición, recarga, fallo inyectado, reversión y arranque offline. El ajuste concurrente posterior añade dos regresiones (134 totales) y vuelve a pasar por CI. El PR se actualiza a entregas 01–07 y alpha.7; sin fusión ni publicación.

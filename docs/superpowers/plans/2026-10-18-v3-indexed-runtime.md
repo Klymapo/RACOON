@@ -39,7 +39,7 @@ la discrepancia recupera el espejo local; no fusiona catálogos automáticamente
 
 ## Registro
 
-- Runtime y UI: 11 pruebas nuevas; primeras ejecuciones fallaron por módulos ausentes,
-  implementación posterior pasó. Suite acumulada: 132 pruebas Node.
+- Runtime y UI: 13 pruebas nuevas; primeras ejecuciones fallaron por módulos ausentes,
+  implementación posterior pasó. Suite acumulada: 134 pruebas Node.
 - Chromium/QA de la entrega previa: run 39132509865 aprobado (121 pruebas y dos E2E).
 - Validación de esta entrega: registrar en reporte maestro tras CI.

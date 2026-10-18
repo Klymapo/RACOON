@@ -80,7 +80,7 @@ Cerradas conexiones IndexedDB tardías tras apertura bloqueada y conexiones acti
 Activación optativa y reversión desde Ajustes, lectura verificada antes del arranque,
 cola de escrituras IDB y espejo local verificado. El respaldo previo no se reemplaza
 al volver a activar; se puede descargar. Fallo IDB o discrepancia recupera el espejo
-más reciente. Origen ilegible detiene el arranque sin sobrescribir datos. 132 pruebas
+más reciente. Origen ilegible detiene el arranque sin sobrescribir datos. 134 pruebas
 Node aprobadas; QA Chromium ampliado y sujeto a CI. La capacidad aún depende de la
 cuota localStorage y no hay sincronización de pestañas. La aceptación Android físico
 queda separada. Sin fusión ni publicación; siguiente bloque: colecciones inteligentes.
