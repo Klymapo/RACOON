@@ -51,6 +51,7 @@ export async function writeIndexedSnapshot(db, state) {
 }
 
 export async function stageLocalStateMigration(storage, openDatabase = openRacoonDatabase) {
+  if (!storage?.getItem) return {status: 'storage-unavailable'};
   let raw;
   try { raw = storage?.getItem(STATE_KEY); }
   catch { return {status: 'storage-unavailable'}; }

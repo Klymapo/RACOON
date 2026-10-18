@@ -53,5 +53,7 @@ export function registerIndexedBackupControl({document, storage, stage = stageLo
 
 if (typeof document !== 'undefined') {
   mountIndexedBackupPanel(document);
-  registerIndexedBackupControl({document, storage: globalThis.localStorage});
+  let storage;
+  try { storage = globalThis.localStorage; } catch { storage = null; }
+  registerIndexedBackupControl({document, storage});
 }

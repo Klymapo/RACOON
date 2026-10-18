@@ -94,3 +94,11 @@ test('a stale IndexedDB snapshot is reported rather than overwriting newer local
   assert.equal((await readIndexedSnapshot(db)).tracking['custom:new'], undefined);
   assert.equal(JSON.parse(storage.getItem(STATE_KEY)).tracking['custom:new'].seen, 2);
 });
+
+
+test('staging without readable storage reports unavailability without opening a database', async () => {
+  let opened = false;
+  const result = await stageLocalStateMigration(null, async () => {opened = true; return database().db;});
+  assert.equal(result.status, 'storage-unavailable');
+  assert.equal(opened, false);
+});
