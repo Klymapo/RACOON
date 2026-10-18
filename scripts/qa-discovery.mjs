@@ -25,9 +25,9 @@ try {
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('https://graphql.anilist.co/**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify({data:{Page:{pageInfo:{hasNextPage:false},media:[]}}})}));
  await page.clock.setFixedTime(new Date('2026-10-18T18:00:00Z'));
- await page.goto('http://127.0.0.1:'+server.address().port+'/');
+ await page.goto('http://127.0.0.1:'+server.address().port+'/');await page.locator('#recommendations h3').waitFor();
  await page.evaluate(async()=>{const {createDefaultState,STATE_KEY}=await import('/js/storage.mjs');const s=createDefaultState([{id:'custom:liked',title:'QA Favorita',mediaKind:'movie',year:2020,genres:['Drama']},{id:'custom:candidate',title:'QA Candidata',mediaKind:'movie',year:2021,genres:['Drama']}]);s.tracking['custom:liked']={rating:9,status:'Terminada'};s.updateMeta.lastChecked=Date.now();localStorage.setItem(STATE_KEY,JSON.stringify(s));});
- await page.reload();assert.match(await page.locator('#recommendations').innerText(),/Drama/);
+ await page.reload();await page.locator('#recommendations h3').waitFor();assert.match(await page.locator('#recommendations').innerText(),/Drama/);
  await page.locator('#recommendations [data-open-detail="custom:candidate"]').click();
  const panel=page.locator('[data-ratings-id="custom:candidate"]');assert.match(await panel.innerText(),/sin nota pública verificada/);
  await panel.locator('[data-personal-rating] input').fill('0');await panel.locator('[data-personal-rating] button').click();assert.match(await panel.locator('[data-ratings-summary]').innerText(),/Tu nota: 0 \/ 10/);
