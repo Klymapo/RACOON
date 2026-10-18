@@ -41,15 +41,19 @@ try {
  await page.locator('[data-close-detail]').click();await page.locator('[data-view="backups"]').click();
  const csv='Name,Year,Rating,Date\nQA Candidata,2021,3.5,2026-10-18\nQA Nueva,2023,4,2026-10-17';
  await page.locator('#letterboxdFile').setInputFiles({name:'ratings.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
+ await page.locator('#letterboxdStatus').filter({hasText:/2 filas; 1 seleccionadas/}).waitFor();
  assert.match(await page.locator('#letterboxdStatus').innerText(),/2 filas; 1 seleccionadas/);
  await page.locator('#letterboxdApply').click();assert.match(await page.locator('#letterboxdStatus').innerText(),/Importación guardada/);
  let saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('racoon-v2-state')));let imported=Object.values(saved.catalogCustom).find(e=>e.title==='QA Nueva');assert(imported);assert.equal(saved.tracking[imported.id].rating,8);assert.equal(saved.tracking[imported.id].watchedAt,null);assert.equal(saved.tracking['custom:candidate'].rating,2);assert(saved.socialData.public['custom:candidate']);
  await page.locator('#letterboxdFile').setInputFiles({name:'quota.csv',mimeType:'text/csv',buffer:Buffer.from('Name,Year\nQA Sin espacio,2025')});
+ await page.locator('#letterboxdStatus').filter({hasText:/1 filas; 1 seleccionadas/}).waitFor();
  const quotaBefore=await page.evaluate(()=>localStorage.getItem('racoon-v2-state'));
  await page.evaluate(()=>{window.originalStorageSet=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='racoon-before-letterboxd')throw new DOMException('QA cuota','QuotaExceededError');return window.originalStorageSet.call(this,key,value);};});
  await page.locator('#letterboxdApply').click();assert.equal(await page.evaluate(()=>localStorage.getItem('racoon-v2-state')),quotaBefore);assert.match(await page.locator('#letterboxdStatus').innerText(),/QA cuota/);
  await page.evaluate(()=>{Storage.prototype.setItem=window.originalStorageSet;});await page.locator('#letterboxdCancel').click();
- const beforeCancel=JSON.stringify(saved);await page.locator('#letterboxdFile').setInputFiles({name:'cancel.csv',mimeType:'text/csv',buffer:Buffer.from('Name,Year\nCancelled,2025')});await page.locator('#letterboxdCancel').click();assert.equal(await page.evaluate(()=>localStorage.getItem('racoon-v2-state')),beforeCancel);
+ const beforeCancel=JSON.stringify(saved);await page.locator('#letterboxdFile').setInputFiles({name:'cancel.csv',mimeType:'text/csv',buffer:Buffer.from('Name,Year\nCancelled,2025')});
+ await page.locator('#letterboxdStatus').filter({hasText:/1 filas; 1 seleccionadas/}).waitFor();
+ await page.locator('#letterboxdCancel').click();assert.equal(await page.evaluate(()=>localStorage.getItem('racoon-v2-state')),beforeCancel);
  for(const width of [320,390,800,1440]){await page.setViewportSize({width,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));}
  await page.locator('#activateIndexedStorage').click();await page.locator('#storageRuntimeStatus').filter({hasText:'IndexedDB activo y verificado'}).waitFor();
  await page.evaluate(()=>navigator.serviceWorker.ready);await page.reload();await context.setOffline(true);await page.reload();await page.locator('[data-view="home"]').click();await page.locator('#recommendations [data-open-detail="custom:candidate"]').click();assert.match(await page.locator('[data-ratings-summary]').innerText(),/emocionado/);

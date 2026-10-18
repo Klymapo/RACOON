@@ -353,3 +353,10 @@ Actualización de pruebas entrega 18: evidencia cromática/geométrica revisada;
 - Región: búsqueda TMDB por nombre y tipo, selección humana de candidato, país exacto, listas de proveedor, clasificación conservadora de Channels y ofertas nunca auto-verificadas. Credencial libre de lectura no persistida. Pruebas de respuesta simulada MX/US, privacidad, UI móvil y escritorio; no hubo verificación en vivo de disponibilidad.
 - CI 39149703930 aprobó 199 pruebas Node y siete E2E Chromium sobre el código 111cf63. Artefacto de capturas disponible en https://github.com/Klymapo/RACOON/actions/runs/39149703930 .
 - Estado actual: 20 incrementos de código en PR #2, alpha.20; dos aceptaciones externas imposibles de acreditar solo con CI: Android físico y consulta real con token TMDB gratuito/licencia/atribución. No fusionado, no desplegado. Producción v2.2.1 intacta.
+
+### Registro de cambios — 2026-10-18 — Argos — PR #2 fusionado y corrección QA posterior
+
+- Admin autorizó explícitamente fusionar y aplicar RACOON v3. PR #2 fusionado a `main` con merge `eea2da6ae4d61dcad3b2a7890dd94cf56923ab14` el 18 de octubre de 2026. El código alpha.20 ya está en la rama principal; no se borró información personal ni se habilitó almacenamiento servidor.
+- La ejecución de producción GitHub Actions 39151492844 aprobó Node y E2E iniciales, pero bloqueó el despliegue por lectura anticipada del texto de la importación CSV Letterboxd en `scripts/qa-discovery.mjs`. El `change` del selector es asíncrono y la prueba consultaba el resultado antes de terminar el parseo. Ningún despliegue v3 ocurrió en esa ejecución.
+- Corrección exclusiva de QA: esperar estado de vista previa para los archivos CSV de prueba (ratings, cuota y cancelación) antes de continuar. Se preservan todas las afirmaciones verificadas de la prueba; no se salta ninguna validación. El nuevo push a `main` ejecutará CI y publicará en Cloudflare solo si aprueba.
+- Aceptación Android físico y consulta TMDB real con token gratuito siguen pendientes de comprobar; no son bloqueos de publicación expresamente aprobada por Admin.
