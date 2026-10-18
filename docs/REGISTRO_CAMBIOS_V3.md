@@ -86,3 +86,10 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 
 - La primera CI 39146611713 falló en dos pruebas de contrato, antes de Chromium: nombre anterior del manifest y constante de versión en app.mjs. No se trató como validación aprobada.
 - Actualizados manifest/test de instalación y constante alpha.18. Generación reproducible de PNG movida antes de los tests Node, que comprueban existencia de las rutas del manifest. Nueva CI por verificar.
+
+### CI verificada y evidencia de identidad v3
+
+- Commit 44e6a2c añadió logo, máscaras, expresiones, SVG monocromo, generación reproducible de PNG y contrato de tests; commit 4ca0f7c ajustó etiqueta del manifiesto/versión app y orden de build.
+- GitHub Actions 39146611713 falló primero por dos contratos de nombre/versión. CI 39146711117 aprobó 192 pruebas Node y los seis E2E Chromium de la entrega. Los PNG se generaron correctamente desde SVG antes de las pruebas.
+- Capturas Chromium de QA pasan a publicarse como artefacto descargable de la CI para inspeccionar la app sin pretender que son un Android físico. Se añadirá vínculo a la primera ejecución validada.
+- Bloque identidad integrado en PR #2; dos frentes parciales restantes. Main/Cloudflare no modificados.

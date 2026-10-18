@@ -333,4 +333,6 @@ incrementos 01–17. Sin fusión ni publicación; tres bloques restantes.
 - Se integra al PR #2 diseño vectorial geométrico aprobado, variante monocromática, rostro compartido con Racoonómetro y PNG reproducibles 192/512 + maskable desde SVG maestro.
 - Manifest, precaché, CI y preparación previa a Cloudflare estático actualizados; la generación es local en GitHub Actions mediante librsvg libre. No hay nueva API ni cuota.
 - Se reduce el trabajo funcional restante de tres bloques a dos (almacenamiento/Android y proveedor regional automático). El QA de Android físico no queda cubierto por Chromium de escritorio.
-- CI de entrega 18 pendiente de comprobar; main y producción v2.2.1 no modificados. Sin merge ni publicación.
+- CI 39146711117 aprobada (192 Node y seis E2E Chromium) tras corregir fallos iniciales de versión/manifiesto. Main y producción v2.2.1 no modificados. Sin merge ni publicación.
+
+Actualización de pruebas entrega 18: evidencia cromática/geométrica revisada; CI 39146711117 aprobó seis flujos Chromium y 192 Node. Se habilitó exportación de capturas de QA como artefacto de Actions (no equivale a aceptación Android físico). Se mantiene pendiente de verificar primer artefacto descargable.
