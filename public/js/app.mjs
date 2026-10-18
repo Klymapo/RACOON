@@ -190,6 +190,7 @@ function memoryStorage() {
 
 export function createApp({document = globalThis.document, storage = globalThis.localStorage || memoryStorage(), fetch = globalThis.fetch, now = Date.now} = {}) {
   let {state} = loadState(storage, CATALOG);
+  mountAutomaticRegionalLookup({document, getState: () => state, fetch, now});
   let currentView = VIEWS.includes(state.preferences.view) ? state.preferences.view : 'home';
   let searchResults = new Map();
   let selectedSeries = null;
@@ -867,7 +868,6 @@ export function createApp({document = globalThis.document, storage = globalThis.
   const commitLocal = candidate => { state = validateState(candidate); const saved = persist(); render(); return saved; };
   mountDiscovery({document, storage, download: downloadFile, getState: () => state, commitState: candidate => { if (!saveState(storage, candidate)) return false; state = validateState(candidate); render(); return true; }, now});
   mountRegionalControls({document, getState: () => state, commitState: commitLocal, now});
-  mountAutomaticRegionalLookup({document, getState: () => state, fetch, now});
   sliceController = mountSlice({document, getState: () => state, commitState: commitLocal, now});
   mountSmartCollectionManager({document, getState: () => state, commitState: commitLocal, now});
   registerTableImporter({document, storage, getState: () => state, commitState: candidate => { if (!saveState(storage, candidate)) return false; state = candidate; render(); return true; }, download: downloadFile, now});
