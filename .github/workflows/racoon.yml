@@ -43,6 +43,7 @@ jobs:
           node scripts/qa-next-three.mjs
           node scripts/qa-discovery.mjs
           node scripts/qa-share-wrap-ocr.mjs
+          node scripts/qa-regional-auto.mjs
       - name: Guardar capturas reales de Chromium de v3
         uses: actions/upload-artifact@v4
         with:

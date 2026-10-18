@@ -110,3 +110,7 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 - Adaptador de búsqueda TMDB con selección humana y consulta de proveedores por país. Distinción de suscripción, posible Channel, alquiler, compra, anuncios y acceso gratuito. No se adjudica cobertura de temporada o episodio desde resultados por obra.
 - Token de lectura del usuario solo en campo memoria, sin persistencia ni peticiones automáticas. Al copiar candidato se registra como borrador no verificado que requiere revisión. Pruebas sintéticas de MX/US, canales y privacidad de token.
 - Fuente TMDB gratuita para uso no comercial con atribución obligatoria; no hay credencial ni consulta real operativa sin token proporcionado. La integración se queda como optativa y no se certifica disponibilidad efectiva. Pendiente aceptación Android físico. CI por observar.
+
+### QA regional automática (fixture, Chromium)
+
+- Prueba E2E nueva: selección manual de obra, token sintético efímero, dos peticiones simuladas TMDB, país MX sin copiar Netflix US, Channel distinto de plan base, borrador no verificado, no persistencia de token ni ofertas sin confirmar. Capturas móvil y escritorio como artefactos en Actions. No se considera consulta real a TMDB ni Android físico.
