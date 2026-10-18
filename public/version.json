@@ -1,8 +1,8 @@
 {
-  "version": "3.0.0-alpha.3",
+  "version": "3.0.0-alpha.4",
   "changes": [
-    "Biblioteca con tarjetas compactas y resumen de progreso",
-    "Ficha universal para consultar fuentes y editar series o películas",
-    "Apertura accesible, cierre con Escape y recuperación del foco"
+    "Carpetas personales con orden, nombres y papelera recuperable",
+    "Una obra en varias carpetas y filtro en Biblioteca",
+    "Carpetas en JSON y CSV, con fusión que respeta cambios recientes"
   ]
 }

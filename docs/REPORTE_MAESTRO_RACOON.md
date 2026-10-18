@@ -7,7 +7,7 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 - Base de producción: v2.2.1, merge `a0be814`, 13 de octubre de 2026.
 - Primera entrega v3: `3.0.0-alpha.1`, rama `codex/racoon-v3-01-navigation`.
-- Estado de trabajo actual: `3.0.0-alpha.3`, tercera entrega acumulada en el mismo
+- Estado de trabajo actual: `3.0.0-alpha.4`, cuarta entrega acumulada en el mismo
   PR #2. Producción continúa en v2.2.1, sin fusionar ni desplegar estas entregas.
 - Alcance: Inicio, Agenda, Biblioteca, Explorar, Ajustes; barra inferior fija móvil,
   banner exclusivo de Inicio y navegación accesible por teclado.
@@ -18,9 +18,9 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 ## Próximos incrementos
 
-1. Carpetas personales y asignación de obras.
+1. Importación CSV/Excel con vista previa y duplicados.
 2. Interfaz para agrupar temporadas; migración a IndexedDB con validación.
-3. Importación CSV/Excel con vista previa y duplicados.
+3. Colecciones inteligentes por filtros.
 4. Fuentes regionales verificadas y suscripciones; Slice, Ratings y recomendaciones.
 
 El orden puede ajustarse con Admin. No prometer fuentes regionales detalladas
@@ -139,3 +139,18 @@ Capturas reales nuevas guardadas en Gaston/APPS/RACOON/CAPTURAS Y QA:
 - [racoon-v3-03-movie-detail-desktop.png](https://drive.google.com/file/d/1RI95FLSmVqaXJhYrhHfdMqImH_A924BK/view?usp=drivesdk)
 
 Registro adicional: código, pruebas y plan de entrega 03 se agregan como commit separado al PR #2; su título y descripción y la bitácora maestra de Gaston se actualizan para reflejar las tres entregas. Se preservan evidencias históricas. Sin fusionar ni publicar.
+
+### 2026-10-17 — Argos/Codex — v3, entrega 04
+
+- Admin autorizó continuar con carpetas personales. Versión de trabajo 3.0.0-alpha.4.
+- Gestión en Biblioteca: crear, renombrar, ordenar con Subir/Bajar, enviar a papelera con confirmación y restaurar. No hay eliminación permanente y no se borran obras ni progreso.
+- Una obra puede pertenecer a varias carpetas; selección desde su ficha. Filtro por carpeta o Sin carpeta, combinado con búsqueda, estado y favoritos. Nombres de 1–80 caracteres, sin duplicados activos por nombre.
+- collections.version=1 extiende el estado 3. Pertenencias por ID interno de obra; bajas conservadas con fecha para que un respaldo antiguo no reactive asignaciones o carpetas quitadas. La fusión remapea IDs de obras de bibliotecas independientes.
+- JSON conserva carpetas, orden, papelera y pertenencias; CSV agrega columna Carpetas. Los respaldos anteriores sin carpetas siguen siendo compatibles.
+- Validación: 97 pruebas Node aprobadas, 0 fallos; diff limpio; Chromium E2E aprobado. Flujo real de crear dos carpetas, renombrar/reordenar, asignar ambas a una película, filtros, papelera/restauración, exportación, fusión sin reactivar una asignación y restauración offline. Progreso anterior intacto.
+- Capturas reales móvil/escritorio revisadas y subidas a Gaston/APPS/RACOON/CAPTURAS Y QA:
+- [racoon-v3-04-folders-desktop.png](https://drive.google.com/file/d/1cXczycQG-kKjS7E1nzsnlgcsp2X0e0Lq/view?usp=drivesdk)
+- [racoon-v3-04-assign-mobile.png](https://drive.google.com/file/d/1pZWDTgyZAdwgN_ZG0pD8pEzd50vF7w-8/view?usp=drivesdk)
+- [racoon-v3-04-filter-mobile.png](https://drive.google.com/file/d/1Mck3dR1gh44O3tNPn0Ha3Lwb8KPBBKXw/view?usp=drivesdk)
+- Código, pruebas y plan se agregan al PR #2 como otro commit; título y descripción del PR y la bitácora maestra de Gaston se actualizan con la cuarta entrega. Sin fusión ni publicación.
+- Cloudflare Pages estático y modo offline conservados; no hay dependencias o servicios nuevos. No se verificó Android físico. Siguiente incremento propuesto: importación CSV/Excel con revisión previa.

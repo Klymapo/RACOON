@@ -1,5 +1,6 @@
 import {STATUS_VALUES} from './model.mjs';
 import {synchronizeMediaLibrary} from './media.mjs';
+import {normalizeCollections} from './folders.mjs';
 
 export const LEGACY_STATE_KEY = 'anime-radar-otono-2026-v1';
 export const STATE_KEY = 'racoon-v2-state';
@@ -50,6 +51,7 @@ export function createDefaultState(catalog = []) {
     catalogOfficial: Object.fromEntries(catalog.filter(Boolean).map((entry) => [entry.id, entry])),
     catalogCustom: {},
     tracking: {},
+    collections: normalizeCollections(),
     preferences: {view: 'home', calendarWeek: null, selectedDay: null, platform: 'all', status: 'all', sort: 'title'},
     sourceCache: {},
     updateMeta: {lastChecked: 0, providers: {}}
@@ -65,6 +67,7 @@ export function validateState(value) {
   state.sourceCache = objectOrEmpty(input.sourceCache);
   state.updateMeta = {...state.updateMeta, ...objectOrEmpty(input.updateMeta)};
   state.mediaLibrary = objectOrEmpty(input.mediaLibrary);
+  state.collections = normalizeCollections(input.collections);
   for (const [id, raw] of Object.entries(objectOrEmpty(input.tracking))) state.tracking[id] = cleanTrackingEntry(raw);
   return synchronizeMediaLibrary(state);
 }

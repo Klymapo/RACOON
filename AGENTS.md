@@ -25,6 +25,9 @@ primer incremento para mantener preferencias y flujos compatibles.
 Desde la entrega 03, Biblioteca muestra tarjetas de solo lectura. Progreso,
 estado y favoritos se editan dentro de la ficha universal; Inicio abre esa ficha.
 El diálogo debe cerrar con Escape y devolver el foco a un acceso visible.
+Las carpetas usan IDs internos de obra y pertenencias múltiples. Papelera y
+restauración conservan obras y progreso; las bajas llevan fecha para impedir
+que un respaldo viejo las reactive durante una fusión.
 
 ## Validación
 

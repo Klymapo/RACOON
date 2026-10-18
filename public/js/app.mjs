@@ -3,6 +3,8 @@ import {createDefaultState, loadState, saveState, validateState} from './storage
 import {isMovie} from './media.mjs';
 import {renderMovieForm} from './movie-ui.mjs';
 import {renderLibraryCard, renderWorkDetail} from './detail-ui.mjs';
+import {foldersForWork, listFolders, createFolder, renameFolder, moveFolder, trashFolder, restoreFolder, setFolderMembership} from './folders.mjs';
+import {renderFolderRows, renderFolderChoices} from './folder-ui.mjs';
 import {buildCalendarModel} from './schedule.mjs';
 import {mexicoDate} from './time.mjs';
 import {searchAnime, fetchAnimeDetails, fetchSeasonalAnime, matchLegacyAnime, seasonForEntry} from './providers/anilist.mjs';
@@ -11,7 +13,7 @@ import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} f
 import {shouldRefresh, refreshCatalog, mergeCatalogObservation, FOUR_HOURS} from './refresh.mjs';
 import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '3.0.0-alpha.3';
+const RACOON_VERSION = '3.0.0-alpha.4';
 const VIEWS = ['home', 'calendar', 'progress', 'add', 'backups'];
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -114,14 +116,21 @@ export function saveCatalogEntry(state, entry, edits = {}) {
   return validateState({...state, tracking, catalogOfficial: {...state.catalogOfficial, [entry.id]: saved}});
 }
 
-export function filterProgressEntries(catalog, state, {query = '', filter = 'all', sort = 'title'} = {}) {
+export function filterProgressEntries(catalog, state, {query = '', filter = 'all', sort = 'title', folder = 'all'} = {}) {
   const normalizedQuery = String(query).trim().toLocaleLowerCase();
+  const activeFolders = folder === 'all' ? null : new Set(listFolders(state).map(item => item.id));
   const entries = Object.values(entryMap(catalog, state)).map((entry) => {
     const tracking = normalizeTracking(state.tracking?.[entry.id]);
     const available = availableValue(entry, tracking);
     const remaining = available === null ? null : Math.max(0, available - tracking.seen);
     return {entry, tracking, available, remaining};
   }).filter(({entry, tracking, available, remaining}) => {
+    if (folder !== 'all') {
+      const workId = state.mediaLibrary?.catalogLinks[entry.id]?.workId;
+      const memberships = Object.keys(state.collections?.memberships?.[workId] || {}).filter(id => activeFolders.has(id) && state.collections.memberships[workId][id].assigned);
+      if (folder === 'unfiled' && memberships.length) return false;
+      if (folder !== 'unfiled' && !memberships.includes(folder)) return false;
+    }
     const haystack = `${entry.title || entry.name} ${entry.alternativeTitles?.join(' ') || ''}`.toLocaleLowerCase();
     if (normalizedQuery && !haystack.includes(normalizedQuery)) return false;
     if (filter === 'watching' && tracking.status !== 'Viendo') return false;
@@ -212,8 +221,22 @@ export function createApp({document = globalThis.document, storage = globalThis.
   function renderProgress() {
     const target = elements('progressList');
     if (!target) return;
-    const entries = filterProgressEntries(CATALOG, state, {query: elements('progressSearch')?.value || '', filter: elements('progressFilter')?.value || 'all', sort: elements('progressSort')?.value || state.preferences.sort || 'title'});
-    target.innerHTML = entries.map(({entry, tracking}) => renderLibraryCard(entry, tracking)).join('') || '<div class="empty-state"><strong>Tu biblioteca está vacía</strong>Agrega tu primera obra.</div>';
+    const entries = filterProgressEntries(CATALOG, state, {query: elements('progressSearch')?.value || '', filter: elements('progressFilter')?.value || 'all', sort: elements('progressSort')?.value || state.preferences.sort || 'title', folder: state.preferences.folder || 'all'});
+    target.innerHTML = entries.map(({entry, tracking}) => renderLibraryCard(entry, tracking)).join('') || '<div class="empty-state"><strong>Sin coincidencias</strong>Prueba otra carpeta o filtro.</div>';
+  }
+
+  function renderFolders() {
+    const folders = listFolders(state);
+    const select = elements('progressFolder');
+    if (select) {
+      const selected = state.preferences.folder || 'all';
+      const valid = ['all', 'unfiled'].includes(selected) || folders.some(folder => folder.id === selected);
+      state.preferences.folder = valid ? selected : 'all';
+      select.innerHTML = '<option value="all">Todas las carpetas</option><option value="unfiled">Sin carpeta</option>' + folders.map(folder => `<option value="${escapeHtml(folder.id)}">${escapeHtml(folder.name)}</option>`).join('');
+      select.value = state.preferences.folder;
+    }
+    const rows = elements('folderList');
+    if (rows) rows.innerHTML = renderFolderRows(state);
   }
 
   function closeDetail() {
@@ -226,7 +249,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
     if (!entry) { closeDetail(); detailId = null; return; }
     const target = elements('workDetailContent');
     if (!target) return;
-    const markup = renderWorkDetail(entry, normalizeTracking(state.tracking[detailId]));
+    const markup = renderWorkDetail(entry, normalizeTracking(state.tracking[detailId]), {folderContent: renderFolderChoices(state, detailId)});
     if (elements('workDetail')?.open && target.dataset.detailId === detailId && target.dataset.detailKind === entry.mediaKind) {
       // Keep live form nodes: replacing them on blur can swallow the click on
       // the next button before mouseup (for example, edit count then favorite).
@@ -245,6 +268,14 @@ export function createApp({document = globalThis.document, storage = globalThis.
         const node = target.querySelector(selector);
         const next = fresh.querySelector(selector);
         if (node && next) { node.textContent = next.textContent; node.disabled = next.disabled; }
+      }
+      const choices = target.querySelector('[data-detail-folders]');
+      const nextChoices = fresh.querySelector('[data-detail-folders]');
+      if (choices && nextChoices) {
+        const current = [...choices.querySelectorAll('[data-work-folder]')];
+        const next = [...nextChoices.querySelectorAll('[data-work-folder]')];
+        if (current.map(node => node.dataset.workFolder).join('|') === next.map(node => node.dataset.workFolder).join('|')) current.forEach((node, index) => { node.checked = next[index].checked; });
+        else choices.innerHTML = nextChoices.innerHTML;
       }
       for (const selector of ['[data-detail-description]', '[data-detail-evidence]', '[data-detail-trust]', '.detail-heading .poster']) {
         const node = target.querySelector(selector);
@@ -427,6 +458,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
 
   function render() {
     renderHome();
+    renderFolders();
     renderProgress();
     renderCalendar();
     renderBackupSummary();
@@ -469,6 +501,23 @@ export function createApp({document = globalThis.document, storage = globalThis.
     document.addEventListener('click', (event) => {
       const viewButton = event.target.closest?.('[data-view], [data-go]');
       if (viewButton) selectView(viewButton.dataset.view || viewButton.dataset.go);
+      const folderAction = event.target.closest?.('[data-folder-action]');
+      if (folderAction) {
+        const id = folderAction.dataset.folderId;
+        const action = folderAction.dataset.folderAction;
+        try {
+          if (action === 'rename') state = renameFolder(state, id, elements('folderList').querySelector(`[data-folder-name="${id}"]`).value, now());
+          if (action === 'up' || action === 'down') state = moveFolder(state, id, action === 'up' ? -1 : 1, now());
+          if (action === 'trash') {
+            if (!globalThis.confirm?.('¿Enviar esta carpeta a la papelera? Sus obras y progreso se conservan; puedes restaurarla después.')) return;
+            state = trashFolder(state, id, now());
+            if (state.preferences.folder === id) state.preferences.folder = 'all';
+          }
+          if (action === 'restore') state = restoreFolder(state, id, now());
+          const saved = persist(); render(); setText('folderStatus', saved ? 'Carpetas guardadas.' : 'Cambio solo en memoria; exporta un respaldo.');
+        } catch (error) { setText('folderStatus', error.message); }
+        return;
+      }
       const detailButton = event.target.closest?.('[data-open-detail]');
       if (detailButton) {
         const id = detailButton.dataset.openDetail;
@@ -595,6 +644,14 @@ export function createApp({document = globalThis.document, storage = globalThis.
       if (action.dataset.progressAction === 'favorite') setTracking(id, {favorite: !tracking.favorite});
     });
     document.addEventListener('change', (event) => {
+      const checkbox = event.target.closest?.('[data-work-folder]');
+      if (checkbox) {
+        try {
+          state = setFolderMembership(state, checkbox.dataset.workId, checkbox.dataset.workFolder, checkbox.checked, now());
+          const saved = persist(); render(); setText('folderChoiceStatus', saved ? 'Carpetas actualizadas.' : 'Cambio solo en memoria; exporta un respaldo.');
+        } catch (error) { setText('folderChoiceStatus', error.message); }
+        return;
+      }
       const field = event.target.closest?.('[data-progress-field]');
       if (!field) return;
       const id = field.dataset.id;
@@ -642,6 +699,14 @@ export function createApp({document = globalThis.document, storage = globalThis.
   elements('calendarPlatform')?.addEventListener?.('change', (event) => { state.preferences.platform = event.target.value; persist(); renderCalendar(); });
   elements('calendarStatus')?.addEventListener?.('change', (event) => { state.preferences.status = event.target.value; persist(); renderCalendar(); });
   elements('progressSearch')?.addEventListener?.('input', () => renderProgress());
+  elements('progressFolder')?.addEventListener?.('change', event => { state.preferences.folder = event.target.value; persist(); renderProgress(); });
+  elements('folderCreateForm')?.addEventListener?.('submit', event => {
+    event.preventDefault();
+    try {
+      state = createFolder(state, elements('folderName').value, now());
+      const saved = persist(); render(); elements('folderName').value = ''; setText('folderStatus', saved ? 'Carpeta creada.' : 'Carpeta solo en memoria; exporta un respaldo.');
+    } catch (error) { setText('folderStatus', error.message); }
+  });
   elements('progressFilter')?.addEventListener?.('change', () => renderProgress());
   elements('progressSort')?.addEventListener?.('change', (event) => { state.preferences.sort = event.target.value; persist(); renderProgress(); });
   elements('createManualSeries')?.addEventListener?.('click', () => {

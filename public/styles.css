@@ -213,3 +213,15 @@ h1 em { color: var(--lilac); font-style: normal; }
 .detail-fields input, .detail-fields select { width: 100%; min-width: 0; min-height: 44px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); }
 .work-detail .mini-button { min-height: 44px; }
 .detail-sources { padding-left: 20px; }
+.folder-manager { margin-bottom: 18px; }
+.folder-manager > summary { min-height: 44px; cursor: pointer; font-weight: 700; }
+.folder-create { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin: 12px 0; }
+.folder-create label { flex: 1 1 220px; }
+.folder-manager label { display: grid; gap: 5px; min-width: 0; font-size: 12px; }
+.folder-manager input { width: 100%; min-width: 0; min-height: 44px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); }
+.folder-row { display: grid; gap: 8px; padding: 14px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.folder-row .mini-button { min-height: 44px; }
+.folder-manager button:disabled { opacity: .45; cursor: default; }
+.folder-choices { display: grid; gap: 6px; margin: 0; padding: 0; border: 0; }
+.folder-choices label { display: flex; align-items: center; gap: 10px; min-height: 44px; overflow-wrap: anywhere; }
+.folder-choices input { flex: 0 0 20px; width: 20px; height: 20px; accent-color: var(--purple); }

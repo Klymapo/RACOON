@@ -1,5 +1,6 @@
 import {migrateLegacyTrack, validateState} from './storage.mjs';
 import {isMovie} from './media.mjs';
+import {mergeCollections, foldersForWork} from './folders.mjs';
 
 const BACKUP_SCHEMA_VERSION = 3;
 const VALID_ID = /^(?:legacy|anilist|custom):[A-Za-z0-9._-]+$/;
@@ -52,6 +53,7 @@ export function createBackup(state, exportedAt = new Date().toISOString()) {
     catalogCustom: clone(clean.catalogCustom),
     tracking: clone(clean.tracking),
     mediaLibrary: clone(clean.mediaLibrary),
+    collections: clone(clean.collections),
     preferences: clone(clean.preferences),
     sourceCache: clone(clean.sourceCache),
     updateMeta: clone(clean.updateMeta)
@@ -83,6 +85,11 @@ export function mergeBackup(current, incoming) {
   const preview = parseBackup(incoming);
   const next = preview.state;
   const localLinks = base.mediaLibrary.catalogLinks;
+  const workIds = {};
+  for (const [id, link] of Object.entries(next.mediaLibrary.catalogLinks)) {
+    workIds[link.workId] = [...new Set([...(workIds[link.workId] || []), localLinks[id]?.workId || link.workId])];
+  }
+  base.collections = mergeCollections(base.collections, next.collections, workIds);
   base.catalogOfficial = {...base.catalogOfficial, ...next.catalogOfficial};
   base.catalogCustom = {...base.catalogCustom, ...next.catalogCustom};
   const seasonIds = new Map(Object.entries(next.mediaLibrary.catalogLinks).filter(([id, link]) => link.seasonId && localLinks[id]?.seasonId).map(([id, link]) => [link.seasonId, localLinks[id].seasonId]));
@@ -114,7 +121,7 @@ function csvCell(value) {
 
 export function stateToCsv(state, catalog = []) {
   const current = validateState(state);
-  const rows = [['ID', 'Título', 'Episodios vistos', 'Episodios disponibles', 'Total', 'Estado', 'Favorito', 'Último cambio', 'Formato', 'Fecha vista']];
+  const rows = [['ID', 'Título', 'Episodios vistos', 'Episodios disponibles', 'Total', 'Estado', 'Favorito', 'Último cambio', 'Formato', 'Fecha vista', 'Carpetas']];
   for (const entry of catalog) {
     const track = current.tracking[entry.id] || {};
     rows.push([
@@ -127,7 +134,8 @@ export function stateToCsv(state, catalog = []) {
       track.favorite ? 'Sí' : 'No',
       track.changedAt || '',
       isMovie(entry) ? 'Película' : 'Serie/temporada',
-      isMovie(entry) ? track.watchedAt || '' : ''
+      isMovie(entry) ? track.watchedAt || '' : '',
+      foldersForWork(current, current.mediaLibrary.catalogLinks[entry.id]?.workId).map(folder => folder.name).join('; ')
     ]);
   }
   return `\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\r\n')}`;
