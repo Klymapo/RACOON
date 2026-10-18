@@ -1,4 +1,5 @@
 import {formatInTimeZone, zonedDateTimeToEpoch} from './time.mjs';
+import {isMovie} from './media.mjs';
 
 function plusDays(ymd, amount) {
   const date = new Date(`${ymd}T12:00:00Z`);
@@ -7,6 +8,7 @@ function plusDays(ymd, amount) {
 }
 
 function recurringDate(entry, date) {
+  if (isMovie(entry)) return null;
   if (entry.kind === 'Finalizada' || entry.airingStatus === 'FINISHED' || entry.airingStatus === 'CANCELLED' || entry.airingStatus === 'HIATUS') return null;
   const schedule = entry.weeklySchedule;
   if (!schedule || schedule.frequency !== 'weekly' || !Number.isInteger(schedule.day)) return null;
@@ -41,6 +43,7 @@ function statusLabel(confidence) {
 
 function statusMatches(entry, tracking, filter) {
   if (filter === 'all') return true;
+  if (isMovie(entry)) return filter === 'pending' ? !['Terminada', 'Descartada'].includes(tracking.status) : false;
   const available = tracking.availableOverride ?? entry.availableEpisodes ?? 0;
   if (filter === 'pending') return available > tracking.seen;
   if (filter === 'uptodate') return available > 0 && tracking.seen >= available;
@@ -79,7 +82,7 @@ export function buildCalendarModel(catalog = [], state = {}, options = {}) {
       const isProjected = Boolean(recurring && !initialDate && !explicit);
       const confidence = explicit?.confidence || (isProjected ? 'estimated' : null) || entry.scheduleConfidence || 'unverified';
       const candidates = explicit?.episodeCandidates || entry.episodeCandidates;
-      const episodeLabel = explicit?.episodeLabel || (candidates?.length && explicit ? `Episodio ${candidates.join('/')} · discrepancia` : entry.episodeLabel) || (japanPremiere ? 'Estreno japonés · fecha AniList' : 'Episodio pendiente de verificar');
+      const episodeLabel = isMovie(entry) ? 'Estreno de película' : explicit?.episodeLabel || (candidates?.length && explicit ? `Episodio ${candidates.join('/')} · discrepancia` : entry.episodeLabel) || (japanPremiere ? 'Estreno japonés · fecha AniList' : 'Episodio pendiente de verificar');
       return {
         ...entry,
         ...explicit,
@@ -97,7 +100,7 @@ export function buildCalendarModel(catalog = [], state = {}, options = {}) {
       };
     }).filter(Boolean);
     const airingAt = Number(entry.nextAiring?.airingAt) * 1000;
-    if (Number.isFinite(airingAt) && airingAt > 0 && Number.isInteger(entry.nextAiring?.episode)) {
+    if (!isMovie(entry) && Number.isFinite(airingAt) && airingAt > 0 && Number.isInteger(entry.nextAiring?.episode)) {
       const mexicoTime = formatInTimeZone(airingAt, 'America/Mexico_City', 'en-CA');
       const mexicoDate = mexicoTime.slice(0, 10);
       if (days.some(({date}) => date === mexicoDate)) {

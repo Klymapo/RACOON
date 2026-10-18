@@ -2,10 +2,10 @@
 <html lang="es-MX">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#100B24">
   <meta name="description" content="RACOON: biblioteca personal y calendario verificable de anime.">
-  <title>RACOON · Anime Wizard</title>
+  <title>RACOON · Tu biblioteca</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="/icons/racoon-wizard.svg">
   <link rel="apple-touch-icon" href="/icons/racoon-wizard-192.png">
@@ -16,7 +16,7 @@
     <header class="topbar">
       <a class="brand" href="#home" aria-label="RACOON, ir a Inicio">
         <img src="/icons/racoon-wizard.svg" alt="" width="42" height="42">
-        <span><strong>RACOON</strong><small>Anime Wizard</small></span>
+        <span><strong>RACOON</strong><small>Tu biblioteca</small></span>
       </a>
       <div class="topbar-actions">
         <span class="freshness" id="freshness" aria-live="polite">Listo para explorar</span>
@@ -25,61 +25,79 @@
     </header>
 
     <main>
-      <section class="hero-card" aria-labelledby="heroTitle">
-        <div class="hero-copy">
-          <p class="eyebrow">✦ Tu radar personal · CDMX</p>
-          <h1 id="heroTitle">Tu semana,<br><em>en modo mágico.</em></h1>
-          <p>Descubre estrenos, registra tu avance y conserva tu biblioteca en este dispositivo con fuentes visibles y datos honestos.</p>
-          <div class="hero-actions">
-            <button class="button button-primary" type="button" data-go="add">＋ Agregar serie</button>
-            <button class="button button-ghost" type="button" data-go="calendar">Ver calendario →</button>
-          </div>
-        </div>
-        <div class="hero-orbit" aria-hidden="true"><img src="/icons/racoon-wizard.svg" alt=""><span>✦</span><span>✧</span></div>
-      </section>
-
       <nav class="primary-nav" aria-label="Secciones principales" role="tablist">
-        <button id="homeTab" class="nav-tab is-active" type="button" role="tab" data-view="home" aria-controls="homeView" aria-selected="true"><span>⌂</span>Inicio</button>
-        <button id="calendarTab" class="nav-tab" type="button" role="tab" data-view="calendar" aria-controls="calendarView" aria-selected="false"><span>▦</span>Calendario</button>
-        <button id="progressTab" class="nav-tab" type="button" role="tab" data-view="progress" aria-controls="progressView" aria-selected="false"><span>◒</span>Mi progreso</button>
-        <button id="addTab" class="nav-tab" type="button" role="tab" data-view="add" aria-controls="addView" aria-selected="false"><span>＋</span>Agregar series</button>
-        <button id="backupsTab" class="nav-tab" type="button" role="tab" data-view="backups" aria-controls="backupsView" aria-selected="false"><span>▣</span>Respaldos</button>
+        <button id="homeTab" class="nav-tab is-active" type="button" role="tab" data-view="home" aria-controls="homeView" aria-selected="true" tabindex="0"><span aria-hidden="true">⌂</span>Inicio</button>
+        <button id="calendarTab" class="nav-tab" type="button" role="tab" data-view="calendar" aria-controls="calendarView" aria-selected="false" tabindex="-1"><span aria-hidden="true">▦</span>Agenda</button>
+        <button id="progressTab" class="nav-tab" type="button" role="tab" data-view="progress" aria-controls="progressView" aria-selected="false" tabindex="-1"><span aria-hidden="true">◒</span>Biblioteca</button>
+        <button id="addTab" class="nav-tab" type="button" role="tab" data-view="add" aria-controls="addView" aria-selected="false" tabindex="-1"><span aria-hidden="true">⌕</span>Explorar</button>
+        <button id="backupsTab" class="nav-tab" type="button" role="tab" data-view="backups" aria-controls="backupsView" aria-selected="false" tabindex="-1"><span aria-hidden="true">⚙</span>Ajustes</button>
       </nav>
 
+      <p id="saveWarning" role="status" class="inline-status" hidden></p>
       <div id="liveRegion" class="sr-only" aria-live="polite"></div>
       <section id="homeView" class="view-panel" role="tabpanel" aria-labelledby="homeTab">
-        <div class="section-heading"><div><p class="eyebrow">Tu biblioteca</p><h2>Buenos días, mago del anime</h2></div><span class="view-note" id="homeUpdated">Sincronización local activa</span></div>
+        <section class="hero-card" aria-labelledby="heroTitle">
+          <div class="hero-copy">
+            <p class="eyebrow">✦ Tu radar personal · CDMX</p>
+            <h1 id="heroTitle">Tu semana,<br><em>en modo mágico.</em></h1>
+            <p>Descubre estrenos, registra tu avance y conserva tu biblioteca en este dispositivo con fuentes visibles y datos honestos.</p>
+            <div class="hero-actions">
+              <button class="button button-primary" type="button" data-go="add">＋ Agregar serie</button>
+              <button class="button button-ghost" type="button" data-go="calendar">Ver calendario →</button>
+            </div>
+          </div>
+          <div class="hero-orbit" aria-hidden="true"><img src="/icons/racoon-wizard.svg" alt=""><span>✦</span><span>✧</span></div>
+        </section>
+
+        <div class="section-heading"><div><p class="eyebrow">Tu biblioteca</p><h2>Tu próxima historia empieza aquí</h2></div><span class="view-note" id="homeUpdated">Sincronización local activa</span></div>
         <div class="stat-grid" id="homeStats"></div>
         <div class="dashboard-grid"><article class="panel-card" id="homePending"><div class="panel-heading"><h3>Episodios pendientes</h3><button class="text-button" type="button" data-go="progress">Ver todo →</button></div><div class="stack-list" id="pendingList"></div></article><article class="panel-card" id="homeUpcoming"><div class="panel-heading"><h3>Próximas emisiones</h3><button class="text-button" type="button" data-go="calendar">Calendario →</button></div><div class="stack-list" id="upcomingList"></div></article></div>
+        <article class="panel-card" id="recommendations"></article>
       </section>
 
       <section id="calendarView" class="view-panel is-hidden" role="tabpanel" aria-labelledby="calendarTab">
-        <div class="section-heading"><div><p class="eyebrow">Agenda de emisiones</p><h2>Calendario</h2><p>Horas en CDMX. Las emisiones japonesas de AniList no confirman estreno en México; las previsiones no cuentan como episodios disponibles.</p></div><div class="heading-actions"><button class="button button-ghost" id="previousWeek" type="button">← Semana anterior</button><button class="button button-ghost" id="nextWeek" type="button">Semana siguiente →</button></div></div>
-        <div class="calendar-toolbar"><button class="button button-soft" id="currentWeek" type="button">Semana actual</button><label class="select-wrap"><span class="sr-only">Plataforma</span><select id="calendarPlatform"><option value="all">Todas las plataformas</option></select></label><label class="select-wrap"><span class="sr-only">Estado</span><select id="calendarStatus"><option value="all">Todos los estados</option><option value="pending">Con pendientes</option><option value="uptodate">Al corriente</option></select></label></div>
+        <div class="section-heading"><div><p class="eyebrow">Agenda de emisiones</p><h2>Agenda</h2><p>Horas en CDMX. Las emisiones japonesas de AniList no confirman estreno en México; las previsiones no cuentan como episodios disponibles.</p></div><div class="heading-actions"><button class="button button-ghost" id="previousWeek" type="button">← Semana anterior</button><button class="button button-ghost" id="nextWeek" type="button">Semana siguiente →</button></div></div>
+        <div class="calendar-toolbar"><label class="select-wrap">Vista<select id="agendaMode"><option value="day">Día</option><option value="week" selected>Semana</option><option value="month">Mes</option></select></label><label class="select-wrap">Obras<select id="agendaScope"><option value="mine">Mis obras</option><option value="all">Todas las del catálogo</option></select></label><label>Fecha<input id="agendaDate" type="date"></label><span id="agendaRange" aria-live="polite"></span><button class="button button-soft" id="currentWeek" type="button">Semana actual</button><label class="select-wrap"><span class="sr-only">Plataforma</span><select id="calendarPlatform"><option value="all">Todas las plataformas</option></select></label><label class="select-wrap"><span class="sr-only">Estado</span><select id="calendarStatus"><option value="all">Todos los estados</option><option value="pending">Con pendientes</option><option value="uptodate">Al corriente</option></select></label></div>
         <div id="daySelector" class="day-selector" role="tablist" aria-label="Días de la semana"></div><div id="calendar" class="calendar-layout"></div>
       </section>
 
       <section id="progressView" class="view-panel is-hidden" role="tabpanel" aria-labelledby="progressTab">
-        <div class="section-heading"><div><p class="eyebrow">Seguimiento local</p><h2>Mi progreso</h2><p>Tu avance es tuyo: los datos remotos no lo reducen.</p></div><div class="heading-actions"><input class="search-input" id="progressSearch" type="search" placeholder="Buscar en mi biblioteca…" aria-label="Buscar en mi biblioteca"><select id="progressFilter" aria-label="Filtrar progreso"><option value="all">Todas</option><option value="watching">Viendo</option><option value="pending">Pendientes</option><option value="uptodate">Al corriente</option><option value="finished">Finalizadas</option><option value="favorites">Favoritas</option></select><select id="progressSort" aria-label="Ordenar progreso"><option value="title">Título</option><option value="progress">Episodios vistos</option><option value="status">Estado</option><option value="favorites">Favoritos</option></select></div></div>
+        <div class="section-heading"><div><p class="eyebrow">Seguimiento local</p><h2>Biblioteca</h2><p>Tu avance es tuyo: los datos remotos no lo reducen.</p></div><div class="heading-actions"><input class="search-input" id="progressSearch" type="search" placeholder="Buscar en mi biblioteca…" aria-label="Buscar en mi biblioteca"><select id="progressFilter" aria-label="Filtrar progreso"><option value="all">Todas</option><option value="watching">Viendo</option><option value="pending">Pendientes</option><option value="uptodate">Al corriente</option><option value="finished">Finalizadas</option><option value="favorites">Favoritas</option></select><select id="progressFolder" aria-label="Filtrar por carpeta"><option value="all">Todas las carpetas</option></select><select id="progressSort" aria-label="Ordenar progreso"><option value="title">Título</option><option value="progress">Episodios vistos</option><option value="status">Estado</option><option value="favorites">Favoritos</option></select></div></div>
+        <details class="panel-card folder-manager" id="folderManager"><summary>Organizar carpetas</summary><form id="folderCreateForm" class="folder-create"><label>Nueva carpeta<input id="folderName" maxlength="80" required placeholder="Ej. Para ver con papá"></label><button class="button button-soft" type="submit">Crear carpeta</button></form><p id="folderStatus" role="status" class="muted"></p><div id="folderList"></div></details>
         <div id="progressList" class="library-grid"></div>
       </section>
 
       <section id="addView" class="view-panel is-hidden" role="tabpanel" aria-labelledby="addTab">
-        <div class="section-heading"><div><p class="eyebrow">Catálogo ampliable</p><h2>Agregar series</h2><p>Busca en AniList y revisa la ficha antes de guardarla.</p></div></div>
+        <div class="section-heading"><div><p class="eyebrow">Catálogo ampliable</p><h2>Explorar</h2><p>Busca anime en AniList o crea una serie o película manual. Revisa la ficha antes de guardarla.</p></div></div>
         <form id="searchForm" class="search-bar"><label class="sr-only" for="animeSearch">Buscar anime</label><input class="search-input" id="animeSearch" type="search" autocomplete="off" placeholder="Ej. Frieren, One Piece…"><button class="button button-primary" type="submit">Buscar</button></form>
-        <button class="button button-soft" id="createManualSeries" type="button">＋ Crear ficha manual sin AniList</button>
+        <div class="button-row"><button class="button button-soft" id="createManualSeries" type="button">＋ Crear serie manual</button><button class="button button-soft" id="createManualMovie" type="button">＋ Crear película manual</button></div>
         <div id="searchStatus" class="inline-status" aria-live="polite"></div><div id="searchResults" class="result-grid"></div><div id="seriesConfirmation" class="panel-card is-hidden"></div>
       </section>
 
       <section id="backupsView" class="view-panel is-hidden" role="tabpanel" aria-labelledby="backupsTab">
-        <div class="section-heading"><div><p class="eyebrow">Tu biblioteca, a salvo</p><h2>Respaldos y ajustes</h2><p>Exporta todo para conservarlo o moverlo a otro dispositivo.</p></div></div>
-        <div class="backup-grid"><article class="panel-card"><div class="panel-heading"><h3>Respaldo completo</h3><span class="badge badge-teal" id="backupSummary">0 series</span></div><p class="muted">Incluye progreso, favoritos, series agregadas, preferencias, fuentes y metadatos.</p><div class="button-row"><button class="button button-primary" id="exportBackup" type="button">↓ Exportar JSON</button><button class="button button-soft" id="exportCsv" type="button">↓ Exportar CSV</button><button class="button button-soft" id="importBackup" type="button">↑ Importar JSON</button><input id="backupFile" class="is-hidden" type="file" accept="application/json,.json"></div></article><article class="panel-card"><div class="panel-heading"><h3>Actualizaciones</h3><span class="badge" id="appVersion">RACOON v2</span></div><p class="muted" id="updateStatus">La aplicación comprobará versiones nuevas al iniciar.</p><button class="button button-soft" id="checkUpdate" type="button">↻ Comprobar versión</button></article></div>
+        <div class="section-heading"><div><p class="eyebrow">Tu biblioteca, a salvo</p><h2>Ajustes</h2><p>Exporta todo para conservarlo o moverlo a otro dispositivo.</p></div></div>
+        <div class="backup-grid"><article class="panel-card"><div class="panel-heading"><h3>Respaldo completo</h3><span class="badge badge-teal" id="backupSummary">0 series</span></div><p class="muted">Incluye progreso, favoritos, series agregadas, preferencias, fuentes y metadatos.</p><div class="button-row"><button class="button button-primary" id="exportBackup" type="button">↓ Exportar JSON</button><button class="button button-soft" id="exportCsv" type="button">↓ Exportar CSV</button><button class="button button-soft" id="importBackup" type="button">↑ Importar JSON</button><button class="button button-soft" id="exportMigrationBackup" type="button" hidden>↓ Respaldo previo a v3</button><input id="backupFile" class="is-hidden" type="file" accept="application/json,.json"></div></article><article class="panel-card"><div class="panel-heading"><h3>Actualizaciones</h3><span class="badge" id="appVersion">RACOON v3 · avance 1</span></div><p class="muted" id="updateStatus">La aplicación comprobará versiones nuevas al iniciar.</p><button class="button button-soft" id="checkUpdate" type="button">↻ Comprobar versión</button></article></div>
+        <article class="panel-card table-import-panel"><h3>Importar CSV o Excel</h3><p class="muted">Archivos locales CSV, TSV y XLSX (hasta 10 MB). Revisa columnas y filas antes de guardar. Las fichas nuevas son manuales; sin estado se marcan Pendiente. No se sobrescribe progreso existente. Para XLS antiguo, exporta como XLSX o CSV.</p>
+          <label>Archivo <input id="tableFile" type="file" accept=".csv,.tsv,.xlsx"></label>
+          <div id="tableOptions" hidden>
+            <div class="table-import-grid"><label>Hoja<select id="tableSheet"></select></label><label>Formato cuando no hay columna<select id="tableFormat"><option value="season">Serie/temporada</option><option value="movie">Película</option></select></label><label>Estado del lote<select id="tableStatus"><option value="auto">Usar columna o Pendiente</option><option>Pendiente</option><option>Viendo</option><option>Terminada</option></select></label><label>Carpeta adicional<select id="tableFolder"></select></label></div>
+            <label class="table-header-toggle"><input id="tableHeader" type="checkbox"> La primera fila contiene encabezados</label>
+            <details><summary>Revisar columnas (cambiar reinicia las selecciones)</summary><div id="tableMapping" class="table-import-grid"></div></details>
+            <p id="tableCounts" role="status"></p><div class="table-import-scroll" tabindex="0" aria-label="Vista previa de importación"><table><thead><tr><th>Fila</th><th>Título y revisión</th><th>Formato y estado</th><th>Acción</th></tr></thead><tbody id="tablePreview"></tbody></table></div>
+            <div class="button-row"><button id="tablePrevious" class="button button-soft" type="button">Página anterior</button><button id="tableNext" class="button button-soft" type="button">Página siguiente</button></div><div class="button-row"><button id="applyTableImport" class="button button-primary" type="button" disabled>Importar seleccionadas</button><button id="cancelTableImport" class="button button-soft" type="button">Cancelar</button></div>
+          </div><p id="tableStatusMessage" role="status" class="inline-status"></p><button id="exportTableRollback" class="button button-soft" type="button" hidden>↓ Respaldo previo a la última importación</button>
+        </article>
+        <article class="panel-card table-import-panel"><h3>Letterboxd · intercambio local</h3><p>Importa un CSV de tu cuenta (hasta 1 MB) y revisa las filas antes de guardar. No conecta tu cuenta ni copia reseñas. Para CSV de un ZIP, extrae primero el archivo.</p>
+<label>Tipo de archivo<select id="letterboxdKind"><option value="ratings">Notas (no infiere vistas)</option><option value="watched">Películas vistas</option><option value="diary">Diario</option><option value="watchlist">Watchlist</option></select></label><label>CSV Letterboxd<input id="letterboxdFile" type="file" accept=".csv,text/csv"></label>
+<div id="letterboxdOptions" hidden><p>Las coincidencias se omiten por defecto. Vincular conserva estado, avance y favoritos. Solo WatchedDate es una fecha de visionado.</p><label><input id="letterboxdOverwrite" type="checkbox"> Reemplazar notas personales existentes en filas vinculadas</label><div class="table-import-scroll" tabindex="0" aria-label="Vista previa Letterboxd"><table><thead><tr><th>Fila</th><th>Película y revisión</th><th>Acción</th></tr></thead><tbody id="letterboxdRows"></tbody></table></div><div class="button-row"><button type="button" class="button button-soft" id="letterboxdPrevious">Anterior</button><button type="button" class="button button-soft" id="letterboxdNext">Siguiente</button><button type="button" class="button button-primary" id="letterboxdApply">Importar seleccionadas</button><button type="button" class="button button-soft" id="letterboxdCancel">Cancelar</button></div></div>
+<p>Exporta vistas al perfil y pendientes a la watchlist por separado. Solo películas. Letterboxd admite notas enteras de 1 a 10: cero y decimales se omiten, sin redondearlos. El respaldo JSON conserva todo.</p><div class="button-row"><button type="button" class="button button-soft" id="letterboxdExport-watched">↓ Vistas CSV</button><button type="button" class="button button-soft" id="letterboxdExport-watchlist">↓ Watchlist CSV</button><button type="button" class="button button-soft" id="letterboxdRollback" hidden>↓ Respaldo previo a Letterboxd</button></div><p id="letterboxdStatus" role="status"></p></article>
         <article class="panel-card danger-safe"><h3>Antes de restaurar</h3><p class="muted">Verás una vista previa con cantidades y conflictos. Fusionar conserva lo más reciente; reemplazar pide confirmación antes de sobrescribir.</p><div id="backupPreview" class="inline-status"></div></article>
       </section>
     </main>
     <footer class="footer"><span>🪄 RACOON · datos personales sólo en este dispositivo</span><a href="https://docs.anilist.co/reference/object/airingschedule" target="_blank" rel="noopener noreferrer">Sobre las fuentes ↗</a></footer>
   </div>
 
+  <dialog id="workDetail" class="wizard-dialog work-detail" aria-labelledby="workDetailTitle"><div id="workDetailContent"></div></dialog>
   <dialog id="updateDialog" class="wizard-dialog"><div class="dialog-icon">🪄</div><h2>RACOON tiene una actualización disponible</h2><p id="updateMessage"></p><div class="button-row"><button class="button button-primary" id="applyUpdate" type="button">Actualizar ahora</button><button class="button button-ghost" id="dismissUpdate" type="button">Más tarde</button></div></dialog>
   <dialog id="importDialog" class="wizard-dialog"><div class="dialog-icon">▣</div><h2>Revisar respaldo</h2><div id="importDetails"></div><div class="button-row"><button class="button button-primary" id="mergeImport" type="button">Fusionar datos</button><button class="button button-soft" id="replaceImport" type="button">Reemplazar biblioteca</button><button class="button button-ghost" id="cancelImport" type="button">Cancelar</button></div></dialog>
   <script type="module" src="/js/app.mjs"></script>

@@ -1,5 +1,5 @@
 {
-  "name": "RACOON · Anime Wizard",
+  "name": "RACOON · Biblioteca audiovisual",
   "short_name": "RACOON",
   "description": "Mi biblioteca, calendario y progreso de anime guardados en este dispositivo.",
   "lang": "es-MX",
@@ -13,13 +13,19 @@
       "src": "/icons/racoon-wizard-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icons/racoon-wizard-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/racoon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

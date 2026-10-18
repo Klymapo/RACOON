@@ -1,19 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
-  <title id="title">RACOON Wizard</title>
-  <desc id="desc">Mapache chibi con antifaz y sombrero morado de mago</desc>
-  <path fill="#8656E8" d="M53 84 27 35l55 22 42-27 49 27 55-22-28 52z"/>
-  <path fill="#B49AFF" d="m120 29 22 2 12 31h-66l12-31z"/>
-  <path fill="#F1CA78" d="m128 21 5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z"/>
-  <path fill="#8F6AF0" stroke="#100B24" stroke-width="7" d="M44 113c0-37 37-65 84-65s84 28 84 65v49c0 45-36 70-84 70s-84-25-84-70z"/>
-  <path fill="#B7A4FF" d="M54 126c0-23 33-42 74-42s74 19 74 42c0 24-33 43-74 43s-74-19-74-43z"/>
-  <path fill="#1B1538" d="M48 122c18-19 39-27 62-27 7 0 13 1 18 3-15 6-26 18-30 35-10-6-24-9-50-11zm160 0c-18-19-39-27-62-27-7 0-13 1-18 3 15 6 26 18 30 35 10-6 24-9 50-11z"/>
-  <ellipse cx="96" cy="130" rx="10" ry="13" fill="#F4EFFF"/>
-  <ellipse cx="160" cy="130" rx="10" ry="13" fill="#F4EFFF"/>
-  <circle cx="98" cy="133" r="5" fill="#100B24"/>
-  <circle cx="158" cy="133" r="5" fill="#100B24"/>
-  <path fill="#D9C8FF" d="M119 145h18l-9 13z"/>
-  <path fill="none" stroke="#100B24" stroke-linecap="round" stroke-width="6" d="M110 166c10 9 26 9 36 0"/>
-  <path fill="#72DFD0" d="M54 172c-33 5-40 24-20 41 15 13 37 11 51-5-17 3-29-3-31-14z"/>
-  <path fill="none" stroke="#100B24" stroke-linecap="round" stroke-width="7" d="M55 181c-13 6-15 14-4 20"/>
-  <path fill="#F1CA78" d="M83 217h90l-12 12H95z"/>
+  <title id="title">RACOON</title>
+  <desc id="desc">Mapache geométrico violeta con antifaz, orejas poligonales y sombrero discreto de mago</desc>
+  <path d="M51 101 27 51 85 77M171 77 229 51 205 101" fill="#8656E8" stroke="#100B24" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M38 147 49 103 87 77 169 77 207 103 218 147 202 198 170 226 86 226 54 198Z" fill="#8656E8" stroke="#100B24" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M54 143 79 111 128 118 177 111 202 143 191 188 164 207 92 207 65 188Z" fill="#B49AFF"/>
+  <path d="M46 143 69 119 108 111 128 131 113 166 74 176 49 162Z" fill="#24183F"/>
+  <path d="M210 143 187 119 148 111 128 131 143 166 182 176 207 162Z" fill="#24183F"/>
+  <path d="M83 132 104 128 110 138 105 151 87 152 80 144Z" fill="#F4EFFF"/>
+  <path d="M173 132 152 128 146 138 151 151 169 152 176 144Z" fill="#F4EFFF"/>
+  <circle cx="98" cy="141" r="5" fill="#100B24"/>
+  <circle cx="158" cy="141" r="5" fill="#100B24"/>
+  <path d="M117 174H139L128 187Z" fill="#24183F"/>
+  <path d="M73 87 123 23 159 89Z" fill="#392459" stroke="#100B24" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M65 89H176L188 99H67Z" fill="#8656E8" stroke="#100B24" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M133 47 137 55 146 56 140 62 141 70 133 66 125 70 126 62 120 56 129 55Z" fill="#F4EFFF"/>
+  <path d="M110 198 Q128 210 146 198" fill="none" stroke="#24183F" stroke-width="6" stroke-linecap="round"/>
 </svg>

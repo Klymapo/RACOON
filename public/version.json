@@ -1,9 +1,9 @@
 {
-  "version": "2.2.1",
-  "publishedAt": "2026-10-13T17:27:47Z",
+  "version": "3.0.0-alpha.20",
   "changes": [
-    "Ediciones y eliminaciones de series protegidas durante consultas a AniList",
-    "La actualización conserva el catálogo local y el progreso personal",
-    "Caché de la PWA renovada sin borrar datos locales"
+    "Consulta optativa TMDB/JustWatch de plataformas por país con identidad confirmada",
+    "Clave de lectura gratuita solo en memoria, sin guardar en JSON ni localStorage",
+    "Modalidad y canal separados; resultados no verificados requieren revisión",
+    "IndexedDB primario resistente a cuota local"
   ]
 }

@@ -1,6 +1,24 @@
+import {mountAutomaticRegionalLookup} from './regional-auto-ui.mjs';
+import {validDay} from './ratings.mjs';
+import {mountShareCards,shareButton} from './share-ui.mjs';
+import {mountWrap} from './wrap-ui.mjs';
+import {mountOcr} from './ocr-ui.mjs';
+import {renderRecommendations,renderRatingsPanel,renderRatingSummary,mountDiscovery} from './discovery-ui.mjs';
+import {registerTableImporter} from './table-import-ui.mjs';
 import {CATALOG} from './catalog.mjs';
-import {createDefaultState, loadState, saveState} from './storage.mjs';
+import {createDefaultState, loadState, saveState, validateState} from './storage.mjs';
+import {isMovie, linkSeasonToWork, detachSeason} from './media.mjs';
+import {renderSeasonGrouping} from './season-ui.mjs';
+import {renderMovieForm} from './movie-ui.mjs';
+import {renderLibraryCard, renderWorkDetail} from './detail-ui.mjs';
+import {foldersForWork, listFolders, createFolder, renameFolder, moveFolder, trashFolder, restoreFolder, setFolderMembership} from './folders.mjs';
+import {renderFolderRows, renderFolderChoices} from './folder-ui.mjs';
+import {listSmartCollections, matchesSmartRules} from './smart-collections.mjs';
+import {mountSmartCollectionManager, renderSmartCollectionRows} from './smart-ui.mjs';
+import {mountRegionalControls, renderRegionalPanel, renderRegionalResults, renderRegionalSettings} from './regional-ui.mjs';
+import {mountSlice} from './slice-ui.mjs';
 import {buildCalendarModel} from './schedule.mjs';
+import {buildAgendaModel, agendaRange, shiftAgendaDate} from './agenda.mjs';
 import {mexicoDate} from './time.mjs';
 import {searchAnime, fetchAnimeDetails, fetchSeasonalAnime, matchLegacyAnime, seasonForEntry} from './providers/anilist.mjs';
 import {registerPwa} from './pwa.mjs';
@@ -8,7 +26,8 @@ import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} f
 import {shouldRefresh, refreshCatalog, mergeCatalogObservation, FOUR_HOURS} from './refresh.mjs';
 import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '2.2.1';
+const RACOON_VERSION = '3.0.0-alpha.20';
+const VIEWS = ['home', 'calendar', 'progress', 'add', 'backups'];
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -17,14 +36,17 @@ function entryMap(catalog, state) {
 }
 
 function availableFor(entry, tracking = {}) {
+  if (isMovie(entry)) return 0;
   return tracking.availableOverride ?? entry.availableEpisodes ?? 0;
 }
 
 function availableValue(entry, tracking = {}) {
+  if (isMovie(entry)) return null;
   return tracking.availableOverride ?? entry.availableEpisodes ?? null;
 }
 
 function totalFor(entry, tracking = {}) {
+  if (isMovie(entry)) return null;
   return tracking.totalOverride ?? entry.totalEpisodes ?? null;
 }
 
@@ -68,7 +90,7 @@ export function buildDashboardModel(catalog, state, today = mexicoDate(Date.now(
     .map(([id, raw]) => ({id, entry: entries[id], tracking: normalizeTracking(raw)}))
     .filter(({entry, tracking}) => entry && !['Terminada', 'Descartada'].includes(tracking.status));
   const pending = tracked.map(({id, entry, tracking}) => ({id, entry, tracking, available: availableFor(entry, tracking), remaining: Math.max(0, availableFor(entry, tracking) - tracking.seen)}))
-    .filter((item) => item.remaining > 0)
+    .filter((item) => !isMovie(item.entry) && item.remaining > 0)
     .sort((left, right) => right.remaining - left.remaining || String(left.entry.title || left.entry.name).localeCompare(String(right.entry.title || right.entry.name)));
   const upcoming = Object.values(entries).filter((entry) => !['Terminada', 'Descartada'].includes(state.tracking[entry.id]?.status)).map((entry) => {
     const event = nextWeeklyDate(entry, today);
@@ -80,10 +102,10 @@ export function buildDashboardModel(catalog, state, today = mexicoDate(Date.now(
   }).slice(0, 6);
   return {
     stats: {
-      tracked: tracked.length,
+      tracked: tracked.filter(({entry}) => !isMovie(entry)).length,
       pendingSeries: pending.length,
       pendingEpisodes: pending.reduce((sum, item) => sum + item.remaining, 0),
-      upToDate: tracked.filter(({entry, tracking}) => availableFor(entry, tracking) > 0 && tracking.seen >= availableFor(entry, tracking)).length
+      upToDate: tracked.filter(({entry, tracking}) => !isMovie(entry) && availableFor(entry, tracking) > 0 && tracking.seen >= availableFor(entry, tracking)).length
     },
     pending,
     upcoming
@@ -103,23 +125,33 @@ export function saveCatalogEntry(state, entry, edits = {}) {
   const changedFields = Object.keys(edits).filter((field) => JSON.stringify(edits[field]) !== JSON.stringify(entry[field] ?? null));
   const saved = {...previous, ...entry, ...edits, id: entry.id, savedAt: Date.now(), manualCatalogFields: [...new Set([...(previous.manualCatalogFields || []), ...changedFields])]};
   const tracking = state.tracking[entry.id] ? state.tracking : {...state.tracking, [entry.id]: normalizeTracking()};
-  if (entry.id.startsWith('custom:')) return {...state, tracking, catalogCustom: {...state.catalogCustom, [entry.id]: saved}};
-  return {...state, tracking, catalogOfficial: {...state.catalogOfficial, [entry.id]: saved}};
+  if (entry.id.startsWith('custom:')) return validateState({...state, tracking, catalogCustom: {...state.catalogCustom, [entry.id]: saved}});
+  return validateState({...state, tracking, catalogOfficial: {...state.catalogOfficial, [entry.id]: saved}});
 }
 
-export function filterProgressEntries(catalog, state, {query = '', filter = 'all', sort = 'title'} = {}) {
+export function filterProgressEntries(catalog, state, {query = '', filter = 'all', sort = 'title', folder = 'all'} = {}) {
   const normalizedQuery = String(query).trim().toLocaleLowerCase();
+  const activeFolders = folder === 'all' ? null : new Set(listFolders(state).map(item => item.id));
+  const smartSelection = folder.startsWith('smart:') ? listSmartCollections(state).find(item => item.id === folder) : null;
   const entries = Object.values(entryMap(catalog, state)).map((entry) => {
     const tracking = normalizeTracking(state.tracking?.[entry.id]);
     const available = availableValue(entry, tracking);
     const remaining = available === null ? null : Math.max(0, available - tracking.seen);
     return {entry, tracking, available, remaining};
   }).filter(({entry, tracking, available, remaining}) => {
+    if (folder.startsWith('smart:')) {
+      if (!smartSelection || !matchesSmartRules(entry, tracking, smartSelection.rules)) return false;
+    } else if (folder !== 'all') {
+      const workId = state.mediaLibrary?.catalogLinks[entry.id]?.workId;
+      const memberships = Object.keys(state.collections?.memberships?.[workId] || {}).filter(id => activeFolders.has(id) && state.collections.memberships[workId][id].assigned);
+      if (folder === 'unfiled' && memberships.length) return false;
+      if (folder !== 'unfiled' && !memberships.includes(folder)) return false;
+    }
     const haystack = `${entry.title || entry.name} ${entry.alternativeTitles?.join(' ') || ''}`.toLocaleLowerCase();
     if (normalizedQuery && !haystack.includes(normalizedQuery)) return false;
     if (filter === 'watching' && tracking.status !== 'Viendo') return false;
-    if (filter === 'pending' && !(remaining !== null && remaining > 0)) return false;
-    if (filter === 'uptodate' && !(available !== null && available > 0 && tracking.seen >= available)) return false;
+    if (filter === 'pending' && !(isMovie(entry) ? ['Pendiente', 'Viendo'].includes(tracking.status) : remaining !== null && remaining > 0)) return false;
+    if (filter === 'uptodate' && (isMovie(entry) || !(available !== null && available > 0 && tracking.seen >= available))) return false;
     if (filter === 'finished' && tracking.status !== 'Terminada') return false;
     if (filter === 'favorites' && !tracking.favorite) return false;
     return true;
@@ -135,6 +167,7 @@ export function filterProgressEntries(catalog, state, {query = '', filter = 'all
 }
 
 export function progressPercentage(entry, tracking = {}) {
+  if (isMovie(entry)) return tracking.status === 'Terminada' ? 100 : 0;
   const denominator = tracking.totalOverride ?? entry.totalEpisodes ?? tracking.availableOverride ?? entry.availableEpisodes;
   return denominator > 0 ? Math.min(100, Math.round(((tracking.seen || 0) / denominator) * 100)) : 0;
 }
@@ -157,12 +190,15 @@ function memoryStorage() {
 
 export function createApp({document = globalThis.document, storage = globalThis.localStorage || memoryStorage(), fetch = globalThis.fetch, now = Date.now} = {}) {
   let {state} = loadState(storage, CATALOG);
-  let currentView = state.preferences.view || 'home';
+  mountAutomaticRegionalLookup({document, getState: () => state, fetch, now});
+  let currentView = VIEWS.includes(state.preferences.view) ? state.preferences.view : 'home';
   let searchResults = new Map();
   let selectedSeries = null;
+  let detailId = null;
   let pwaController = null;
   let pendingImport = null;
   let refreshInFlight = null;
+  let sliceController = null;
   const elements = (id) => document?.getElementById?.(id);
 
   function setText(id, value) {
@@ -170,7 +206,20 @@ export function createApp({document = globalThis.document, storage = globalThis.
     if (node) node.textContent = value;
   }
 
+  function persist() {
+    state = validateState(state);
+    const saved = saveState(storage, state);
+    const warning = elements('saveWarning');
+    if (warning) {
+      warning.hidden = saved;
+      warning.textContent = saved ? '' : 'No se pudo guardar en este dispositivo. Tus datos anteriores se conservaron; exporta un respaldo antes de cerrar.';
+    }
+    return saved;
+  }
+
   function renderHome() {
+    const discovery = elements('recommendations');
+    if (discovery) discovery.innerHTML = renderRecommendations(state, mexicoDate(now()));
     const model = buildDashboardModel(CATALOG, state, mexicoDate(now()));
     const stats = elements('homeStats');
     if (stats) stats.innerHTML = [
@@ -180,7 +229,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
       ['upcoming', model.upcoming.length, 'Próximas emisiones']
     ].map(([, value, label]) => `<article class="stat-card"><strong>${value}</strong><span>${label}</span></article>`).join('');
     const pending = elements('pendingList');
-    if (pending) pending.innerHTML = model.pending.length ? model.pending.slice(0, 4).map((item) => `<div class="stack-item"><div class="stack-icon">${escapeHtml(item.entry.icon || '✦')}</div><div class="stack-copy"><strong>${escapeHtml(item.entry.title || item.entry.name)}</strong><span>${item.remaining} episodio${item.remaining === 1 ? '' : 's'} pendiente${item.remaining === 1 ? '' : 's'}</span></div><button class="mini-button" type="button" data-progress-action="plus" data-id="${escapeHtml(item.id)}" aria-label="Marcar un episodio visto de ${escapeHtml(item.entry.title || item.entry.name)}">+1</button></div>`).join('') : '<div class="empty-state"><strong>Todo en calma</strong>No tienes episodios pendientes.</div>';
+    if (pending) pending.innerHTML = model.pending.length ? model.pending.slice(0, 4).map((item) => `<div class="stack-item"><div class="stack-icon">${escapeHtml(item.entry.icon || '✦')}</div><div class="stack-copy"><strong>${escapeHtml(item.entry.title || item.entry.name)}</strong><span>${item.remaining} episodio${item.remaining === 1 ? '' : 's'} pendiente${item.remaining === 1 ? '' : 's'}</span></div><button class="mini-button" type="button" data-open-detail="${escapeHtml(item.id)}" aria-label="Abrir ficha de ${escapeHtml(item.entry.title || item.entry.name)}">Abrir ficha</button></div>`).join('') : '<div class="empty-state"><strong>Todo en calma</strong>No tienes episodios pendientes.</div>';
     const upcoming = elements('upcomingList');
     if (upcoming) upcoming.innerHTML = model.upcoming.length ? model.upcoming.slice(0, 4).map((entry) => `<div class="stack-item"><div class="stack-icon">${escapeHtml(entry.icon || '✦')}</div><div class="stack-copy"><strong>${escapeHtml(entry.title || entry.name)}</strong><span>${escapeHtml(entry.date)} · ${escapeHtml(entry.platformLabel || 'Fuente pendiente')} · ${escapeHtml(entry.statusLabel)}</span></div></div>`).join('') : '<div class="empty-state"><strong>Sin próximas emisiones</strong>Agrega una serie para verla aquí.</div>';
     const checked = Number(state.updateMeta?.lastChecked);
@@ -192,28 +241,86 @@ export function createApp({document = globalThis.document, storage = globalThis.
   function renderProgress() {
     const target = elements('progressList');
     if (!target) return;
-    const entries = filterProgressEntries(CATALOG, state, {query: elements('progressSearch')?.value || '', filter: elements('progressFilter')?.value || 'all', sort: elements('progressSort')?.value || state.preferences.sort || 'title'});
-    const cards = entries.map(({entry, tracking, available}) => {
-      const id = entry.id;
-      const total = totalFor(entry, tracking);
-      const percent = progressPercentage(entry, tracking);
-      const poster = safeHttpUrl(entry.poster) ? `<img src="${escapeHtml(entry.poster)}" alt="" loading="lazy">` : escapeHtml(entry.icon || '✦');
-      const availableLabel = available === null ? 'pendiente' : available;
-      return `<article class="library-card" data-library-id="${escapeHtml(id)}"><div class="poster">${poster}</div><div class="card-content"><div class="card-topline"><select class="status-select" data-progress-field="status" data-id="${escapeHtml(id)}" aria-label="Estado de ${escapeHtml(entry.title || entry.name)}">${['Pendiente', 'Viendo', 'Al día', 'Terminada', 'Descartada'].map((value) => `<option value="${value}"${tracking.status === value ? ' selected' : ''}>${value}</option>`).join('')}</select><button class="favorite-button ${tracking.favorite ? 'is-favorite' : ''}" type="button" data-progress-action="favorite" data-id="${escapeHtml(id)}" aria-label="${tracking.favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}">${tracking.favorite ? '★' : '☆'}</button></div><h3>${escapeHtml(entry.title || entry.name)}</h3><div class="card-meta"><span>${tracking.seen} vistos · ${availableLabel} disponibles · ${total ?? '?'} total</span></div><div class="progress-line"><span style="width:${percent}%"></span></div><div class="progress-edit-grid"><label>Vistos<input type="number" min="0" max="9999" value="${tracking.seen}" data-progress-field="seen" data-id="${escapeHtml(id)}"></label><label>Disponibles<input type="number" min="0" max="9999" value="${available ?? ''}" placeholder="?" data-progress-field="availableOverride" data-id="${escapeHtml(id)}"></label><label>Total<input type="number" min="0" max="9999" value="${total ?? ''}" placeholder="?" data-progress-field="totalOverride" data-id="${escapeHtml(id)}"></label></div><div class="card-actions"><button class="mini-button" type="button" data-progress-action="minus" data-id="${escapeHtml(id)}">−1</button><button class="mini-button" type="button" data-progress-action="plus" data-id="${escapeHtml(id)}">＋1</button><button class="mini-button" type="button" data-progress-action="catchup" data-id="${escapeHtml(id)}"${available === null ? ' disabled' : ''}>Al corriente</button></div></div></article>`;
-    });
-    target.innerHTML = cards.join('') || '<div class="empty-state"><strong>Tu biblioteca está vacía</strong>Agrega tu primera serie.</div>';
-    target.querySelectorAll?.('[data-library-id]')?.forEach((card) => {
-      const id = card.dataset.libraryId;
-      const entry = entryMap(CATALOG, state)[id];
-      const tracking = normalizeTracking(state.tracking[id]);
-      const denominator = totalFor(entry, tracking) ?? availableValue(entry, tracking);
-      card.querySelector('.card-meta')?.insertAdjacentHTML('beforeend', `<span> · ${denominator > 0 ? `${progressPercentage(entry, tracking)}% de ${totalFor(entry, tracking) ? 'la temporada' : 'lo disponible'}` : 'porcentaje pendiente'}</span>`);
-      const availabilityTrust = tracking.availableOverride !== null ? 'disponibles: ajuste local' : entry.availableConfidence === 'confirmed' ? 'disponibles: confirmado' : 'disponibles: sin verificar';
-      const totalTrust = tracking.totalOverride !== null ? 'total: ajuste local' : entry.totalConfidence === 'confirmed' ? 'total: confirmado' : entry.totalEpisodes !== null && entry.totalEpisodes !== undefined ? 'total: previsto' : 'total: sin verificar';
-      card.querySelector('.card-meta')?.insertAdjacentHTML('beforeend', `<small>${availabilityTrust} · ${totalTrust}</small>`);
-      if (id.startsWith('legacy:')) return;
-      card.querySelector('.card-actions')?.insertAdjacentHTML('beforeend', `<button class="mini-button" type="button" data-series-edit="${escapeHtml(id)}">Editar ficha</button><button class="mini-button" type="button" data-series-delete="${escapeHtml(id)}">Eliminar</button>`);
-    });
+    const entries = filterProgressEntries(CATALOG, state, {query: elements('progressSearch')?.value || '', filter: elements('progressFilter')?.value || 'all', sort: elements('progressSort')?.value || state.preferences.sort || 'title', folder: state.preferences.folder || 'all'});
+    target.innerHTML = entries.map(({entry, tracking}) => renderLibraryCard(entry, tracking)).join('') || '<div class="empty-state"><strong>Sin coincidencias</strong>Prueba otra carpeta o filtro.</div>';
+  }
+
+  function renderFolders() {
+    const folders = listFolders(state);
+    const smart = listSmartCollections(state);
+    const select = elements('progressFolder');
+    if (select) {
+      const selected = state.preferences.folder || 'all';
+      const valid = ['all', 'unfiled'].includes(selected) || [...folders, ...smart].some(folder => folder.id === selected);
+      state.preferences.folder = valid ? selected : 'all';
+      select.innerHTML = '<option value="all">Todas las carpetas</option><option value="unfiled">Sin carpeta</option>' + folders.map(folder => `<option value="${escapeHtml(folder.id)}">${escapeHtml(folder.name)}</option>`).join('') + (smart.length ? '<optgroup label="Colecciones inteligentes">' + smart.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('') + '</optgroup>' : '');
+      select.value = state.preferences.folder;
+    }
+    const rows = elements('folderList');
+    if (rows) rows.innerHTML = renderFolderRows(state);
+    const smartRows = elements('smartList');
+    if (smartRows) smartRows.innerHTML = renderSmartCollectionRows(state);
+  }
+
+  function closeDetail() {
+    elements('workDetail')?.close?.();
+  }
+
+  function renderDetail() {
+    if (!detailId) return;
+    const entry = entryMap(CATALOG, state)[detailId];
+    if (!entry) { closeDetail(); detailId = null; return; }
+    const target = elements('workDetailContent');
+    if (!target) return;
+    const markup = renderWorkDetail(entry, normalizeTracking(state.tracking[detailId]), {folderContent: renderFolderChoices(state, detailId), seasonContent: renderSeasonGrouping(state, detailId)}) + renderRegionalPanel(state, entry, mexicoDate(now())) + renderRatingsPanel(state, entry, mexicoDate(now())) + shareButton(entry.id);
+    if (elements('workDetail')?.open && target.dataset.detailId === detailId && target.dataset.detailKind === entry.mediaKind) {
+      // Keep live form nodes: replacing them on blur can swallow the click on
+      // the next button before mouseup (for example, edit count then favorite).
+      const fresh = document.createElement('div');
+      fresh.innerHTML = markup;
+      for (const selector of ['[data-detail-summary]', '#workDetailTitle', '.detail-heading p']) {
+        const node = target.querySelector(selector);
+        if (node) node.textContent = fresh.querySelector(selector)?.textContent || '';
+      }
+      target.querySelectorAll('[data-progress-field]').forEach(node => {
+        const value = fresh.querySelector(`[data-progress-field="${node.dataset.progressField}"]`)?.value;
+        if (node !== document.activeElement && value !== undefined) node.value = value;
+      });
+      for (const action of ['favorite', 'catchup']) {
+        const selector = `[data-progress-action="${action}"]`;
+        const node = target.querySelector(selector);
+        const next = fresh.querySelector(selector);
+        if (node && next) { node.textContent = next.textContent; node.disabled = next.disabled; }
+      }
+      const choices = target.querySelector('[data-detail-folders]');
+      const nextChoices = fresh.querySelector('[data-detail-folders]');
+      if (choices && nextChoices) {
+        const current = [...choices.querySelectorAll('[data-work-folder]')];
+        const next = [...nextChoices.querySelectorAll('[data-work-folder]')];
+        if (current.map(node => node.dataset.workFolder).join('|') === next.map(node => node.dataset.workFolder).join('|')) current.forEach((node, index) => { node.checked = next[index].checked; });
+        else choices.innerHTML = nextChoices.innerHTML;
+      }
+      const seasons = target.querySelector('[data-detail-seasons]');
+      const ratings = target.querySelector('[data-ratings-summary]');
+      if (ratings) ratings.innerHTML = renderRatingSummary(state, detailId, mexicoDate(now()));
+      const regional = target.querySelector('[data-regional-results]');
+      if (regional) regional.innerHTML = renderRegionalResults(state, detailId, mexicoDate(now()));
+      const nextSeasons = fresh.querySelector('[data-detail-seasons]');
+      if (seasons && nextSeasons && !seasons.contains(document.activeElement)) seasons.innerHTML = nextSeasons.innerHTML;
+      for (const selector of ['[data-detail-description]', '[data-detail-evidence]', '[data-detail-trust]', '.detail-heading .poster']) {
+        const node = target.querySelector(selector);
+        if (node) node.innerHTML = fresh.querySelector(selector)?.innerHTML || '';
+      }
+      return;
+    }
+    const active = document?.activeElement;
+    const field = active?.dataset?.progressField;
+    const action = active?.dataset?.progressAction;
+    target.innerHTML = markup;
+    target.dataset.detailId = detailId;
+    target.dataset.detailKind = entry.mediaKind;
+    if (field) target.querySelector?.(`[data-progress-field="${field}"]`)?.focus?.({preventScroll: true});
+    else if (action) target.querySelector?.(`[data-progress-action="${action}"]`)?.focus?.({preventScroll: true});
   }
 
   function renderCalendarEntry(entry) {
@@ -237,13 +344,23 @@ export function createApp({document = globalThis.document, storage = globalThis.
       effectivePlatform = platforms.includes(selectedPlatform) ? selectedPlatform : 'all';
       platformSelect.value = effectivePlatform;
     }
-    const model = buildCalendarModel(entries, state, {weekStart, selectedDay, platform: effectivePlatform, status: state.preferences.status || 'all'});
+    const mode = ['day','week','month'].includes(state.preferences.agendaMode) ? state.preferences.agendaMode : 'week';
+    let anchor = state.preferences.agendaAnchor || state.preferences.calendarWeek || today;
+    try { agendaRange(mode, anchor); } catch { anchor = today; }
+    const model = buildAgendaModel(entries, state, {mode, anchor, selectedDay, scope: state.preferences.agendaScope, platform: effectivePlatform, status: state.preferences.status || 'all'});
+    if (elements('agendaMode')) elements('agendaMode').value = mode;
+    if (elements('agendaScope')) elements('agendaScope').value = model.scope;
+    if (elements('agendaDate')) elements('agendaDate').value = anchor;
+    setText('agendaRange', `${model.start} — ${model.days.at(-1).date} · ${model.scope === 'mine' ? 'Obras con seguimiento o guardadas por ti' : 'Catálogo local disponible, no todos los estrenos del mundo'}`);
+    const names = {day:'Día',week:'Semana',month:'Mes'};
+    setText('previousWeek', `← ${names[mode]} anterior`); setText('nextWeek', `${names[mode]} siguiente →`); setText('currentWeek', mode==='day'?'Hoy':mode==='month'?'Mes actual':'Semana actual');
     if (elements('calendarStatus')) elements('calendarStatus').value = state.preferences.status || 'all';
     const selector = elements('daySelector');
-    if (selector) selector.innerHTML = model.days.map((day, index) => `<button class="day-chip ${day.date === model.selectedDay ? 'is-active' : ''}" type="button" data-calendar-day="${day.date}" role="tab" aria-selected="${day.date === model.selectedDay}"><strong>${DAY_NAMES[index]} ${day.date.slice(8, 10)}</strong><small>${day.entries.length} evento${day.entries.length === 1 ? '' : 's'}</small></button>`).join('');
+    if (selector) selector.innerHTML = model.days.map((day, index) => `<button class="day-chip ${day.date === model.selectedDay ? 'is-active' : ''}" type="button" data-calendar-day="${day.date}" role="tab" aria-selected="${day.date === model.selectedDay}"><strong>${DAY_NAMES[(new Date(day.date+'T12:00:00Z').getUTCDay()+6)%7]} ${day.date.slice(8, 10)}</strong><small>${day.entries.length} evento${day.entries.length === 1 ? '' : 's'}</small></button>`).join('');
     const calendar = elements('calendar');
     if (!calendar) return;
-    calendar.innerHTML = model.days.map((day, index) => `<section class="calendar-day ${day.date === model.selectedDay ? 'is-selected' : ''}" data-calendar-panel="${day.date}"><header><h3>${DAY_NAMES[index]} · ${day.date.slice(8, 10)}/${day.date.slice(5, 7)}</h3><span>${day.entries.length}</span></header>${day.entries.length ? day.entries.map(renderCalendarEntry).join('') : '<div class="empty-state">Sin eventos para este día. Puedes revisar otra semana.</div>'}</section>`).join('');
+    if (calendar.dataset) calendar.dataset.agendaMode = mode;
+    calendar.innerHTML = model.days.map((day, index) => `<section class="calendar-day ${day.date === model.selectedDay ? 'is-selected' : ''}" data-calendar-panel="${day.date}"><header><h3>${DAY_NAMES[(new Date(day.date+'T12:00:00Z').getUTCDay()+6)%7]} · ${day.date.slice(8, 10)}/${day.date.slice(5, 7)}</h3><span>${day.entries.length}</span></header>${day.entries.length ? day.entries.map(renderCalendarEntry).join('') : '<div class="empty-state">Sin eventos para este día. Puedes revisar otra semana.</div>'}</section>`).join('');
   }
 
   function renderSearchResults(results = []) {
@@ -257,6 +374,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
     const target = elements('seriesConfirmation');
     if (!target) return;
     target.classList.remove('is-hidden');
+    if (isMovie(entry)) { target.innerHTML = renderMovieForm(entry); return; }
     target.innerHTML = `<div class="panel-heading"><h3>Confirmar serie</h3><span class="badge badge-teal">${escapeHtml(entry.id)}</span></div><div class="series-form"><label>Título<input data-series-field="title" value="${escapeHtml(entry.title || '')}"></label><label>Títulos alternativos<input data-series-field="alternativeTitles" value="${escapeHtml((entry.alternativeTitles || []).join(', '))}"></label><label>Sinopsis<textarea data-series-field="synopsis" rows="4">${escapeHtml(entry.synopsis || '')}</textarea></label><div class="form-grid"><label>Géneros<input data-series-field="genres" value="${escapeHtml((entry.genres || []).join(', '))}" placeholder="Pendiente de verificar"></label><label>Temporada<input data-series-field="season" value="${escapeHtml(entry.season || '')}" placeholder="Pendiente"></label><label>Año<input type="number" data-series-field="seasonYear" value="${entry.seasonYear ?? ''}" placeholder="Pendiente"></label><label>Estreno<input type="date" data-series-field="premiereDate" value="${escapeHtml(entry.premiereDate || '')}"></label><label>Total de episodios<input type="number" min="0" data-series-field="totalEpisodes" value="${entry.totalEpisodes ?? ''}" placeholder="Pendiente"></label><label>Estado de emisión<input data-series-field="airingStatus" value="${escapeHtml(entry.airingStatus || '')}" placeholder="Pendiente"></label><label>Plataforma<input data-series-field="platform" value="${escapeHtml(entry.platform || entry.platforms?.[0] || '')}" placeholder="Pendiente de verificar"></label><label>Disponibilidad México<input data-series-field="regionalAvailability" value="${escapeHtml(entry.regionalAvailability || '')}" placeholder="Pendiente de verificar"></label></div></div><div class="tag-row"><span class="status-pill">ID permanente: ${escapeHtml(entry.id)}</span><span class="status-pill">Fuente consultada: AniList</span></div><p class="muted">Fuente: <a href="${escapeHtml(entry.sources?.[0]?.url || '#')}" target="_blank" rel="noopener noreferrer">AniList ↗</a>. Los campos regionales quedan sin verificar hasta confirmar una fuente mexicana.</p><div class="button-row"><button class="button button-primary" type="button" data-save-series="${escapeHtml(entry.id)}">Guardar en mi biblioteca</button><button class="button button-ghost" type="button" data-cancel-series>Cancelar</button></div>`;
     const sourceLink = target.querySelector('.tag-row + p.muted a');
     if (sourceLink && !safeHttpUrl(entry.sources?.[0]?.url)) sourceLink.removeAttribute('href');
@@ -276,7 +394,12 @@ export function createApp({document = globalThis.document, storage = globalThis.
 
   function renderBackupSummary() {
     const summary = elements('backupSummary');
-    if (summary) summary.textContent = `${allEntries().length} series · ${Object.keys(state.tracking).length} con seguimiento · ${state.updateMeta?.lastBackupAt ? `respaldo ${String(state.updateMeta.lastBackupAt).slice(0, 10)}` : 'sin respaldo reciente'}`;
+    if (summary) summary.textContent = `${allEntries().length} obras · ${Object.keys(state.tracking).length} con seguimiento · ${state.updateMeta?.lastBackupAt ? `respaldo ${String(state.updateMeta.lastBackupAt).slice(0, 10)}` : 'sin respaldo reciente'}`;
+    const rollback = elements('exportMigrationBackup');
+    if (rollback) {
+      try { rollback.hidden = !storage.getItem('racoon-v2-state:before-media-v1'); }
+      catch { rollback.hidden = true; }
+    }
   }
 
   function downloadFile(name, content, type) {
@@ -367,43 +490,117 @@ export function createApp({document = globalThis.document, storage = globalThis.
       providers: {...state.updateMeta.providers, catalog: result.state.updateMeta.providers.catalog}
     }};
     if (result.status !== 'failed' && known.length) state.updateMeta.anilistCursor = (cursor + processedKnown) % known.length;
-    saveState(storage, state);
+    persist();
     setText('freshness', result.status === 'completed' ? `Fuentes actualizadas · ${new Date(now()).toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit'})}` : result.status === 'no-update' ? 'Fuentes revisadas · sin novedades' : result.status === 'partial' ? 'Consulta parcial · algunos datos conservados' : 'Fuentes sin conexión · último dato conservado');
     render();
     return result;
   }
 
   function render() {
+    sliceController?.render();
+    renderRegionalSettings(document, state);
     renderHome();
+    renderFolders();
     renderProgress();
     renderCalendar();
     renderBackupSummary();
+    renderDetail();
     if (document?.querySelectorAll) document.querySelectorAll('[data-view]').forEach((tab) => {
       const active = tab.dataset.view === currentView;
       tab.classList.toggle('is-active', active);
       tab.setAttribute('aria-selected', String(active));
+      tab.setAttribute('tabindex', active ? '0' : '-1');
     });
     if (document?.querySelectorAll) document.querySelectorAll('[role="tabpanel"]').forEach((panel) => panel.classList.toggle('is-hidden', panel.id !== `${currentView}View`));
   }
 
   function selectView(viewId) {
-    if (!['home', 'calendar', 'progress', 'add', 'backups'].includes(viewId)) return;
+    if (!VIEWS.includes(viewId)) return;
     currentView = viewId;
     state = {...state, preferences: {...state.preferences, view: viewId}};
-    saveState(storage, state);
+    persist();
     render();
   }
 
   function setTracking(id, patch) {
     state = applyTrackingPatch(state, id, patch, now());
-    saveState(storage, state);
+    persist();
     render();
   }
 
   if (document?.addEventListener) {
+    document.addEventListener('keydown', (event) => {
+      const tab = event.target.closest?.('[data-view]');
+      if (!tab || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      const tabs = [...document.querySelectorAll('[data-view]')];
+      const index = tabs.indexOf(tab);
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+        : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+      event.preventDefault();
+      selectView(tabs[next].dataset.view);
+      tabs[next].focus();
+    });
     document.addEventListener('click', (event) => {
       const viewButton = event.target.closest?.('[data-view], [data-go]');
       if (viewButton) selectView(viewButton.dataset.view || viewButton.dataset.go);
+      const folderAction = event.target.closest?.('[data-folder-action]');
+      if (folderAction) {
+        const id = folderAction.dataset.folderId;
+        const action = folderAction.dataset.folderAction;
+        try {
+          if (action === 'rename') state = renameFolder(state, id, elements('folderList').querySelector(`[data-folder-name="${id}"]`).value, now());
+          if (action === 'up' || action === 'down') state = moveFolder(state, id, action === 'up' ? -1 : 1, now());
+          if (action === 'trash') {
+            if (!globalThis.confirm?.('¿Enviar esta carpeta a la papelera? Sus obras y progreso se conservan; puedes restaurarla después.')) return;
+            state = trashFolder(state, id, now());
+            if (state.preferences.folder === id) state.preferences.folder = 'all';
+          }
+          if (action === 'restore') state = restoreFolder(state, id, now());
+          const saved = persist(); render(); setText('folderStatus', saved ? 'Carpetas guardadas.' : 'Cambio solo en memoria; exporta un respaldo.');
+        } catch (error) { setText('folderStatus', error.message); }
+        return;
+      }
+      const detailButton = event.target.closest?.('[data-open-detail]');
+      if (detailButton) {
+        const id = detailButton.dataset.openDetail;
+        if (!entryMap(CATALOG, state)[id]) return;
+        detailId = id;
+        renderDetail();
+        elements('workDetail')?.showModal?.();
+        return;
+      }
+      if (event.target.closest?.('[data-close-detail]')) { closeDetail(); return; }
+       const openSeason = event.target.closest?.('[data-season-open]');
+       if (openSeason && entryMap(CATALOG, state)[openSeason.dataset.seasonOpen]) {
+         detailId = openSeason.dataset.seasonOpen;
+         renderDetail();
+         elements('workDetailContent')?.querySelector?.('[data-close-detail]')?.focus?.({preventScroll: true});
+         return;
+       }
+       const seasonButton = event.target.closest?.('[data-season-link], [data-season-detach]');
+       if (seasonButton) {
+         const id = seasonButton.dataset.seasonLink || seasonButton.dataset.seasonDetach;
+         if (id !== detailId) return;
+         const panel = elements('workDetailContent');
+         const feedback = message => { const node = panel?.querySelector?.('[data-season-status]'); if (node) node.textContent = message; };
+         try {
+           if (seasonButton.dataset.seasonDetach) state = detachSeason(state, id);
+           else {
+             const workId = panel.querySelector('[data-season-work]').value;
+             const raw = panel.querySelector('[data-season-number]').value.trim();
+             const number = raw === '' ? null : Number(raw);
+             if (raw !== '' && (!Number.isSafeInteger(number) || number < 1 || number > 9999)) throw new Error('El número debe ser 1–9999 o quedar vacío.');
+             state = linkSeasonToWork(state, id, workId, number, now());
+           }
+           const saved = persist();
+           // Es una acción confirmada, no un blur: rehacer el panel y su lista.
+           if (panel) panel.dataset.detailKind = '';
+           render();
+           panel?.querySelector?.('[data-season-link]')?.focus?.({preventScroll: true});
+           feedback(saved ? 'Agrupación guardada; progreso y carpetas conservados.' : 'Cambio solo en memoria; exporta respaldo antes de cerrar.');
+         } catch (error) { feedback(error.message); }
+         return;
+       }
       const seriesButton = event.target.closest?.('[data-series-select]');
       if (seriesButton) {
         const result = searchResults.get(seriesButton.dataset.seriesSelect);
@@ -422,7 +619,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const editSeries = event.target.closest?.('[data-series-edit]');
       if (editSeries) {
         selectedSeries = entryMap(CATALOG, state)[editSeries.dataset.seriesEdit] || null;
-        if (selectedSeries) { selectView('add'); renderSeriesConfirmation(selectedSeries); renderAddStatus('Edita la ficha y guarda los cambios.'); }
+        if (selectedSeries) { detailId = null; closeDetail(); selectView('add'); renderSeriesConfirmation(selectedSeries); renderAddStatus('Edita la ficha y guarda los cambios.'); }
         return;
       }
       const deleteSeries = event.target.closest?.('[data-series-delete]');
@@ -430,12 +627,14 @@ export function createApp({document = globalThis.document, storage = globalThis.
         const id = deleteSeries.dataset.seriesDelete;
         const entry = entryMap(CATALOG, state)[id];
         if (!entry || id.startsWith('legacy:') || !globalThis.confirm?.(`¿Eliminar ${entry.title || entry.name} y su progreso local? Exporta un respaldo si quieres poder recuperarlo.`)) return;
+        closeDetail();
+        detailId = null;
         const catalogOfficial = {...state.catalogOfficial};
         const catalogCustom = {...state.catalogCustom};
         const tracking = {...state.tracking};
         delete catalogOfficial[id]; delete catalogCustom[id]; delete tracking[id];
         state = {...state, catalogOfficial, catalogCustom, tracking};
-        saveState(storage, state);
+        persist();
         render();
         return;
       }
@@ -443,11 +642,12 @@ export function createApp({document = globalThis.document, storage = globalThis.
       if (saveSeries && selectedSeries?.id === saveSeries.dataset.saveSeries) {
         const fields = Object.fromEntries([...document.querySelectorAll?.('[data-series-field]') || []].map((field) => [field.dataset.seriesField, field.value]));
         if (!fields.title?.trim()) { renderAddStatus('Escribe un título antes de guardar.'); return; }
-        if (fields.weeklyDay !== '' && !fields.premiereDate) { renderAddStatus('Para proyectar un día semanal, indica primero una fecha de estreno.'); return; }
+        if (!isMovie(selectedSeries) && fields.weeklyDay !== '' && !fields.premiereDate) { renderAddStatus('Para proyectar un día semanal, indica primero una fecha de estreno.'); return; }
+        if (isMovie(selectedSeries) && fields.durationMinutes && !(optionalFormInteger(fields.durationMinutes) > 0)) { renderAddStatus('Escribe una duración positiva o deja el campo vacío.'); return; }
         const patternUrl = /^https?:\/\//i.test(fields.patternUrl || '') ? fields.patternUrl.trim() : null;
         if (fields.patternUrl && !patternUrl) { renderAddStatus('La fuente del patrón debe ser una URL http o https.'); return; }
         const weeklyDay = fields.weeklyDay === '' ? null : Number(fields.weeklyDay);
-        const schedule = Number.isInteger(weeklyDay) && weeklyDay >= 0 && weeklyDay < 7 ? {frequency: 'weekly', day: weeklyDay, startDate: fields.premiereDate, confidence: 'estimated'} : null;
+        const schedule = !isMovie(selectedSeries) && Number.isInteger(weeklyDay) && weeklyDay >= 0 && weeklyDay < 7 ? {frequency: 'weekly', day: weeklyDay, startDate: fields.premiereDate, confidence: 'estimated'} : null;
         const edited = {
           title: fields.title?.trim() || selectedSeries.title,
           alternativeTitles: fields.alternativeTitles?.split(',').map((value) => value.trim()).filter(Boolean) || selectedSeries.alternativeTitles || [],
@@ -456,7 +656,8 @@ export function createApp({document = globalThis.document, storage = globalThis.
           season: fields.season?.trim() || null,
           seasonYear: optionalFormInteger(fields.seasonYear),
           premiereDate: fields.premiereDate || null,
-          totalEpisodes: optionalFormInteger(fields.totalEpisodes),
+          totalEpisodes: isMovie(selectedSeries) ? null : optionalFormInteger(fields.totalEpisodes),
+          ...(isMovie(selectedSeries) ? {durationMinutes: optionalFormInteger(fields.durationMinutes), availableEpisodes: null, nextAiring: null} : {}),
           airingStatus: fields.airingStatus?.trim() || 'UNKNOWN',
           platform: fields.platform?.trim() || null,
           platforms: fields.platform?.trim() ? [fields.platform.trim()] : [],
@@ -470,9 +671,9 @@ export function createApp({document = globalThis.document, storage = globalThis.
           sources: patternUrl ? [...(selectedSeries.sources || []), {kind: 'secondary', name: 'Fuente indicada por usuario', url: patternUrl, queriedAt: new Date(now()).toISOString()}] : selectedSeries.sources || []
         };
         state = saveCatalogEntry(state, selectedSeries, edited);
-        saveState(storage, state);
+        persist();
         render();
-        renderAddStatus('Serie guardada en tu biblioteca local.');
+        renderAddStatus('Obra guardada en tu biblioteca local.');
         selectedSeries = null;
         elements('seriesConfirmation')?.classList.add('is-hidden');
         return;
@@ -486,7 +687,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const calendarDay = event.target.closest?.('[data-calendar-day]');
       if (calendarDay) {
         state.preferences.selectedDay = calendarDay.dataset.calendarDay;
-        saveState(storage, state);
+        persist();
         renderCalendar();
         return;
       }
@@ -495,7 +696,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
         const current = state.preferences.calendarWeek || mondayOf(mexicoDate(now()));
         state.preferences.calendarWeek = addDays(current, Number(goWeek.dataset.calendarWeek));
         state.preferences.selectedDay = state.preferences.calendarWeek;
-        saveState(storage, state);
+        persist();
         renderCalendar();
         return;
       }
@@ -503,6 +704,11 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const id = action.dataset.id;
       const entry = entryMap(CATALOG, state)[id];
       const tracking = normalizeTracking(state.tracking[id]);
+      if (isMovie(entry)) {
+        if (action.dataset.progressAction === 'watched') setTracking(id, {status: 'Terminada'});
+        if (action.dataset.progressAction === 'favorite') setTracking(id, {favorite: !tracking.favorite});
+        return;
+      }
       const available = availableFor(entry, tracking);
       const manualStatus = tracking.manualFields.includes('status');
       if (action.dataset.progressAction === 'plus') setTracking(id, {seen: Math.min(9999, tracking.seen + 1), ...(manualStatus ? {} : {status: 'Viendo'})});
@@ -511,9 +717,22 @@ export function createApp({document = globalThis.document, storage = globalThis.
       if (action.dataset.progressAction === 'favorite') setTracking(id, {favorite: !tracking.favorite});
     });
     document.addEventListener('change', (event) => {
+      const checkbox = event.target.closest?.('[data-work-folder]');
+      if (checkbox) {
+        try {
+          state = setFolderMembership(state, checkbox.dataset.workId, checkbox.dataset.workFolder, checkbox.checked, now());
+          const saved = persist(); render(); setText('folderChoiceStatus', saved ? 'Carpetas actualizadas.' : 'Cambio solo en memoria; exporta un respaldo.');
+        } catch (error) { setText('folderChoiceStatus', error.message); }
+        return;
+      }
       const field = event.target.closest?.('[data-progress-field]');
       if (!field) return;
       const id = field.dataset.id;
+      if (field.dataset.progressField === 'watchedAt') {
+        const date = field.value;
+        if (entryMap(CATALOG, state)[id] && (!date || validDay(date))) setTracking(id, {watchedAt: date || null});
+        return;
+      }
       const value = field.dataset.progressField === 'status' ? field.value : field.dataset.progressField === 'seen' && field.value === '' ? 0 : optionalFormInteger(field.value);
       if (field.dataset.progressField === 'status' && !['Pendiente', 'Viendo', 'Al día', 'Terminada', 'Descartada'].includes(value)) return;
       if (field.dataset.progressField !== 'status' && field.value !== '' && value === null) return;
@@ -522,35 +741,57 @@ export function createApp({document = globalThis.document, storage = globalThis.
       setTracking(id, {[field.dataset.progressField]: value, manualFields: [...manualFields]});
     });
   }
-  elements('previousWeek')?.addEventListener?.('click', () => {
-    const button = {dataset: {calendarWeek: '-7'}};
-    state.preferences.calendarWeek = addDays(state.preferences.calendarWeek || mondayOf(mexicoDate(now())), -7);
-    state.preferences.selectedDay = state.preferences.calendarWeek;
-    saveState(storage, state);
-    renderCalendar();
+  elements('workDetail')?.addEventListener?.('close', () => {
+    const id = detailId;
+    detailId = null;
+    if (id) {
+      const opener = [...document.querySelectorAll?.('[data-open-detail]') || []].find(button => button.dataset.openDetail === id && button.getClientRects?.().length);
+      (opener || elements(`${currentView}Tab`))?.focus?.({preventScroll: true});
+    }
   });
-  elements('nextWeek')?.addEventListener?.('click', () => {
-    state.preferences.calendarWeek = addDays(state.preferences.calendarWeek || mondayOf(mexicoDate(now())), 7);
-    state.preferences.selectedDay = state.preferences.calendarWeek;
-    saveState(storage, state);
-    renderCalendar();
-  });
-  elements('currentWeek')?.addEventListener?.('click', () => {
-    const week = mondayOf(mexicoDate(now()));
-    state.preferences.calendarWeek = week;
-    state.preferences.selectedDay = week;
-    saveState(storage, state);
-    renderCalendar();
-  });
-  elements('calendarPlatform')?.addEventListener?.('change', (event) => { state.preferences.platform = event.target.value; saveState(storage, state); renderCalendar(); });
-  elements('calendarStatus')?.addEventListener?.('change', (event) => { state.preferences.status = event.target.value; saveState(storage, state); renderCalendar(); });
+  function moveAgenda(direction) {
+    const mode = state.preferences.agendaMode || 'week';
+    const anchor = state.preferences.agendaAnchor || state.preferences.calendarWeek || mexicoDate(now());
+    const date = direction === 0 ? mexicoDate(now()) : shiftAgendaDate(anchor, mode, direction);
+    state.preferences.agendaAnchor = date;
+    state.preferences.calendarWeek = agendaRange('week', date).start;
+    state.preferences.selectedDay = mode === 'week' ? state.preferences.calendarWeek : date;
+    persist(); renderCalendar();
+  }
+  elements('previousWeek')?.addEventListener?.('click', () => moveAgenda(-1));
+  elements('nextWeek')?.addEventListener?.('click', () => moveAgenda(1));
+  elements('currentWeek')?.addEventListener?.('click', () => moveAgenda(0));
+  elements('agendaMode')?.addEventListener?.('change', event => {state.preferences.agendaMode = event.target.value; persist(); renderCalendar();});
+  elements('agendaScope')?.addEventListener?.('change', event => {state.preferences.agendaScope = event.target.value; persist(); renderCalendar();});
+  elements('agendaDate')?.addEventListener?.('change', event => {try {agendaRange('day',event.target.value); state.preferences.agendaAnchor = event.target.value; state.preferences.selectedDay = event.target.value; state.preferences.calendarWeek = agendaRange('week',event.target.value).start; persist(); renderCalendar();} catch {renderCalendar();}});
+  elements('calendarPlatform')?.addEventListener?.('change', (event) => { state.preferences.platform = event.target.value; persist(); renderCalendar(); });
+  elements('calendarStatus')?.addEventListener?.('change', (event) => { state.preferences.status = event.target.value; persist(); renderCalendar(); });
   elements('progressSearch')?.addEventListener?.('input', () => renderProgress());
+  elements('progressFolder')?.addEventListener?.('change', event => { state.preferences.folder = event.target.value; persist(); renderProgress(); });
+  elements('folderCreateForm')?.addEventListener?.('submit', event => {
+    event.preventDefault();
+    try {
+      state = createFolder(state, elements('folderName').value, now());
+      const saved = persist(); render(); elements('folderName').value = ''; setText('folderStatus', saved ? 'Carpeta creada.' : 'Carpeta solo en memoria; exporta un respaldo.');
+    } catch (error) { setText('folderStatus', error.message); }
+  });
   elements('progressFilter')?.addEventListener?.('change', () => renderProgress());
-  elements('progressSort')?.addEventListener?.('change', (event) => { state.preferences.sort = event.target.value; saveState(storage, state); renderProgress(); });
+  elements('progressSort')?.addEventListener?.('change', (event) => { state.preferences.sort = event.target.value; persist(); renderProgress(); });
   elements('createManualSeries')?.addEventListener?.('click', () => {
     selectedSeries = {id: createCustomId(), title: '', mediaKind: 'series', sources: [], airingStatus: 'UNKNOWN', totalEpisodes: null, availableEpisodes: null};
     renderSeriesConfirmation(selectedSeries);
     renderAddStatus('Ficha manual: completa al menos el título. Los datos sin fuente seguirán sin verificar.');
+  });
+  elements('createManualMovie')?.addEventListener?.('click', () => {
+    selectedSeries = {id: createCustomId(), title: '', mediaKind: 'movie', sources: []};
+    renderSeriesConfirmation(selectedSeries);
+    renderAddStatus('Película manual: agrega el título; duración y estreno son opcionales.');
+  });
+  elements('exportMigrationBackup')?.addEventListener?.('click', () => {
+    try {
+      const previous = storage.getItem('racoon-v2-state:before-media-v1');
+      if (previous) downloadFile('racoon-antes-v3.json', previous, 'application/json');
+    } catch { setText('saveWarning', 'No se pudo leer el respaldo previo.'); }
   });
   elements('searchForm')?.addEventListener?.('submit', async (event) => {
     event.preventDefault();
@@ -583,7 +824,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   elements('exportBackup')?.addEventListener?.('click', () => {
     const exportedAt = new Date(now()).toISOString();
     state = {...state, updateMeta: {...state.updateMeta, lastBackupAt: exportedAt}};
-    saveState(storage, state);
+    persist();
     downloadFile('racoon-respaldo.json', JSON.stringify(createBackup(state, exportedAt), null, 2), 'application/json;charset=utf-8');
     renderBackupSummary();
   });
@@ -596,7 +837,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
       pendingImport = parseBackup(JSON.parse(await file.text()));
       pendingImport.conflicts = Object.keys(pendingImport.state.tracking).filter((id) => state.tracking[id]);
       const details = elements('importDetails');
-      if (details) details.innerHTML = `<p class="muted">Respaldo: ${escapeHtml(pendingImport.exportedAt || 'sin fecha')} · ${pendingImport.counts.series} series · ${pendingImport.counts.tracking} seguimientos · ${pendingImport.invalidRecords} registros inválidos · ${pendingImport.conflicts.length} progresos ya existentes.</p>${pendingImport.invalidRecords ? '<p class="error-state">Hay identificadores inválidos. No se importará este archivo.</p>' : ''}`;
+      if (details) details.innerHTML = `<p class="muted">Respaldo: ${escapeHtml(pendingImport.exportedAt || 'sin fecha')} · ${pendingImport.counts.series} obras · ${pendingImport.counts.tracking} seguimientos · ${pendingImport.invalidRecords} registros inválidos · ${pendingImport.conflicts.length} progresos ya existentes.</p>${pendingImport.invalidRecords ? '<p class="error-state">Hay registros inválidos o reglas incompatibles. No se importará este archivo.</p>' : ''}`;
       elements('mergeImport').disabled = !pendingImport.valid;
       elements('replaceImport').disabled = !pendingImport.valid;
       elements('importDialog')?.showModal?.();
@@ -606,7 +847,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   elements('mergeImport')?.addEventListener?.('click', () => {
     if (!pendingImport || !globalThis.confirm?.('¿Fusionar este respaldo con tu biblioteca actual?')) return;
     state = mergeBackup(state, pendingImport);
-    saveState(storage, state);
+    persist();
     elements('importDialog')?.close?.();
     pendingImport = null;
     render();
@@ -614,12 +855,22 @@ export function createApp({document = globalThis.document, storage = globalThis.
   elements('replaceImport')?.addEventListener?.('click', () => {
     if (!pendingImport || !globalThis.confirm?.('¿Reemplazar toda tu biblioteca? Esta acción requiere un respaldo para deshacerla.')) return;
     state = replaceWithBackup(pendingImport);
-    saveState(storage, state);
+    persist();
     elements('importDialog')?.close?.();
     pendingImport = null;
     render();
   });
   elements('cancelImport')?.addEventListener?.('click', () => elements('importDialog')?.close?.());
+  const commitVerified = candidate => { if (!saveState(storage, candidate)) return false; state = validateState(candidate); render(); return true; };
+  const shareCards = mountShareCards({document, getState: () => state, today: () => mexicoDate(now())});
+  mountWrap({document, getState: () => state, commitState: commitVerified, share: shareCards, today: () => mexicoDate(now()), now});
+  mountOcr({document, getState: () => state, commitState: commitVerified, share: shareCards, fetch, now});
+  const commitLocal = candidate => { state = validateState(candidate); const saved = persist(); render(); return saved; };
+  mountDiscovery({document, storage, download: downloadFile, getState: () => state, commitState: candidate => { if (!saveState(storage, candidate)) return false; state = validateState(candidate); render(); return true; }, now});
+  mountRegionalControls({document, getState: () => state, commitState: commitLocal, now});
+  sliceController = mountSlice({document, getState: () => state, commitState: commitLocal, now});
+  mountSmartCollectionManager({document, getState: () => state, commitState: commitLocal, now});
+  registerTableImporter({document, storage, getState: () => state, commitState: candidate => { if (!saveState(storage, candidate)) return false; state = candidate; render(); return true; }, download: downloadFile, now});
   elements('appVersion') && (elements('appVersion').textContent = `RACOON v${RACOON_VERSION}`);
   if (typeof window !== 'undefined' && globalThis.navigator?.serviceWorker) {
     registerPwa({navigator: globalThis.navigator, window, fetch, currentVersion: RACOON_VERSION, onUpdate: showUpdate}).then((controller) => { pwaController = controller; });
@@ -635,4 +886,24 @@ export function createApp({document = globalThis.document, storage = globalThis.
   return {selectView, setTracking, render, refreshRemote, getState: () => state, getView: () => currentView, fetch};
 }
 
-if (typeof document !== 'undefined') createApp();
+if (typeof document !== 'undefined') {
+  // Resolver el almacenamiento antes de construir el estado de la interfaz.
+  (async () => {
+    const {createStorageRuntime} = await import('./storage-runtime.mjs');
+    const {mountStorageRuntimePanel, updateStorageRuntimeStatus} = await import('./storage-runtime-ui.mjs');
+    let lastStatus;
+    const runtime = await createStorageRuntime({storage: globalThis.localStorage, onStatus: event => {
+      lastStatus = event;
+      updateStorageRuntimeStatus(document, event);
+    }});
+    createApp({storage: runtime.storage});
+    mountStorageRuntimePanel(document, runtime, globalThis.localStorage);
+    if (lastStatus) updateStorageRuntimeStatus(document, lastStatus);
+  })().catch(() => {
+    const warning = document.getElementById('saveWarning');
+    if (warning) {
+      warning.hidden = false;
+      warning.textContent = 'No se pudo abrir tu biblioteca de forma segura. No se sobrescribieron datos. Conserva tus respaldos y vuelve a intentar.';
+    }
+  });
+}

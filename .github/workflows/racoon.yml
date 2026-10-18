@@ -19,7 +19,38 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Preparar PNG de identidad v3 (SVG local, librsvg libre)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y librsvg2-bin
+          node scripts/build-brand-icons.mjs
       - run: node --test tests/*.test.mjs
+      - name: Preparar motor OCR autoalojado (versiones e integridad fijadas)
+        run: |
+          npm ci --prefix scripts/ocr-deps --ignore-scripts --no-audit --no-fund
+          node scripts/prepare-ocr-assets.mjs
+      - name: Preparar Chromium para QA (solo CI)
+        run: |
+          npm install --prefix "$RUNNER_TEMP/racoon-qa" --no-save playwright@1.51.1
+          node "$RUNNER_TEMP/racoon-qa/node_modules/playwright/cli.js" install --with-deps chromium
+          echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/racoon-qa/node_modules/playwright/index.js" >> "$GITHUB_ENV"
+      - name: Verificar biblioteca, PWA y copia IndexedDB en Chromium
+        timeout-minutes: 10
+        run: |
+          node scripts/qa-browser.mjs
+          node scripts/qa-indexeddb.mjs
+          node scripts/qa-smart.mjs
+          node scripts/qa-next-three.mjs
+          node scripts/qa-discovery.mjs
+          node scripts/qa-share-wrap-ocr.mjs
+          node scripts/qa-regional-auto.mjs
+      - name: Guardar capturas reales de Chromium de v3
+        uses: actions/upload-artifact@v4
+        with:
+          name: racoon-v3-capturas-chromium
+          path: artifacts/qa/*.png
+          if-no-files-found: error
+          retention-days: 7
   publicar:
     name: Publicar sitio estático en Cloudflare Pages
     needs: calidad
@@ -44,6 +75,11 @@ jobs:
           if [ "$PROJECT" = "racoon" ]; then PROJECT="racoon-radar-klymapo"; fi
           [[ "$PROJECT" =~ ^[a-z0-9-]+$ ]] || { echo "::error::Nombre de proyecto inválido"; exit 1; }
           npm install -g wrangler@4
+          npm ci --prefix scripts/ocr-deps --ignore-scripts --no-audit --no-fund
+          node scripts/prepare-ocr-assets.mjs
+          sudo apt-get update -qq
+          sudo apt-get install -y librsvg2-bin
+          node scripts/build-brand-icons.mjs
           STATIC_DIR="$(mktemp -d)"
           cp -R public/. "$STATIC_DIR/"
           # La publicación deliberadamente no incluye functions/ ni schema.sql.

@@ -1,4 +1,11 @@
+import {normalizeWrapData} from './wrap.mjs';
+import {normalizeSocialData} from './ratings.mjs';
 import {STATUS_VALUES} from './model.mjs';
+import {synchronizeMediaLibrary} from './media.mjs';
+import {normalizeCollections} from './folders.mjs';
+import {normalizeSmartCollections} from './smart-collections.mjs';
+import {normalizeRegionData} from './regional.mjs';
+import {normalizeSliceData} from './slice.mjs';
 
 export const LEGACY_STATE_KEY = 'anime-radar-otono-2026-v1';
 export const STATE_KEY = 'racoon-v2-state';
@@ -32,20 +39,34 @@ function cleanTrackingEntry(raw = {}) {
     changedAt: Number.isSafeInteger(Number(input.changedAt)) && Number(input.changedAt) > 0 ? Number(input.changedAt) : 0,
     availableOverride,
     totalOverride,
-    manualFields
+    manualFields,
+    ...(Object.hasOwn(input, 'watchedAt') ? {watchedAt: validDate(input.watchedAt)} : {}),
+    ...(Object.hasOwn(input, 'rating') ? {rating: typeof input.rating === 'number' && Number.isFinite(input.rating) && input.rating >= 0 && input.rating <= 10 ? input.rating : null} : {})
   };
 }
 
+function validDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value ? value : null;
+}
+
 export function createDefaultState(catalog = []) {
-  return {
+  return synchronizeMediaLibrary({
     schemaVersion: STATE_SCHEMA_VERSION,
     catalogOfficial: Object.fromEntries(catalog.filter(Boolean).map((entry) => [entry.id, entry])),
     catalogCustom: {},
     tracking: {},
+    collections: normalizeCollections(),
+    smartCollections: normalizeSmartCollections(),
+    regionData: normalizeRegionData(),
+    sliceData: normalizeSliceData(),
+    socialData: normalizeSocialData(),
+    wrapData: normalizeWrapData(),
     preferences: {view: 'home', calendarWeek: null, selectedDay: null, platform: 'all', status: 'all', sort: 'title'},
     sourceCache: {},
     updateMeta: {lastChecked: 0, providers: {}}
-  };
+  });
 }
 
 export function validateState(value) {
@@ -56,8 +77,15 @@ export function validateState(value) {
   state.preferences = {...state.preferences, ...objectOrEmpty(input.preferences)};
   state.sourceCache = objectOrEmpty(input.sourceCache);
   state.updateMeta = {...state.updateMeta, ...objectOrEmpty(input.updateMeta)};
+  state.mediaLibrary = objectOrEmpty(input.mediaLibrary);
+  state.collections = normalizeCollections(input.collections);
+  state.smartCollections = normalizeSmartCollections(input.smartCollections);
+  state.regionData = normalizeRegionData(input.regionData);
+  state.sliceData = normalizeSliceData(input.sliceData);
+  state.socialData = normalizeSocialData(input.socialData);
+  state.wrapData = normalizeWrapData(input.wrapData);
   for (const [id, raw] of Object.entries(objectOrEmpty(input.tracking))) state.tracking[id] = cleanTrackingEntry(raw);
-  return state;
+  return synchronizeMediaLibrary(state);
 }
 
 export function migrateLegacyTrack(track, catalog = []) {
@@ -105,7 +133,7 @@ function withCatalog(state, catalog) {
       availableConfidence: stored.availableConfidence === 'estimated' ? entry.availableConfidence : stored.availableConfidence
     };
   }
-  return next;
+  return synchronizeMediaLibrary(next);
 }
 
 export function loadState(storage, catalog = []) {
@@ -126,9 +154,23 @@ export function saveState(storage, state) {
   const clean = validateState(state);
   try {
     const previous = storage.getItem(STATE_KEY);
+    if (previous && !parseStorage(storage, STATE_KEY)?.mediaLibrary?.version) {
+      const checkpoint = `${STATE_KEY}:before-media-v1`;
+      if (!storage.getItem(checkpoint)) {
+        storage.setItem(checkpoint, previous);
+        if (storage.getItem(checkpoint) !== previous) return false;
+      }
+    }
     if (previous) storage.setItem(`${STATE_KEY}:previous`, previous);
-    storage.setItem(STATE_KEY, JSON.stringify(clean));
+    const serialized = JSON.stringify(clean);
+    storage.setItem(STATE_KEY, serialized);
+    if (storage.getItem(STATE_KEY) !== serialized) {
+      if (previous) storage.setItem(STATE_KEY, previous);
+      return false;
+    }
+    return true;
   } catch {
     // The caller keeps the validated in-memory state; quota errors must not erase it.
+    return false;
   }
 }
