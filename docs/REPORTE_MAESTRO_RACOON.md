@@ -62,3 +62,8 @@ Registro adicional — 2026-10-17: subidas tres capturas nuevas a Gaston/APPS/RA
 CAPTURAS Y QA. El código se conserva mediante el conector autenticado de GitHub;
 las imágenes se conservan en Drive y se pueden regenerar con el script QA.
 El push de Git por terminal no tenía credenciales; no se solicitó ningún token.
+
+Registro adicional — 2026-10-17: creado PR #2 en borrador para revisión:
+https://github.com/Klymapo/RACOON/pull/2
+Commit de implementación: 7c33620dac8797569b749d6d530f47a853727080.
+El reporte maestro de Gaston se actualiza con el alcance, pruebas y enlaces de esta entrega.
