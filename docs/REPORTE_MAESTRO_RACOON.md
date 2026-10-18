@@ -7,7 +7,7 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 - Base de producción: v2.2.1, merge `a0be814`, 13 de octubre de 2026.
 - Primera entrega v3: `3.0.0-alpha.1`, rama `codex/racoon-v3-01-navigation`.
-- Estado de trabajo actual: `3.0.0-alpha.11`, once incrementos acumulados en el mismo
+- Estado de trabajo actual: `3.0.0-alpha.14`, catorce incrementos acumulados en el mismo
   PR #2. Producción continúa en v2.2.1, sin fusionar ni desplegar estas entregas.
 - Alcance: Inicio, Agenda, Biblioteca, Explorar, Ajustes; barra inferior fija móvil,
   banner exclusivo de Inicio y navegación accesible por teclado.
@@ -18,14 +18,14 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 ## Próximos incrementos
 
-1. Recomendaciones locales, seguidas de Ratings/Racoonómetro.
+1. Tarjetas para compartir, WRAP y OCR revisable; mascota e iconos.
 2. Independencia de la cuota localStorage para IndexedDB y aceptación Android.
 3. Proveedor automático regional gratuito, conservando evidencia manual y suscripciones.
 
 El orden puede ajustarse con Admin. No prometer fuentes regionales detalladas
 antes de verificar que ofrecen los datos y permiten su uso gratuito.
 
-Conteo: 11 incrementos implementados; 9 bloques con trabajo restante, desglosados
+Conteo: 14 incrementos implementados; 6 bloques con trabajo restante, desglosados
 en [ROADMAP_V3.md](ROADMAP_V3.md). No equivalen a 13 entregas garantizadas.
 
 ## Registro de cambios
@@ -273,3 +273,22 @@ restantes, siete abiertos y dos parciales; regional automático y cuota IndexedD
 no se consideran resueltos. Producción v2.2.1; sin fusión ni despliegue.
 
 Réplica a Gaston completada y verificada: maestro 1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA actualizado con el estado alpha.11, resumen ejecutivo y Registro de cambios de 07C/07D/08 y 09–11. Se conservaron antecedentes; revisión protegida contra cambios concurrentes y lectura posterior confirmó los párrafos nuevos. El acceso se recuperó seleccionando la cuenta Gaston correcta; no se cambiaron permisos ni credenciales. La consulta automática regional sigue pendiente también en el documento.
+
+### 2026-10-18 — Argos/Codex — entregas 12–14, alpha.14
+
+- Commit 7399721: recomendaciones locales explicables, Ratings/Racoonómetro y
+  Letterboxd mediante CSV/enlaces externos, conservando costo cero y ejecución local.
+- JSON y espejo IndexedDB incluyen evidencia pública y enlaces. Nota personal no
+  cambia la cara pública. Importación revisable, respaldo previo verificado,
+  duplicados omitidos por defecto y fechas de visionado explícitas.
+- Letterboxd no ofrece acceso API general para este uso; la alternativa aprobada
+  de intercambio CSV y enlaces evita scraping o copia de reseñas.
+- Revisión independiente: corregidos rendimiento de carpetas, compatibilidad de
+  género del catálogo inicial y año real de películas AniList, con regresiones.
+  También se comprobaron las cinco expresiones SVG. 180 pruebas Node aprobadas.
+- CI 39141291923 aprobó 180 pruebas Node y cinco E2E Chromium sobre 49fe9ef,
+  incluidos cuota fallida, cancelación, geometría, IndexedDB y offline. Producción sigue en v2.2.1, sin fusión ni despliegue.
+- Se consultó el maestro en Gaston con su cuenta correcta para preparar la
+  réplica del registro final sin borrar antecedentes.
+
+Réplica final 12–14 en Gaston completada y leída de vuelta: estado alpha.14, resumen ejecutivo y registro histórico actualizados con protección de revisión concurrente; antecedentes conservados. El maestro confirma catorce incrementos, seis bloques restantes y CI 39141291923 (180 Node + cinco E2E). https://github.com/Klymapo/RACOON/actions/runs/39141291923

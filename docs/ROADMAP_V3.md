@@ -19,8 +19,11 @@ sin Functions, D1 ni servicios de pago.
 | 09 | Evidencia regional y suscripciones locales; automatización pendiente | integrada en alpha.11 |
 | 10 | Agenda día/semana/mes, Mis obras/Todas del catálogo | integrada en alpha.11 |
 | 11 | Slice con gestos, historial y deshacer protegido | alpha.11 |
+| 12 | Recomendaciones locales explicables, diversidad y afinidad cualitativa | integrada en alpha.14 |
+| 13 | Ratings: fuente pública, nota personal y Racoonómetro independientes | integrada en alpha.14 |
+| 14 | Letterboxd: intercambio CSV revisable y enlaces externos | alpha.14 |
 
-## Pendiente: 9 bloques con trabajo restante
+## Pendiente: 6 bloques con trabajo restante
 
 Esta es una agrupación para contar el alcance pendiente, no una promesa de 13
 entregas. Cada bloque puede dividirse en varias entregas con pruebas. El modelo
@@ -31,9 +34,6 @@ nota numérica tampoco equivale a completar Ratings.
 | --- | --- |
 | 1 | Transición reversible implementada; falta independencia de cuota localStorage y aceptación Android físico |
 | 3 | Evidencia y suscripciones manuales implementadas; falta proveedor automático gratuito validado |
-| 6 | Recomendaciones locales |
-| 7 | Ratings / Racoonómetro |
-| 8 | Integración o intercambio con Letterboxd, según capacidades gratuitas verificadas |
 | 9 | Tarjetas para compartir |
 | 10 | WRAP |
 | 11 | OCR con revisión antes de guardar |
@@ -115,3 +115,28 @@ CI 39138045660: 167 pruebas Node y cuatro E2E Chromium aprobados. Geometría
 320/390/800/1440 y recarga offline incluidas. Sin revisión independiente ni Android
 físico; sin fusión ni publicación. Hay once incrementos acumulados y nueve bloques
 con trabajo: siete abiertos y dos parciales (1 y 3). Siguiente: recomendaciones locales.
+
+## Entregas 12–14, 18 de octubre de 2026 — alpha.14
+
+Recomendaciones locales con géneros/temas, formato/duración conocida, notas y
+favoritos, carpetas, evidencia regional y diversidad. Exclusión por obra de vistas
+y descartadas. Afinidad baja/media/alta/muy alta o sin datos; nunca porcentaje.
+No considera haber visto una obra como señal de gusto ni autoevalúa con la propia nota.
+
+Ratings separa evidencia pública manual (fuente/URL/base/votos/fecha), nota
+personal 0–10 y afinidad. Cinco expresiones SVG y marcador preciso en el
+Racoonómetro; sin fuente suficiente queda sin nota/marcador. No se genera una
+distribución a partir del promedio. Retirada reversible de evidencia.
+
+Letterboxd admite CSV local oficial, revisión paginada, omisión predeterminada
+de coincidencias/ambigüedad, vinculación que conserva progreso/favoritos y
+reemplazo de nota explícito. Respaldo anterior verificado y exportaciones
+separadas vistas/watchlist. No se redondean notas no representables por Rating10;
+se informa omisión y JSON conserva exactitud. Date no se usa como WatchedDate.
+Sin API ni extracción/copia de reseñas; enlaces externos, incluida búsqueda
+explícita cuando no existe identidad confirmada. Fuentes en el plan de entrega.
+
+Revisión independiente identificó compatibilidad de género/año y costo de
+normalizar carpetas por candidato; corregidos con regresiones. 180 pruebas Node
+y cinco E2E Chromium aprobados en CI 39141291923 (49fe9ef). Sin fusión ni
+publicación. Permanecen seis bloques (cuatro abiertos y dos parciales).

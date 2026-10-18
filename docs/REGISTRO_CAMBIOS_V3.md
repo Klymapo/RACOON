@@ -45,3 +45,15 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 - CI 39138045660: 167 pruebas Node y cuatro E2E Chromium aprobados. https://github.com/Klymapo/RACOON/actions/runs/39138045660
 - PR #2, plan, roadmap y maestro actualizados. Once incrementos acumulados; nueve bloques pendientes (siete abiertos y almacenamiento/regional automático parciales). Próximo: recomendaciones locales.
 - Producción permanece v2.2.1, sin fusión ni despliegue. Se sincroniza en Gaston el registro de 07C/07D/08 y 09–11, conservando antecedentes; la escritura y lectura de verificación se registran en el maestro.
+
+## 2026-10-18 — Argos — entregas 12–14, alpha.14
+
+- Commit 7399721: recomendaciones locales con motivos, Ratings públicos/personales
+  y afinidad independientes, cinco caras SVG, CSV Letterboxd local y enlaces.
+- Importación con vista previa, cancelación, omisión de duplicados, preservación de
+  progreso y respaldo anterior. Datos nuevos en JSON y espejo IndexedDB/offline.
+- Revisión independiente y regresiones de rendimiento, género legacy y año AniList.
+  180 pruebas Node y cinco E2E Chromium aprobados: CI 39141291923, 49fe9ef.
+- Roadmap/maestro: catorce incrementos, seis bloques restantes (dos parciales).
+  Sin fusión ni despliegue. Lectura Gaston realizada para preparar réplica final.
+- Réplica Gaston escrita con revisión protegida y verificada mediante lectura posterior: estado alpha.14, resumen y registro 12–14, sin borrar antecedentes. https://github.com/Klymapo/RACOON/actions/runs/39141291923

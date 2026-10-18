@@ -15,4 +15,8 @@ Decisión: notas cero o fraccionarias no representables por Rating10 se omiten a
 
 Fuentes oficiales consultadas: https://letterboxd.com/about/importing-data/ y https://letterboxd.com/api-beta/access/. Rating admite 0.5–5 en pasos de media estrella; Rating10 enteros 1–10. WatchedDate es fecha de vista; Date no se infiere. CSV UTF-8 de hasta 1 MB.
 
-Verificación: test nuevo observado fallar por módulos ausentes; después 176/176 Node. Chromium local no instalado: verificar E2E en CI antes de declarar aprobación. Revisión final independiente solicitada.
+Verificación: test nuevo observado fallar por módulos ausentes; después 180/180 Node. Chromium local no instalado; cinco flujos Chromium ejecutados y aprobados en CI 39141291923. Revisión final independiente completada.
+
+Revisión independiente de review_discovery: corregidos campos legacy genre y año AniList (seasonYear/premiereDate), carpeta preindexada, consultas regionales repetidas y expresiones SVG distintas. Regresiones observadas fallar y pasar. También se añadió motivo para afinidad baja con nota explícita cero. Prueba de 2,000 obras con carpeta: 39 ms tras corregir exploración cuadrática (antes ~4.6 s en revisión).
+
+CI 39140679961 detectó desbordamiento en ajustes móvil. Se reutilizó la contención del importador tabular para controles Letterboxd; el segundo CI alcanzó una referencia fuera de alcance en el diagnóstico nuevo del test, corregida en ca937fe. El test original de geometría se conserva. Nuevo E2E incluye cuota fallida sin mutación, cancelación, IDB y offline. El fixture E2E se carga antes del arranque (49fe9ef) para evitar interferencia de la actualización inicial. Validación final CI 39141291923: 180 pruebas Node y cinco E2E Chromium aprobados.
