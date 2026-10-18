@@ -1,4 +1,5 @@
 import {createCustomId} from './model.mjs';
+import {normalizeCollections} from './folders.mjs';
 
 export const isMovie = (entry) => entry?.mediaKind === 'movie';
 const object = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -66,6 +67,39 @@ export function attachSeason(state, entryId, workId, seasonNumber = null) {
   if (current.mediaLibrary.works[workId]?.kind !== 'series') throw new Error('Obra de serie no encontrada');
   if (seasonNumber !== null && count(seasonNumber) === null) throw new Error('Número de temporada inválido');
   return synchronizeMediaLibrary({...current, [layer]: {...current[layer], [entryId]: {...entry, workId, seasonNumber}}});
+}
+
+// Combina carpetas activas sin perder pertenencias previas.
+export function linkSeasonToWork(state, entryId, workId, seasonNumber = null, now = Date.now()) {
+  const current = synchronizeMediaLibrary(state);
+  const sourceId = current.mediaLibrary.catalogLinks[entryId]?.workId;
+  const linked = attachSeason(current, entryId, workId, seasonNumber);
+  if (!sourceId || sourceId === workId) return linked;
+  const collections = normalizeCollections(linked.collections);
+  const target = {...collections.memberships[workId]};
+  for (const [folderId, membership] of Object.entries(collections.memberships[sourceId] || {})) {
+    if (membership.assigned && !target[folderId]?.assigned) target[folderId] = {assigned: true, changedAt: now};
+  }
+  collections.memberships[workId] = target;
+  return {...linked, collections};
+}
+// Una separación crea identidad nueva sin borrar el historial ni los vínculos antiguos.
+export function detachSeason(state, entryId) {
+  const current = synchronizeMediaLibrary(state);
+  const link = current.mediaLibrary.catalogLinks[entryId];
+  const work = link && current.mediaLibrary.works[link.workId];
+  const siblings = Object.values(current.mediaLibrary.seasons).filter(s => s.workId === link?.workId);
+  if (!work || work.kind !== 'series' || siblings.length < 2) throw new Error('La temporada no forma parte de una agrupación');
+  const layer = Object.hasOwn(current.catalogCustom, entryId) ? 'catalogCustom' : 'catalogOfficial';
+  const entry = current[layer][entryId];
+  if (!entry || isMovie(entry)) throw new Error('Temporada no encontrada');
+  const freshId = internalId('work');
+  const works = {...current.mediaLibrary.works, [freshId]: {id: freshId, kind: 'series', title: entry.title || entry.name || 'Sin título', catalogIds: [], sourceIds: []}};
+  const separated = synchronizeMediaLibrary({...current, mediaLibrary: {...current.mediaLibrary, works},
+    [layer]: {...current[layer], [entryId]: {...entry, workId: freshId}}});
+  const collections = normalizeCollections(separated.collections);
+  collections.memberships[freshId] = {...collections.memberships[link.workId]};
+  return {...separated, collections};
 }
 
 export function getMediaProgress(state, entityId) {

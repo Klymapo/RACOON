@@ -1,8 +1,8 @@
 {
-  "version": "3.0.0-alpha.5",
+  "version": "3.0.0-alpha.6",
   "changes": [
-    "Importación local CSV, TSV y XLSX con revisión de columnas y filas",
-    "Duplicados omitidos por defecto y progreso existente protegido",
-    "Respaldo verificable previo a importar y descarga para restaurar"
+    "Agrupación manual y navegación entre temporadas de una obra",
+    "Separación reversible preservando progreso, favoritos y carpetas",
+    "Sin agrupación automática ni episodios inventados"
   ]
 }

@@ -1,7 +1,8 @@
 import {registerTableImporter} from './table-import-ui.mjs';
 import {CATALOG} from './catalog.mjs';
 import {createDefaultState, loadState, saveState, validateState} from './storage.mjs';
-import {isMovie} from './media.mjs';
+import {isMovie, linkSeasonToWork, detachSeason} from './media.mjs';
+import {renderSeasonGrouping} from './season-ui.mjs';
 import {renderMovieForm} from './movie-ui.mjs';
 import {renderLibraryCard, renderWorkDetail} from './detail-ui.mjs';
 import {foldersForWork, listFolders, createFolder, renameFolder, moveFolder, trashFolder, restoreFolder, setFolderMembership} from './folders.mjs';
@@ -14,7 +15,7 @@ import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} f
 import {shouldRefresh, refreshCatalog, mergeCatalogObservation, FOUR_HOURS} from './refresh.mjs';
 import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '3.0.0-alpha.5';
+const RACOON_VERSION = '3.0.0-alpha.6';
 const VIEWS = ['home', 'calendar', 'progress', 'add', 'backups'];
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -250,7 +251,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
     if (!entry) { closeDetail(); detailId = null; return; }
     const target = elements('workDetailContent');
     if (!target) return;
-    const markup = renderWorkDetail(entry, normalizeTracking(state.tracking[detailId]), {folderContent: renderFolderChoices(state, detailId)});
+    const markup = renderWorkDetail(entry, normalizeTracking(state.tracking[detailId]), {folderContent: renderFolderChoices(state, detailId), seasonContent: renderSeasonGrouping(state, detailId)});
     if (elements('workDetail')?.open && target.dataset.detailId === detailId && target.dataset.detailKind === entry.mediaKind) {
       // Keep live form nodes: replacing them on blur can swallow the click on
       // the next button before mouseup (for example, edit count then favorite).
@@ -278,6 +279,9 @@ export function createApp({document = globalThis.document, storage = globalThis.
         if (current.map(node => node.dataset.workFolder).join('|') === next.map(node => node.dataset.workFolder).join('|')) current.forEach((node, index) => { node.checked = next[index].checked; });
         else choices.innerHTML = nextChoices.innerHTML;
       }
+      const seasons = target.querySelector('[data-detail-seasons]');
+      const nextSeasons = fresh.querySelector('[data-detail-seasons]');
+      if (seasons && nextSeasons && !seasons.contains(document.activeElement)) seasons.innerHTML = nextSeasons.innerHTML;
       for (const selector of ['[data-detail-description]', '[data-detail-evidence]', '[data-detail-trust]', '.detail-heading .poster']) {
         const node = target.querySelector(selector);
         if (node) node.innerHTML = fresh.querySelector(selector)?.innerHTML || '';
@@ -529,6 +533,34 @@ export function createApp({document = globalThis.document, storage = globalThis.
         return;
       }
       if (event.target.closest?.('[data-close-detail]')) { closeDetail(); return; }
+       const openSeason = event.target.closest?.('[data-season-open]');
+       if (openSeason && entryMap(CATALOG, state)[openSeason.dataset.seasonOpen]) {
+         detailId = openSeason.dataset.seasonOpen;
+         renderDetail();
+         elements('workDetailContent')?.querySelector?.('[data-close-detail]')?.focus?.({preventScroll: true});
+         return;
+       }
+       const seasonButton = event.target.closest?.('[data-season-link], [data-season-detach]');
+       if (seasonButton) {
+         const id = seasonButton.dataset.seasonLink || seasonButton.dataset.seasonDetach;
+         if (id !== detailId) return;
+         const panel = elements('workDetailContent');
+         const feedback = message => { const node = panel?.querySelector?.('[data-season-status]'); if (node) node.textContent = message; };
+         try {
+           if (seasonButton.dataset.seasonDetach) state = detachSeason(state, id);
+           else {
+             const workId = panel.querySelector('[data-season-work]').value;
+             const raw = panel.querySelector('[data-season-number]').value.trim();
+             const number = raw === '' ? null : Number(raw);
+             if (raw !== '' && (!Number.isSafeInteger(number) || number < 1 || number > 9999)) throw new Error('El número debe ser 1–9999 o quedar vacío.');
+             state = linkSeasonToWork(state, id, workId, number, now());
+           }
+           const saved = persist();
+           render();
+           feedback(saved ? 'Agrupación guardada; progreso y carpetas conservados.' : 'Cambio solo en memoria; exporta respaldo antes de cerrar.');
+         } catch (error) { feedback(error.message); }
+         return;
+       }
       const seriesButton = event.target.closest?.('[data-series-select]');
       if (seriesButton) {
         const result = searchResults.get(seriesButton.dataset.seriesSelect);

@@ -13,29 +13,29 @@ sin Functions, D1 ni servicios de pago.
 | 03 | Tarjetas compactas y ficha universal | alpha.3 |
 | 04 | Carpetas múltiples, filtros, orden y papelera recuperable | alpha.4 |
 | 05 | Importación CSV/TSV/XLSX, revisión y respaldo previo | alpha.5 |
+| 06 | Agrupación manual de temporadas y separación protegida | alpha.6 |
 
-## Pendiente: 13 bloques funcionales
+## Pendiente: 12 bloques funcionales
 
 Esta es una agrupación para contar el alcance pendiente, no una promesa de 13
 entregas. Cada bloque puede dividirse en varias entregas con pruebas. El modelo
-de temporadas ya existe; su interfaz de agrupación sigue pendiente. Importar una
+de temporadas y su interfaz de agrupación explícita ya existen. Importar una
 nota numérica tampoco equivale a completar Ratings.
 
 | Bloque | Trabajo restante |
 | --- | --- |
-| 1 | Interfaz para agrupar temporadas de una obra |
-| 2 | IndexedDB y migración con recuperación comprobada |
-| 3 | Colecciones inteligentes por filtros |
-| 4 | Disponibilidad regional, proveedores y suscripciones, con fuentes gratuitas verificadas |
-| 5 | Agenda v3: día/semana/mes, mis obras/todas |
-| 6 | Slice |
-| 7 | Recomendaciones locales |
-| 8 | Ratings / Racoonómetro |
-| 9 | Integración o intercambio con Letterboxd, según capacidades gratuitas verificadas |
-| 10 | Tarjetas para compartir |
-| 11 | WRAP |
-| 12 | OCR con revisión antes de guardar |
-| 13 | Nueva mascota e iconos |
+| 1 | IndexedDB y migración con recuperación comprobada |
+| 2 | Colecciones inteligentes por filtros |
+| 3 | Disponibilidad regional, proveedores y suscripciones, con fuentes gratuitas verificadas |
+| 4 | Agenda v3: día/semana/mes, mis obras/todas |
+| 5 | Slice |
+| 6 | Recomendaciones locales |
+| 7 | Ratings / Racoonómetro |
+| 8 | Integración o intercambio con Letterboxd, según capacidades gratuitas verificadas |
+| 9 | Tarjetas para compartir |
+| 10 | WRAP |
+| 11 | OCR con revisión antes de guardar |
+| 12 | Nueva mascota e iconos |
 
 Después del alcance funcional: revisión integral, aceptación en Android físico
 y decisión del propietario sobre fusión/publicación. Sin fecha ni porcentaje
@@ -58,3 +58,7 @@ requieren evaluación separada; no son dependencias implícitas de la aplicació
   restaurar con el flujo JSON existente. Si no se puede guardar ese respaldo,
   no se guarda el lote. Las importaciones anteriores se conservan al exportar
   los respaldos; el acceso rápido guarda solo el estado previo al último lote.
+
+## Entrega 06
+
+Desde la ficha de una serie se elige explícitamente a qué obra vincular su temporada, un número de temporada opcional, se navega entre temporadas agrupadas y se puede separar. Los progresos y favoritos individuales no cambian; las carpetas de ambos grupos se conservan y al separar se heredan las asignaciones del grupo. No se agrupa por similitud de títulos. Se añadieron pruebas en tests/season-grouping.test.mjs; revisión visual y Android físico quedan pendientes. No fusionada ni publicada.

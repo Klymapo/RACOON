@@ -238,3 +238,12 @@ h1 em { color: var(--lilac); font-style: normal; }
 .table-import-panel [hidden] { display: none !important; }
 .table-import-panel select { background: #21183d; color: #eeeafa; border: 1px solid #514273; border-radius: 10px; padding: 8px; font: inherit; }
 .table-import-panel select:focus-visible { outline: 2px solid #66dbd1; outline-offset: 2px; }
+
+/* v3: temporadas dentro de la ficha */
+.season-linked { list-style:none; padding:0; display:grid; gap:8px; }
+.season-linked li { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px; border:1px solid var(--line); border-radius:10px; }
+.season-linked li span { min-width:0; overflow-wrap:anywhere; }
+.season-linked small { display:block; color:var(--muted); }
+.season-controls { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.season-controls input,.season-controls select { width:100%; min-width:0; min-height:44px; padding:8px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--text); }
+@media(max-width:550px) { .season-controls { grid-template-columns:1fr; } }

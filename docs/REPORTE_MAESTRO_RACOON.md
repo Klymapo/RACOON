@@ -7,7 +7,7 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 - Base de producción: v2.2.1, merge `a0be814`, 13 de octubre de 2026.
 - Primera entrega v3: `3.0.0-alpha.1`, rama `codex/racoon-v3-01-navigation`.
-- Estado de trabajo actual: `3.0.0-alpha.5`, quinta entrega acumulada en el mismo
+- Estado de trabajo actual: `3.0.0-alpha.6`, sexta entrega acumulada en el mismo
   PR #2. Producción continúa en v2.2.1, sin fusionar ni desplegar estas entregas.
 - Alcance: Inicio, Agenda, Biblioteca, Explorar, Ajustes; barra inferior fija móvil,
   banner exclusivo de Inicio y navegación accesible por teclado.
@@ -18,14 +18,14 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 ## Próximos incrementos
 
-1. Interfaz para agrupar temporadas; migración a IndexedDB con validación.
+1. Migración a IndexedDB con validación.
 2. Colecciones inteligentes por filtros.
 3. Fuentes regionales verificadas y suscripciones; Slice, Ratings y recomendaciones.
 
 El orden puede ajustarse con Admin. No prometer fuentes regionales detalladas
 antes de verificar que ofrecen los datos y permiten su uso gratuito.
 
-Conteo: 5 entregas implementadas; 13 bloques funcionales pendientes, desglosados
+Conteo: 6 entregas implementadas; 12 bloques funcionales pendientes, desglosados
 en [ROADMAP_V3.md](ROADMAP_V3.md). No equivalen a 13 entregas garantizadas.
 
 ## Registro de cambios
@@ -187,3 +187,11 @@ Registro adicional: código, pruebas y plan de entrega 03 se agregan como commit
   Revisión visual móvil/escritorio y git diff --check sin errores.
 - Estado: sin fusionar ni desplegar; producción permanece en v2.2.1. Cloudflare Pages
   conservado: solo archivos estáticos, sin Functions, D1 ni servicios de pago.
+
+### 2026-10-17 — Argos — v3, entrega 06
+
+- Continuación de PR #2 desde alpha.5; interfaz explícita para agrupar temporadas desde su ficha, asignar número y navegar entre las temporadas de la misma obra.
+- Separación reversible, sin perder avance, favoritos ni fichas; carpetas activas combinadas al agrupar y heredadas al separar. No se inventan episodios y las películas no son elegibles.
+- Nuevos módulos y pruebas: season-ui.mjs y season-grouping.test.mjs. Actualizados app, media, ficha, estilos, Service Worker, versión y ROADMAP.
+- Versión de trabajo 3.0.0-alpha.6. Sin fusión ni despliegue; Cloudflare Pages permanece estático sin dependencias pagadas.
+- Pendiente: revisión en navegador y aceptación Android físico. Bloque siguiente: IndexedDB reversible.
