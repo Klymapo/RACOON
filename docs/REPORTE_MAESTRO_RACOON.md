@@ -240,3 +240,5 @@ Validación final 07D (3733f26): CI 39133366898 aprobó 134 pruebas Node y ambos
 - Revisión del propio autor. Sin fusión ni publicación. Registro en Klymapo; réplica a Gaston diferida por autorización de Admin.
 
 Revisión de entrega 08: reproducida aceptación silenciosa de una colección con reglas inválidas en la vista previa JSON. Ahora se cuenta como registro inválido y bloquea los controles de importación; la regresión falló antes del cambio y pasa después. Suite local 147/147, diff limpio. Las reglas ausentes o incompatibles tampoco se amplían a toda la biblioteca.
+
+QA inicial 08, run 39133992904: Node y los E2E general/IndexedDB aprobados; el nuevo E2E llegó a recarga offline y falló al leer innerText dentro del panel details cerrado (texto vacío). Se corrige la prueba para abrir el gestor antes de inspeccionar el nombre; no se reduce la comprobación del contenido ni de persistencia. Se vuelve a ejecutar CI.

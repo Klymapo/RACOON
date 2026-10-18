@@ -85,6 +85,7 @@ try {
  await context.setOffline(true);await page.reload();await page.locator('[data-view="progress"]').click();
  assert.equal(await page.locator('#progressFolder').inputValue(),id);
  assert.equal(await page.locator('[data-library-id]').count(),1);
+ await page.locator('#smartManager summary').click();
  assert.match(await page.locator('#smartList').innerText(),/Películas QA editadas/);
  await page.locator('[data-library-id="custom:smartfilm"] [data-open-detail]').click();
  await page.locator('#workDetail [data-progress-action="favorite"]').click();await page.locator('#workDetail [data-close-detail]').click();
