@@ -1,6 +1,7 @@
 import {migrateLegacyTrack, validateState} from './storage.mjs';
 import {isMovie} from './media.mjs';
 import {mergeCollections, foldersForWork} from './folders.mjs';
+import {mergeSmartCollections} from './smart-collections.mjs';
 
 const BACKUP_SCHEMA_VERSION = 3;
 const VALID_ID = /^(?:legacy|anilist|custom):[A-Za-z0-9._-]+$/;
@@ -54,6 +55,7 @@ export function createBackup(state, exportedAt = new Date().toISOString()) {
     tracking: clone(clean.tracking),
     mediaLibrary: clone(clean.mediaLibrary),
     collections: clone(clean.collections),
+    smartCollections: clone(clean.smartCollections),
     preferences: clone(clean.preferences),
     sourceCache: clone(clean.sourceCache),
     updateMeta: clone(clean.updateMeta)
@@ -90,6 +92,7 @@ export function mergeBackup(current, incoming) {
     workIds[link.workId] = [...new Set([...(workIds[link.workId] || []), localLinks[id]?.workId || link.workId])];
   }
   base.collections = mergeCollections(base.collections, next.collections, workIds);
+  base.smartCollections = mergeSmartCollections(base.smartCollections, next.smartCollections);
   base.catalogOfficial = {...base.catalogOfficial, ...next.catalogOfficial};
   base.catalogCustom = {...base.catalogCustom, ...next.catalogCustom};
   const seasonIds = new Map(Object.entries(next.mediaLibrary.catalogLinks).filter(([id, link]) => link.seasonId && localLinks[id]?.seasonId).map(([id, link]) => [link.seasonId, localLinks[id].seasonId]));

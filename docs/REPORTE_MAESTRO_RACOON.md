@@ -227,3 +227,14 @@ Revisión de 07D: reproducidos dos riesgos de arranque concurrente (cambio duran
 CI 07D inicial (64c74d1), run 39133242646: 132 pruebas Node, QA general y QA IndexedDB ampliado aprobados; publicación omitida. Incluye copia, respaldo descargado, activación, edición, recarga, fallo inyectado, reversión y arranque offline. El ajuste concurrente posterior añade dos regresiones (134 totales) y vuelve a pasar por CI. El PR se actualiza a entregas 01–07 y alpha.7; sin fusión ni publicación.
 
 Validación final 07D (3733f26): CI 39133366898 aprobó 134 pruebas Node y ambos flujos Chromium, incluidos activación, reversión, recuperación y offline. https://github.com/Klymapo/RACOON/actions/runs/39133366898 . PR #2 actualizado a entregas 01–07; sin fusión ni despliegue. Se actualiza el conteo a siete entregas. El bloque 1 queda parcialmente cubierto por la transición; la independencia de cuota local y aceptación Android no se dan por resueltas. El siguiente bloque funcional del roadmap es colecciones inteligentes.
+
+### 2026-10-18 — Argos — entrega 08: colecciones inteligentes (alpha.8)
+
+- Admin pidió continuar con la siguiente implementación y aclarar el conteo. Al iniciar quedaban doce bloques con trabajo: once abiertos y almacenamiento parcialmente cubierto.
+- Filtros guardados con reglas AND por título/alias, formato, estado, favorita, género y nota mínima personal. Resultados y conteos por ficha recalculados al cambiar el catálogo/seguimiento; no se modifica progreso ni pertenencias manuales.
+- Editor en Biblioteca para crear/editar y papelera recuperable con confirmación. Selector combinado con búsqueda, filtro y orden existentes. Sin carpeta conserva su significado manual.
+- smartCollections.version=1 extiende esquema 3. JSON conserva reglas y bajas; la fusión respeta cambios más recientes y no revive bajas con un respaldo antiguo. Compatibilidad con respaldos sin reglas.
+- Nota desconocida no equivale a cero; géneros usan el texto registrado sin traducción inferida; reglas incompatibles se excluyen sin ampliar resultados.
+- App, SW y metadatos alpha.8; módulos incluidos offline. Sigue estática para Cloudflare y sin dependencias de producto nuevas.
+- Validación local: 146 pruebas Node aprobadas, diff limpio y scripts sintácticamente válidos. QA nuevo scripts/qa-smart.mjs incluido en CI con los dos E2E existentes; resultado Chromium pendiente de ejecución.
+- Revisión del propio autor. Sin fusión ni publicación. Registro en Klymapo; réplica a Gaston diferida por autorización de Admin.

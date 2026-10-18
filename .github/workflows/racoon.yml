@@ -30,6 +30,7 @@ jobs:
         run: |
           node scripts/qa-browser.mjs
           node scripts/qa-indexeddb.mjs
+          node scripts/qa-smart.mjs
   publicar:
     name: Publicar sitio estático en Cloudflare Pages
     needs: calidad

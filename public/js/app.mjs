@@ -7,6 +7,8 @@ import {renderMovieForm} from './movie-ui.mjs';
 import {renderLibraryCard, renderWorkDetail} from './detail-ui.mjs';
 import {foldersForWork, listFolders, createFolder, renameFolder, moveFolder, trashFolder, restoreFolder, setFolderMembership} from './folders.mjs';
 import {renderFolderRows, renderFolderChoices} from './folder-ui.mjs';
+import {listSmartCollections, matchesSmartRules} from './smart-collections.mjs';
+import {mountSmartCollectionManager, renderSmartCollectionRows} from './smart-ui.mjs';
 import {buildCalendarModel} from './schedule.mjs';
 import {mexicoDate} from './time.mjs';
 import {searchAnime, fetchAnimeDetails, fetchSeasonalAnime, matchLegacyAnime, seasonForEntry} from './providers/anilist.mjs';
@@ -15,7 +17,7 @@ import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} f
 import {shouldRefresh, refreshCatalog, mergeCatalogObservation, FOUR_HOURS} from './refresh.mjs';
 import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '3.0.0-alpha.7';
+const RACOON_VERSION = '3.0.0-alpha.8';
 const VIEWS = ['home', 'calendar', 'progress', 'add', 'backups'];
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -121,13 +123,16 @@ export function saveCatalogEntry(state, entry, edits = {}) {
 export function filterProgressEntries(catalog, state, {query = '', filter = 'all', sort = 'title', folder = 'all'} = {}) {
   const normalizedQuery = String(query).trim().toLocaleLowerCase();
   const activeFolders = folder === 'all' ? null : new Set(listFolders(state).map(item => item.id));
+  const smartSelection = folder.startsWith('smart:') ? listSmartCollections(state).find(item => item.id === folder) : null;
   const entries = Object.values(entryMap(catalog, state)).map((entry) => {
     const tracking = normalizeTracking(state.tracking?.[entry.id]);
     const available = availableValue(entry, tracking);
     const remaining = available === null ? null : Math.max(0, available - tracking.seen);
     return {entry, tracking, available, remaining};
   }).filter(({entry, tracking, available, remaining}) => {
-    if (folder !== 'all') {
+    if (folder.startsWith('smart:')) {
+      if (!smartSelection || !matchesSmartRules(entry, tracking, smartSelection.rules)) return false;
+    } else if (folder !== 'all') {
       const workId = state.mediaLibrary?.catalogLinks[entry.id]?.workId;
       const memberships = Object.keys(state.collections?.memberships?.[workId] || {}).filter(id => activeFolders.has(id) && state.collections.memberships[workId][id].assigned);
       if (folder === 'unfiled' && memberships.length) return false;
@@ -229,16 +234,19 @@ export function createApp({document = globalThis.document, storage = globalThis.
 
   function renderFolders() {
     const folders = listFolders(state);
+    const smart = listSmartCollections(state);
     const select = elements('progressFolder');
     if (select) {
       const selected = state.preferences.folder || 'all';
-      const valid = ['all', 'unfiled'].includes(selected) || folders.some(folder => folder.id === selected);
+      const valid = ['all', 'unfiled'].includes(selected) || [...folders, ...smart].some(folder => folder.id === selected);
       state.preferences.folder = valid ? selected : 'all';
-      select.innerHTML = '<option value="all">Todas las carpetas</option><option value="unfiled">Sin carpeta</option>' + folders.map(folder => `<option value="${escapeHtml(folder.id)}">${escapeHtml(folder.name)}</option>`).join('');
+      select.innerHTML = '<option value="all">Todas las carpetas</option><option value="unfiled">Sin carpeta</option>' + folders.map(folder => `<option value="${escapeHtml(folder.id)}">${escapeHtml(folder.name)}</option>`).join('') + (smart.length ? '<optgroup label="Colecciones inteligentes">' + smart.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('') + '</optgroup>' : '');
       select.value = state.preferences.folder;
     }
     const rows = elements('folderList');
     if (rows) rows.innerHTML = renderFolderRows(state);
+    const smartRows = elements('smartList');
+    if (smartRows) smartRows.innerHTML = renderSmartCollectionRows(state);
   }
 
   function closeDetail() {
@@ -829,6 +837,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
     render();
   });
   elements('cancelImport')?.addEventListener?.('click', () => elements('importDialog')?.close?.());
+  mountSmartCollectionManager({document, getState: () => state, commitState: candidate => { state = validateState(candidate); const saved = persist(); render(); return saved; }, now});
   registerTableImporter({document, storage, getState: () => state, commitState: candidate => { if (!saveState(storage, candidate)) return false; state = candidate; render(); return true; }, download: downloadFile, now});
   elements('appVersion') && (elements('appVersion').textContent = `RACOON v${RACOON_VERSION}`);
   if (typeof window !== 'undefined' && globalThis.navigator?.serviceWorker) {
