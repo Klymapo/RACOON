@@ -556,7 +556,10 @@ export function createApp({document = globalThis.document, storage = globalThis.
              state = linkSeasonToWork(state, id, workId, number, now());
            }
            const saved = persist();
+           // Es una acción confirmada, no un blur: rehacer el panel y su lista.
+           if (panel) panel.dataset.detailKind = '';
            render();
+           panel?.querySelector?.('[data-season-link]')?.focus?.({preventScroll: true});
            feedback(saved ? 'Agrupación guardada; progreso y carpetas conservados.' : 'Cambio solo en memoria; exporta respaldo antes de cerrar.');
          } catch (error) { feedback(error.message); }
          return;

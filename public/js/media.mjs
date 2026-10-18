@@ -39,7 +39,7 @@ export function synchronizeMediaLibrary(state) {
       seasonId = validId(old.seasonId, 'season') && !library.seasons[old.seasonId] ? old.seasonId : internalId('season');
       library.seasons[seasonId] = {
         id: seasonId, workId, catalogId: entry.id,
-        number: count(entry.seasonNumber) ?? count(oldSeasons[seasonId]?.number),
+        number: Object.hasOwn(entry, 'seasonNumber') ? count(entry.seasonNumber) : count(oldSeasons[seasonId]?.number),
         title: entry.title || entry.name || 'Sin título',
         totalEpisodes: count(entry.totalEpisodes), availableEpisodes: count(entry.availableEpisodes)
       };

@@ -195,3 +195,5 @@ Registro adicional: código, pruebas y plan de entrega 03 se agregan como commit
 - Nuevos módulos y pruebas: season-ui.mjs y season-grouping.test.mjs. Actualizados app, media, ficha, estilos, Service Worker, versión y ROADMAP.
 - Versión de trabajo 3.0.0-alpha.6. Sin fusión ni despliegue; Cloudflare Pages permanece estático sin dependencias pagadas.
 - Pendiente: revisión en navegador y aceptación Android físico. Bloque siguiente: IndexedDB reversible.
+
+- Ajuste de QA de entrega 06: limpiar el número de temporada lo deja sin número (sin reponer el dato anterior), y las acciones de agrupar/separar fuerzan la actualización visible de la ficha tras guardar, manteniendo el foco en el control de agrupación.

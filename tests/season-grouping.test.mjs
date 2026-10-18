@@ -16,6 +16,8 @@ test('agrupar conserva progreso independiente e identidad al restaurar',()=>{
  assert.deepEqual(parseBackup(createBackup(joined)).state.mediaLibrary.catalogLinks,joined.mediaLibrary.catalogLinks);
  assert.notEqual(s.mediaLibrary.catalogLinks['custom:b'].workId,id);
  assert.equal(joined.tracking['custom:a'].favorite,true);
+ const cleared=linkSeasonToWork(joined,'custom:b',id,null);
+ assert.equal(cleared.mediaLibrary.seasons[cleared.mediaLibrary.catalogLinks['custom:b'].seasonId].number,null);
 });
 test('carpetas siguen asignadas al agrupar y separar',()=>{
  let s=fixture();s=createFolder(s,'A',100);s=createFolder(s,'B',101);
