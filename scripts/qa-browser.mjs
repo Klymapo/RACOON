@@ -184,11 +184,11 @@ try {
   assert.match(await page.locator('#calendar').innerText(), /Previsto/);
   await page.locator('#currentWeek').click();
   await page.locator('[data-calendar-day="2026-10-17"]').click();
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, JSON.stringify({view,width,overflow:await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.right>innerWidth+1;}).map(e=>({tag:e.tagName,id:e.id,class:e.className})).slice(0,12))}));
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await page.screenshot({path: 'artifacts/qa/racoon-v3-01-agenda-mobile.png', fullPage: false});
   await page.setViewportSize({width: 1440, height: 1000});
   await page.screenshot({path: 'artifacts/qa/racoon-v3-01-agenda-desktop.png', fullPage: true});
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, JSON.stringify({view,width,overflow:await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.right>innerWidth+1;}).map(e=>({tag:e.tagName,id:e.id,class:e.className})).slice(0,12))}));
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await page.locator('[data-view="backups"]').click();
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
   servedVersion = nextVersion;
