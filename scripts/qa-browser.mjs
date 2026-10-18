@@ -56,7 +56,7 @@ try {
       await page.locator(`[data-view="${view}"]`).click();
       assert.equal(await page.locator('.hero-card').isVisible(), view === 'home');
       assert.equal(await page.locator('[role="tabpanel"]:visible').count(), 1);
-      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, JSON.stringify({view,width,overflow:await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.right>innerWidth+1;}).map(e=>({tag:e.tagName,id:e.id,class:e.className})).slice(0,12))}));
       const nav = await page.locator('.primary-nav').boundingBox();
       if (width <= 800) {
         assert.ok(Math.abs(nav.y + nav.height - 844) < 2, 'mobile tabs stay at the viewport bottom');
@@ -184,11 +184,11 @@ try {
   assert.match(await page.locator('#calendar').innerText(), /Previsto/);
   await page.locator('#currentWeek').click();
   await page.locator('[data-calendar-day="2026-10-17"]').click();
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, JSON.stringify({view,width,overflow:await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.right>innerWidth+1;}).map(e=>({tag:e.tagName,id:e.id,class:e.className})).slice(0,12))}));
   await page.screenshot({path: 'artifacts/qa/racoon-v3-01-agenda-mobile.png', fullPage: false});
   await page.setViewportSize({width: 1440, height: 1000});
   await page.screenshot({path: 'artifacts/qa/racoon-v3-01-agenda-desktop.png', fullPage: true});
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, JSON.stringify({view,width,overflow:await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.right>innerWidth+1;}).map(e=>({tag:e.tagName,id:e.id,class:e.className})).slice(0,12))}));
   await page.locator('[data-view="backups"]').click();
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
   servedVersion = nextVersion;
