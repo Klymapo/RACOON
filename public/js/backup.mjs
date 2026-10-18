@@ -2,6 +2,8 @@ import {migrateLegacyTrack, validateState} from './storage.mjs';
 import {isMovie} from './media.mjs';
 import {mergeCollections, foldersForWork} from './folders.mjs';
 import {mergeSmartCollections} from './smart-collections.mjs';
+import {mergeRegionData} from './regional.mjs';
+import {mergeSliceData, reconcileSliceUndo} from './slice.mjs';
 
 const BACKUP_SCHEMA_VERSION = 3;
 const VALID_ID = /^(?:legacy|anilist|custom):[A-Za-z0-9._-]+$/;
@@ -33,6 +35,11 @@ function countState(state) {
 function sanitizeState(state) {
   const clean = validateState(state);
   const invalid = [];
+  for (const [group, layer] of [['regionData','offers'], ['regionData','subscriptions'], ['sliceData','records']]) {
+    for (const id of Object.keys(objectOrEmpty(state?.[group]?.[layer]))) {
+      if (!Object.hasOwn(clean[group][layer], id)) invalid.push(`${group}:${id}`);
+    }
+  }
   for (const id of Object.keys(objectOrEmpty(state?.smartCollections?.items))) {
     if (!Object.hasOwn(clean.smartCollections.items, id)) invalid.push(`smart-rule:${id}`);
   }
@@ -59,6 +66,8 @@ export function createBackup(state, exportedAt = new Date().toISOString()) {
     mediaLibrary: clone(clean.mediaLibrary),
     collections: clone(clean.collections),
     smartCollections: clone(clean.smartCollections),
+    regionData: clone(clean.regionData),
+    sliceData: clone(clean.sliceData),
     preferences: clone(clean.preferences),
     sourceCache: clone(clean.sourceCache),
     updateMeta: clone(clean.updateMeta)
@@ -96,6 +105,8 @@ export function mergeBackup(current, incoming) {
   }
   base.collections = mergeCollections(base.collections, next.collections, workIds);
   base.smartCollections = mergeSmartCollections(base.smartCollections, next.smartCollections);
+  base.regionData = mergeRegionData(base.regionData, next.regionData);
+  base.sliceData = mergeSliceData(base.sliceData, next.sliceData);
   base.catalogOfficial = {...base.catalogOfficial, ...next.catalogOfficial};
   base.catalogCustom = {...base.catalogCustom, ...next.catalogCustom};
   const seasonIds = new Map(Object.entries(next.mediaLibrary.catalogLinks).filter(([id, link]) => link.seasonId && localLinks[id]?.seasonId).map(([id, link]) => [link.seasonId, localLinks[id].seasonId]));
@@ -114,7 +125,7 @@ export function mergeBackup(current, incoming) {
     base.sourceCache = {...base.sourceCache, ...next.sourceCache};
     base.updateMeta = {...base.updateMeta, ...next.updateMeta};
   }
-  return validateState(base);
+  return validateState(reconcileSliceUndo(base));
 }
 
 export function replaceWithBackup(incoming) {

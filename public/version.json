@@ -1,8 +1,4 @@
 {
-  "version": "3.0.0-alpha.8",
-  "changes": [
-    "Colecciones inteligentes con filtros que se actualizan automáticamente",
-    "Edición y papelera recuperable sin modificar fichas ni progreso",
-    "Reglas conservadas en respaldo JSON, fusión, IndexedDB y offline"
-  ]
+ "version":"3.0.0-alpha.11",
+ "changes":["Disponibilidad por país, modalidad y suscripciones con evidencia manual","Agenda día, semana y mes; mis obras o catálogo local","Slice: gestos, historial, favoritos, nota, carpetas y deshacer protegido"]
 }

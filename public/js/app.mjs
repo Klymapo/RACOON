@@ -9,7 +9,10 @@ import {foldersForWork, listFolders, createFolder, renameFolder, moveFolder, tra
 import {renderFolderRows, renderFolderChoices} from './folder-ui.mjs';
 import {listSmartCollections, matchesSmartRules} from './smart-collections.mjs';
 import {mountSmartCollectionManager, renderSmartCollectionRows} from './smart-ui.mjs';
+import {mountRegionalControls, renderRegionalPanel, renderRegionalResults, renderRegionalSettings} from './regional-ui.mjs';
+import {mountSlice} from './slice-ui.mjs';
 import {buildCalendarModel} from './schedule.mjs';
+import {buildAgendaModel, agendaRange, shiftAgendaDate} from './agenda.mjs';
 import {mexicoDate} from './time.mjs';
 import {searchAnime, fetchAnimeDetails, fetchSeasonalAnime, matchLegacyAnime, seasonForEntry} from './providers/anilist.mjs';
 import {registerPwa} from './pwa.mjs';
@@ -17,7 +20,7 @@ import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} f
 import {shouldRefresh, refreshCatalog, mergeCatalogObservation, FOUR_HOURS} from './refresh.mjs';
 import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '3.0.0-alpha.8';
+const RACOON_VERSION = '3.0.0-alpha.11';
 const VIEWS = ['home', 'calendar', 'progress', 'add', 'backups'];
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -188,6 +191,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   let pwaController = null;
   let pendingImport = null;
   let refreshInFlight = null;
+  let sliceController = null;
   const elements = (id) => document?.getElementById?.(id);
 
   function setText(id, value) {
@@ -259,7 +263,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
     if (!entry) { closeDetail(); detailId = null; return; }
     const target = elements('workDetailContent');
     if (!target) return;
-    const markup = renderWorkDetail(entry, normalizeTracking(state.tracking[detailId]), {folderContent: renderFolderChoices(state, detailId), seasonContent: renderSeasonGrouping(state, detailId)});
+    const markup = renderWorkDetail(entry, normalizeTracking(state.tracking[detailId]), {folderContent: renderFolderChoices(state, detailId), seasonContent: renderSeasonGrouping(state, detailId)}) + renderRegionalPanel(state, entry, mexicoDate(now()));
     if (elements('workDetail')?.open && target.dataset.detailId === detailId && target.dataset.detailKind === entry.mediaKind) {
       // Keep live form nodes: replacing them on blur can swallow the click on
       // the next button before mouseup (for example, edit count then favorite).
@@ -288,6 +292,8 @@ export function createApp({document = globalThis.document, storage = globalThis.
         else choices.innerHTML = nextChoices.innerHTML;
       }
       const seasons = target.querySelector('[data-detail-seasons]');
+      const regional = target.querySelector('[data-regional-results]');
+      if (regional) regional.innerHTML = renderRegionalResults(state, detailId, mexicoDate(now()));
       const nextSeasons = fresh.querySelector('[data-detail-seasons]');
       if (seasons && nextSeasons && !seasons.contains(document.activeElement)) seasons.innerHTML = nextSeasons.innerHTML;
       for (const selector of ['[data-detail-description]', '[data-detail-evidence]', '[data-detail-trust]', '.detail-heading .poster']) {
@@ -327,13 +333,23 @@ export function createApp({document = globalThis.document, storage = globalThis.
       effectivePlatform = platforms.includes(selectedPlatform) ? selectedPlatform : 'all';
       platformSelect.value = effectivePlatform;
     }
-    const model = buildCalendarModel(entries, state, {weekStart, selectedDay, platform: effectivePlatform, status: state.preferences.status || 'all'});
+    const mode = ['day','week','month'].includes(state.preferences.agendaMode) ? state.preferences.agendaMode : 'week';
+    let anchor = state.preferences.agendaAnchor || state.preferences.calendarWeek || today;
+    try { agendaRange(mode, anchor); } catch { anchor = today; }
+    const model = buildAgendaModel(entries, state, {mode, anchor, selectedDay, scope: state.preferences.agendaScope, platform: effectivePlatform, status: state.preferences.status || 'all'});
+    if (elements('agendaMode')) elements('agendaMode').value = mode;
+    if (elements('agendaScope')) elements('agendaScope').value = model.scope;
+    if (elements('agendaDate')) elements('agendaDate').value = anchor;
+    setText('agendaRange', `${model.start} — ${model.days.at(-1).date} · ${model.scope === 'mine' ? 'Obras con seguimiento o guardadas por ti' : 'Catálogo local disponible, no todos los estrenos del mundo'}`);
+    const names = {day:'Día',week:'Semana',month:'Mes'};
+    setText('previousWeek', `← ${names[mode]} anterior`); setText('nextWeek', `${names[mode]} siguiente →`); setText('currentWeek', mode==='day'?'Hoy':mode==='month'?'Mes actual':'Semana actual');
     if (elements('calendarStatus')) elements('calendarStatus').value = state.preferences.status || 'all';
     const selector = elements('daySelector');
-    if (selector) selector.innerHTML = model.days.map((day, index) => `<button class="day-chip ${day.date === model.selectedDay ? 'is-active' : ''}" type="button" data-calendar-day="${day.date}" role="tab" aria-selected="${day.date === model.selectedDay}"><strong>${DAY_NAMES[index]} ${day.date.slice(8, 10)}</strong><small>${day.entries.length} evento${day.entries.length === 1 ? '' : 's'}</small></button>`).join('');
+    if (selector) selector.innerHTML = model.days.map((day, index) => `<button class="day-chip ${day.date === model.selectedDay ? 'is-active' : ''}" type="button" data-calendar-day="${day.date}" role="tab" aria-selected="${day.date === model.selectedDay}"><strong>${DAY_NAMES[(new Date(day.date+'T12:00:00Z').getUTCDay()+6)%7]} ${day.date.slice(8, 10)}</strong><small>${day.entries.length} evento${day.entries.length === 1 ? '' : 's'}</small></button>`).join('');
     const calendar = elements('calendar');
     if (!calendar) return;
-    calendar.innerHTML = model.days.map((day, index) => `<section class="calendar-day ${day.date === model.selectedDay ? 'is-selected' : ''}" data-calendar-panel="${day.date}"><header><h3>${DAY_NAMES[index]} · ${day.date.slice(8, 10)}/${day.date.slice(5, 7)}</h3><span>${day.entries.length}</span></header>${day.entries.length ? day.entries.map(renderCalendarEntry).join('') : '<div class="empty-state">Sin eventos para este día. Puedes revisar otra semana.</div>'}</section>`).join('');
+    if (calendar.dataset) calendar.dataset.agendaMode = mode;
+    calendar.innerHTML = model.days.map((day, index) => `<section class="calendar-day ${day.date === model.selectedDay ? 'is-selected' : ''}" data-calendar-panel="${day.date}"><header><h3>${DAY_NAMES[(new Date(day.date+'T12:00:00Z').getUTCDay()+6)%7]} · ${day.date.slice(8, 10)}/${day.date.slice(5, 7)}</h3><span>${day.entries.length}</span></header>${day.entries.length ? day.entries.map(renderCalendarEntry).join('') : '<div class="empty-state">Sin eventos para este día. Puedes revisar otra semana.</div>'}</section>`).join('');
   }
 
   function renderSearchResults(results = []) {
@@ -470,6 +486,8 @@ export function createApp({document = globalThis.document, storage = globalThis.
   }
 
   function render() {
+    sliceController?.render();
+    renderRegionalSettings(document, state);
     renderHome();
     renderFolders();
     renderProgress();
@@ -720,26 +738,21 @@ export function createApp({document = globalThis.document, storage = globalThis.
       (opener || elements(`${currentView}Tab`))?.focus?.({preventScroll: true});
     }
   });
-  elements('previousWeek')?.addEventListener?.('click', () => {
-    const button = {dataset: {calendarWeek: '-7'}};
-    state.preferences.calendarWeek = addDays(state.preferences.calendarWeek || mondayOf(mexicoDate(now())), -7);
-    state.preferences.selectedDay = state.preferences.calendarWeek;
-    persist();
-    renderCalendar();
-  });
-  elements('nextWeek')?.addEventListener?.('click', () => {
-    state.preferences.calendarWeek = addDays(state.preferences.calendarWeek || mondayOf(mexicoDate(now())), 7);
-    state.preferences.selectedDay = state.preferences.calendarWeek;
-    persist();
-    renderCalendar();
-  });
-  elements('currentWeek')?.addEventListener?.('click', () => {
-    const week = mondayOf(mexicoDate(now()));
-    state.preferences.calendarWeek = week;
-    state.preferences.selectedDay = week;
-    persist();
-    renderCalendar();
-  });
+  function moveAgenda(direction) {
+    const mode = state.preferences.agendaMode || 'week';
+    const anchor = state.preferences.agendaAnchor || state.preferences.calendarWeek || mexicoDate(now());
+    const date = direction === 0 ? mexicoDate(now()) : shiftAgendaDate(anchor, mode, direction);
+    state.preferences.agendaAnchor = date;
+    state.preferences.calendarWeek = agendaRange('week', date).start;
+    state.preferences.selectedDay = mode === 'week' ? state.preferences.calendarWeek : date;
+    persist(); renderCalendar();
+  }
+  elements('previousWeek')?.addEventListener?.('click', () => moveAgenda(-1));
+  elements('nextWeek')?.addEventListener?.('click', () => moveAgenda(1));
+  elements('currentWeek')?.addEventListener?.('click', () => moveAgenda(0));
+  elements('agendaMode')?.addEventListener?.('change', event => {state.preferences.agendaMode = event.target.value; persist(); renderCalendar();});
+  elements('agendaScope')?.addEventListener?.('change', event => {state.preferences.agendaScope = event.target.value; persist(); renderCalendar();});
+  elements('agendaDate')?.addEventListener?.('change', event => {try {agendaRange('day',event.target.value); state.preferences.agendaAnchor = event.target.value; state.preferences.selectedDay = event.target.value; state.preferences.calendarWeek = agendaRange('week',event.target.value).start; persist(); renderCalendar();} catch {renderCalendar();}});
   elements('calendarPlatform')?.addEventListener?.('change', (event) => { state.preferences.platform = event.target.value; persist(); renderCalendar(); });
   elements('calendarStatus')?.addEventListener?.('change', (event) => { state.preferences.status = event.target.value; persist(); renderCalendar(); });
   elements('progressSearch')?.addEventListener?.('input', () => renderProgress());
@@ -837,7 +850,10 @@ export function createApp({document = globalThis.document, storage = globalThis.
     render();
   });
   elements('cancelImport')?.addEventListener?.('click', () => elements('importDialog')?.close?.());
-  mountSmartCollectionManager({document, getState: () => state, commitState: candidate => { state = validateState(candidate); const saved = persist(); render(); return saved; }, now});
+  const commitLocal = candidate => { state = validateState(candidate); const saved = persist(); render(); return saved; };
+  mountRegionalControls({document, getState: () => state, commitState: commitLocal, now});
+  sliceController = mountSlice({document, getState: () => state, commitState: commitLocal, now});
+  mountSmartCollectionManager({document, getState: () => state, commitState: commitLocal, now});
   registerTableImporter({document, storage, getState: () => state, commitState: candidate => { if (!saveState(storage, candidate)) return false; state = candidate; render(); return true; }, download: downloadFile, now});
   elements('appVersion') && (elements('appVersion').textContent = `RACOON v${RACOON_VERSION}`);
   if (typeof window !== 'undefined' && globalThis.navigator?.serviceWorker) {

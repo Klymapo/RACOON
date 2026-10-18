@@ -251,3 +251,13 @@ https://github.com/Klymapo/RACOON/actions/runs/39134171386
 Conteo actualizado: ocho entregas realizadas; once bloques con trabajo restante
 (diez abiertos y almacenamiento parcial). El PR #2 se actualiza a 01–08/alpha.8;
 reporte maestro y roadmap registran la misma evidencia. Sin fusión ni publicación.
+
+### 2026-10-18 — Argos — entregas 09–11 (alpha.11), implementación
+
+- Admin autorizó los siguientes tres bloques: regional/proveedores/suscripciones, Agenda v3 y Slice. Leído el roadmap vigente; se recuperó la especificación aprobada de Gaston al seleccionar correctamente su cuenta. Se conserva extracto en el repo para continuidad.
+- Regional: país MX configurable, suscripciones por país/servicio/canal, evidencia manual por ficha con modalidad, cobertura, URL, fecha y caducidad. Inclusión requiere coincidencia exacta y evidencia actual. No se convierten datos estadounidenses en mexicanos ni Channels/alquiler en suscripción base. Retirada y restauración de ofertas sin borrar evidencia.
+- Fuentes primarias revisadas en docs/FUENTES_REGIONALES.md. No hay consulta automática de ofertas; esa parte del bloque 3 sigue pendiente, sin habilitar servicios pagados ni inventar verificación. Evidencia manual >30 días se etiqueta antigua, no indisponible.
+- Agenda: día/semana/mes, fecha e intervalos, Mis obras por defecto/Todas del catálogo local; conserva CDMX, límites por huso y previsiones sin aumentar disponibles.
+- Slice: cola local, botones/gestos/teclado, favorito, nota 0–10 y carpeta opcionales; historial persistente paginado y undo protegido frente a cambios posteriores. Deshacer no revive al fusionar un respaldo anterior. No se asignan fechas ni episodios ni gusto por inferencia.
+- JSON preserva regionData y sliceData, bajas y preferencias. Registros incompatibles bloquean vista previa en lugar de desaparecer. Persistencia y versión de esquema de biblioteca 3 conservadas; versión app/SW alpha.11 y nuevos módulos offline.
+- Suite Node y cuatro E2E (tres anteriores más qa-next-three.mjs) se verifican antes del cierre. Sin fusión ni despliegue. Registro final de pruebas y réplica de bitácora a Gaston al terminar.

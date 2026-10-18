@@ -247,3 +247,12 @@ h1 em { color: var(--lilac); font-style: normal; }
 .season-controls { grid-template-columns: repeat(2,minmax(0,1fr)); }
 .season-controls input,.season-controls select { width:100%; min-width:0; min-height:44px; padding:8px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--text); }
 @media(max-width:550px) { .season-controls { grid-template-columns:1fr; } }
+/* Agenda v3: día y mes muestran todo su intervalo también en móvil. */
+.calendar-layout[data-agenda-mode="day"] { grid-template-columns: minmax(0,1fr); }
+.calendar-layout[data-agenda-mode="month"] { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.calendar-layout[data-agenda-mode="month"] .calendar-day,.calendar-layout[data-agenda-mode="day"] .calendar-day { display:block; min-width:0; }
+#agendaRange { font-size:12px; overflow-wrap:anywhere; }
+@media(max-width:800px) { .calendar-layout[data-agenda-mode="month"] { grid-template-columns: minmax(0,1fr); } }
+.slice-gesture-area { touch-action:none; min-height:140px; padding:18px; border:1px solid var(--line); border-radius:14px; margin:12px 0; overflow-wrap:anywhere; }
+.slice-gesture-area:focus-visible { outline:3px solid var(--lilac); }
+#slicePanel .button-row { flex-wrap:wrap; }

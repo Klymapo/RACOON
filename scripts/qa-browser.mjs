@@ -120,6 +120,7 @@ try {
   await page.screenshot({path: 'artifacts/qa/racoon-v3-03-library-mobile.png'});
   await page.locator('#progressFilter').selectOption('all');
   await page.locator('[data-view="calendar"]').click();
+  await page.locator('#agendaScope').selectOption('all');
   const next = page.locator('#nextWeek');
   for (let index = 0; index < 2 && !await page.locator('.episode-card:has-text("Coherence Show")').count(); index += 1) await next.click();
   const eventDay = await page.locator('.episode-card:has-text("Coherence Show")').first().locator('xpath=ancestor::section[@data-calendar-panel]').getAttribute('data-calendar-panel');
