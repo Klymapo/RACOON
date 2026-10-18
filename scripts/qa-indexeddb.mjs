@@ -135,6 +135,27 @@ try {
   assert.equal(await page.locator('#activateIndexedStorage').isDisabled(),true);
   assert.equal(await readSeen(),5);
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('racoon-v2-state')).tracking['legacy:verm'].seen),5);
+  // Prueba adicional en navegador real: cuota local llena, IDB sigue guardando.
+  await page.evaluate(() => {
+    const original=Storage.prototype.setItem;
+    Storage.prototype.setItem=function(key,value) {
+      if(key==='racoon-v2-state'||key==='racoon-v2-state:previous')throw Error('QuotaExceededError simulado');
+      return original.call(this,key,value);
+    };
+  });
+  await increment();
+  await page.waitForFunction(() => document.getElementById('storageRuntimeStatus')?.textContent.includes('Guardado en IndexedDB verificado'));
+  assert.equal(await readSeen(),6);
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('racoon-v2-state')).tracking['legacy:verm'].seen),5);
+  await page.reload(); // La cuota simulada desaparece; el dato reciente se lee de IDB.
+  await page.locator('[data-view="progress"]').click();
+  await page.locator('[data-library-id="legacy:verm"] [data-open-detail]').click();
+  assert.equal(await page.locator('#workDetail [data-progress-field="seen"]').inputValue(),'6');
+  await page.locator('#workDetail [data-close-detail]').click();
+  await page.locator('[data-view="backups"]').click();
+  await page.locator('#deactivateIndexedStorage').click();
+  await page.locator('#storageRuntimeStatus').filter({hasText:'localStorage activo'}).waitFor();
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('racoon-v2-state')).tracking['legacy:verm'].seen),6);
   assert.deepEqual(errors, []);
   console.log('Chromium IndexedDB: copia, verificación, duplicado, conflicto, origen intacto, activación, edición, recarga, fallo, reversión y offline OK');
 } finally {
