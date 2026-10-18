@@ -66,3 +66,7 @@ Desde la ficha de una serie se elige explícitamente a qué obra vincular su tem
 ## Bloque 1: etapa 07A, 18 de octubre de 2026
 
 Adaptador IndexedDB optativo en public/js/indexeddb.mjs: lectura validada, escritura transaccional verificada y preparación explícita desde localStorage. Se detectan estados inválidos, instantáneas obsoletas, errores y cambios concurrentes. Pruebas en tests/indexeddb.test.mjs. La aplicación todavía usa localStorage: NO se activó migración automática ni se borraron datos. Faltan integración, reversión y pruebas en navegador real. El bloque 1 sigue pendiente; restan 12 bloques funcionales. Sin fusión ni publicación.
+
+## Bloque 1: etapa 07B, 18 de octubre de 2026
+
+Se añadió un control optativo en Ajustes para preparar y verificar copia IndexedDB, con mensajes accesibles de éxito, copia obsoleta, origen incompatible, cambio concurrente y errores; reintento sin sobrescribir localStorage. El control se inicializa desde el módulo PWA, sin activar almacenamiento principal en IndexedDB. Nuevo módulo indexeddb-ui.mjs y pruebas unitarias; QA de Chromium/offline en scripts/qa-indexeddb.mjs. La versión visible permanece alpha.6 mientras se prepara la migración completa; no se publicó. Bloque 1 todavía abierto: faltan conmutación reversible, validación real en navegador y Android físico.

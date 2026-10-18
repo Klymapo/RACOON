@@ -10,3 +10,10 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 - Commits eb78beea, fae5a66e, 05d2d5f. CI inicial: 112 pruebas Node correctas en https://github.com/Klymapo/RACOON/actions/runs/39102505146 .
 - Pendiente: CI del commit final, integración con fallback/rollback y E2E IndexedDB en Chromium/Android. Bloque 1 incompleto; 12 bloques pendientes.
 - PR #2 sigue sin fusionar ni publicar; producción v2.2.1 en Cloudflare Pages estático.
+
+## 2026-10-18 — Argos — etapa 07B, preparación manual desde Ajustes
+
+- Revisados PR #2, rama, ROADMAP, CI de 07A (113 pruebas aprobadas) y bitácora de Gaston.
+- Control IndexedDB optativo desde Ajustes: preparación y verificación, aviso de copia obsoleta y errores, protección contra doble ejecución. La biblioteca original en localStorage permanece activa e intacta.
+- Nuevos public/js/indexeddb-ui.mjs, tests/indexeddb-ui.test.mjs, scripts/qa-indexeddb.mjs; public/js/pwa.mjs inicializa el control; SW precachea módulos para offline.
+- Pendiente verificar CI y QA de Chromium, migración reversible y Android físico. Sin fusión ni despliegue; producción v2.2.1.

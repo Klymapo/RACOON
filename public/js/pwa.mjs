@@ -1,3 +1,4 @@
+import './indexeddb-ui.mjs';
 function versionParts(version) {
   return String(version || '0').replace(/^v/i, '').split('.').map((part) => Number.parseInt(part, 10) || 0);
 }
