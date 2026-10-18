@@ -74,3 +74,10 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
   https://github.com/Klymapo/RACOON/actions/runs/39143385060
 - Main verificado en a0be814. Maestro Gaston actualizado con control de revisión
   y leído de vuelta; antecedentes conservados y PR #2 actualizado a 01–17.
+
+## 2026-10-18 — Argos — entrega 18, identidad vectorial v3 (alpha.18)
+
+- Fuente SVG geométrica para favicon/logo y rostro común del Racoonómetro; antifaz, orejas poligonales, sombrero discreto y paleta aprobada. Expresiones derivadas exclusivamente de la puntuación pública verificada.
+- SVG monocromático adicional. Script local libre (librsvg) genera iconos PNG 192/512 y maskable 512 con zona de seguridad, sin CDN ni costes, antes de QA y antes de cualquier despliegue.
+- Manifest y precaché versionados; pruebas de contrato vectorial y rangos de expresión. Los PNG generados sustituyen a los antiguos en el artefacto de CI/despliegue; el repositorio conserva los PNG v2 hasta esa construcción, sin borrar archivos.
+- Entrega aplicada solamente a la rama del PR #2. Validación CI pendiente de observar; no se fusiona ni publica. Restan dos frentes funcionales parciales: almacenamiento/cuota/Android y disponibilidad regional automática.

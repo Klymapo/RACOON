@@ -29,6 +29,11 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/racoon-qa" --no-save playwright@1.51.1
           node "$RUNNER_TEMP/racoon-qa/node_modules/playwright/cli.js" install --with-deps chromium
           echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/racoon-qa/node_modules/playwright/index.js" >> "$GITHUB_ENV"
+      - name: Preparar PNG de identidad v3 (SVG local, librsvg libre)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y librsvg2-bin
+          node scripts/build-brand-icons.mjs
       - name: Verificar biblioteca, PWA y copia IndexedDB en Chromium
         timeout-minutes: 10
         run: |
@@ -64,6 +69,9 @@ jobs:
           npm install -g wrangler@4
           npm ci --prefix scripts/ocr-deps --ignore-scripts --no-audit --no-fund
           node scripts/prepare-ocr-assets.mjs
+          sudo apt-get update -qq
+          sudo apt-get install -y librsvg2-bin
+          node scripts/build-brand-icons.mjs
           STATIC_DIR="$(mktemp -d)"
           cp -R public/. "$STATIC_DIR/"
           # La publicación deliberadamente no incluye functions/ ni schema.sql.

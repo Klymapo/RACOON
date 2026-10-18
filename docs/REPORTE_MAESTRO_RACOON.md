@@ -327,3 +327,10 @@ Se verificó main en a0be814 (v2.2.1). Réplica Gaston con revisión protegida:
 estado alpha.17, resumen ejecutivo y registro 15–17 escritos; lectura posterior
 confirma nuevos párrafos y conservación de antecedentes. PR #2 actualizado a
 incrementos 01–17. Sin fusión ni publicación; tres bloques restantes.
+
+### 2026-10-18 — Argos — entrega 18, identidad RACOON v3
+
+- Se integra al PR #2 diseño vectorial geométrico aprobado, variante monocromática, rostro compartido con Racoonómetro y PNG reproducibles 192/512 + maskable desde SVG maestro.
+- Manifest, precaché, CI y preparación previa a Cloudflare estático actualizados; la generación es local en GitHub Actions mediante librsvg libre. No hay nueva API ni cuota.
+- Se reduce el trabajo funcional restante de tres bloques a dos (almacenamiento/Android y proveedor regional automático). El QA de Android físico no queda cubierto por Chromium de escritorio.
+- CI de entrega 18 pendiente de comprobar; main y producción v2.2.1 no modificados. Sin merge ni publicación.

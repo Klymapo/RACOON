@@ -25,8 +25,9 @@ sin Functions, D1 ni servicios de pago.
 | 15 | Tarjetas PNG cuadradas/verticales y menú Compartir | integrada en alpha.17 |
 | 16 | WRAP local por periodo e instantáneas de registros | integrada en alpha.17 |
 | 17 | OCR local de imágenes/fotogramas, corrección y confirmación | alpha.17 |
+| 18 | Identidad geométrica, seis gestos vectoriales, iconos y manifest PWA | alpha.18 |
 
-## Pendiente: 3 bloques con trabajo restante
+## Pendiente: 2 bloques con trabajo restante
 
 Esta es una agrupación para contar el alcance pendiente, no una promesa de 13
 entregas. Cada bloque puede dividirse en varias entregas con pruebas. El modelo
@@ -37,7 +38,6 @@ nota numérica tampoco equivale a completar Ratings.
 | --- | --- |
 | 1 | Transición reversible implementada; falta independencia de cuota localStorage y aceptación Android físico |
 | 3 | Evidencia y suscripciones manuales implementadas; falta proveedor automático gratuito validado |
-| 12 | Nueva mascota e iconos |
 
 Después del alcance funcional: revisión integral, aceptación en Android físico
 y decisión del propietario sobre fusión/publicación. Sin fecha ni porcentaje
@@ -174,5 +174,9 @@ fotograma/selección, privacidad de tarjeta WRAP y claridad de fechas futuras.
 También se protege exportación tras retirar una ficha. Validación local: 189
 pruebas Node y seis flujos Chromium (incluido OCR real de imagen/video y offline);
 CI 39143385060 aprobó el mismo código (e0a9764); réplica Gaston final verificada. Sin fusión ni publicación.
-Quedan tres bloques con trabajo: identidad vectorial final y dos parciales
+Quedan dos bloques con trabajo: dos parciales
 (almacenamiento independiente de cuota/Android y proveedor regional automático).
+
+## Entrega 18, 18 de octubre de 2026 — alpha.18
+
+Diseño geométrico SVG y monocromo, un mismo rostro para las expresiones del Racoonómetro. Íconos PWA normales y maskable generados reproduciblemente con librsvg libre en CI y deploy; pruebas de paleta, rangos y manifest. Sin publicación/fusión. Validación CI pendiente hasta observar ejecución; aceptación Android físico pendiente.
