@@ -62,7 +62,8 @@ export async function stageLocalStateMigration(storage, openDatabase = openRacoo
   let db;
   try {
     db = await openDatabase();
-    if (await readIndexedSnapshot(db)) return {status: 'already-staged'};
+    const existing = await readIndexedSnapshot(db);
+    if (existing) return {status: JSON.stringify(existing) === JSON.stringify(validateState(source)) ? 'already-staged' : 'stale-snapshot'};
     await writeIndexedSnapshot(db, validateState(source));
     if (storage.getItem(STATE_KEY) !== raw) return {status: 'source-changed'};
     return {status: 'staged'};

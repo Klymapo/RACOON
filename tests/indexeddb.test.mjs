@@ -82,3 +82,15 @@ test('read validates snapshot version and write rejects incompatible state', asy
   rows.set('primary', {id: 'primary', schemaVersion: 2, json: '{}'});
   await assert.rejects(() => readIndexedSnapshot(db), /incompatible/);
 });
+
+test('a stale IndexedDB snapshot is reported rather than overwriting newer local data', async () => {
+  const storage = localStorageWith(JSON.stringify(createDefaultState()));
+  const {db} = database();
+  assert.equal((await stageLocalStateMigration(storage, async () => db)).status, 'staged');
+  const changed = createDefaultState();
+  changed.tracking['custom:new'] = {seen: 2, favorite: true, status: 'Viendo'};
+  storage.setItem(STATE_KEY, JSON.stringify(changed));
+  assert.equal((await stageLocalStateMigration(storage, async () => db)).status, 'stale-snapshot');
+  assert.equal((await readIndexedSnapshot(db)).tracking['custom:new'], undefined);
+  assert.equal(JSON.parse(storage.getItem(STATE_KEY)).tracking['custom:new'].seen, 2);
+});
