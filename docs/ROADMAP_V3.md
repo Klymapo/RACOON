@@ -173,6 +173,6 @@ Revisión independiente corregida: cancelación de resultados tardíos al cambia
 fotograma/selección, privacidad de tarjeta WRAP y claridad de fechas futuras.
 También se protege exportación tras retirar una ficha. Validación local: 189
 pruebas Node y seis flujos Chromium (incluido OCR real de imagen/video y offline);
-CI y réplica final se registran al cerrar la entrega. Sin fusión ni publicación.
+CI 39143385060 aprobó el mismo código (e0a9764); réplica Gaston final verificada. Sin fusión ni publicación.
 Quedan tres bloques con trabajo: identidad vectorial final y dos parciales
 (almacenamiento independiente de cuota/Android y proveedor regional automático).

@@ -44,7 +44,7 @@ Interfaces: extractQueries(text), localCandidates(state,query), commitOcrCandida
 ## Verification and delivery
 - [x] node --test tests/*.test.mjs y git diff --check.
 - [x] Seis flujos Chromium (cinco existentes y share/WRAP/OCR nuevo) y revisión independiente; registrar limitaciones Android físico.
-- [ ] Persistir alpha.17 y cerrar CI/PR/bitácoras/Gaston con lectura de verificación.
+- [x] Persistir alpha.17 y cerrar CI/PR/bitácoras/Gaston con lectura de verificación.
 
 ## Evidencia de ejecución
 
@@ -54,3 +54,5 @@ Interfaces: extractQueries(text), localCandidates(state,query), commitOcrCandida
 - Local: 189 Node, seis E2E Chromium y preparación npm ci/lock aprobados. OCR real leyó imagen y WebM generado, sin peticiones externas; solo la consulta confirmada envió texto a la ruta simulada AniList. Offline/IDB verificados. PNG inspeccionado y dimensiones comprobadas en cabecera binaria.
 - Decisión: ningún identificador visual externo; si no hay texto útil se ofrece corrección/ficha manual. Costo: no se reconoce universalmente un fotograma sin texto.
 - Decisión: WRAP no deduce fechas de changedAt ni inventa gustos anteriores; compara instantáneas voluntarias y notas actuales. Costo: los registros sin fecha no participan en mes/año hasta que el usuario declare una.
+
+Cierre: código e0a9764, CI 39143385060: 189/189 Node y seis E2E Chromium aprobados. cbe939a ya había pasado CI 39143270576. Se añadió vaciado del lienzo temporal y contención de controles ocultos. PR #2 y maestro Gaston actualizados; lectura de réplica verificada, main a0be814 sin modificar. Sin despliegue ni fusión.

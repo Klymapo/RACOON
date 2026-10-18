@@ -314,4 +314,16 @@ Réplica final 12–14 en Gaston completada y leída de vuelta: estado alpha.14,
   colecciones, región/Agenda/Slice, descubrimiento y tarjetas/WRAP/OCR). La nueva
   prueba verifica OCR real sin tráfico externo, envío exclusivo de texto elegido,
   PNG, confirmación, duplicados, cancelación, geometría, JSON/IDB y OCR offline.
-- Producción v2.2.1; sin fusión ni despliegue. Se prepara CI y réplica Gaston final.
+- Producción v2.2.1; sin fusión ni despliegue. CI 39143385060 y réplica Gaston final verificados.
+
+Validación final 15–17: cbe939a incorporó los tres bloques y e0a9764 vació el
+lienzo al retirar la captura y corrigió controles ocultos. CI 39143385060 aprobó
+189 Node y seis E2E Chromium, incluidos motor OCR/modelos preparados con npm ci,
+OCR real de imagen/WebM, fotograma cambiado, selección manual frente a respuesta
+remota tardía, cero tráfico externo al reconocer, PNG exactos, fechas de series,
+privacidad, duplicados, geometría y OCR offline/IDB.
+https://github.com/Klymapo/RACOON/actions/runs/39143385060
+Se verificó main en a0be814 (v2.2.1). Réplica Gaston con revisión protegida:
+estado alpha.17, resumen ejecutivo y registro 15–17 escritos; lectura posterior
+confirma nuevos párrafos y conservación de antecedentes. PR #2 actualizado a
+incrementos 01–17. Sin fusión ni publicación; tres bloques restantes.

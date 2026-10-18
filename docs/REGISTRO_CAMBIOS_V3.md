@@ -67,6 +67,10 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
   Motor/modelos autoalojados, licencias libres, npm lock e integridad; caché
   offline optativa. Los originales no se envían ni se guardan.
 - Revisión independiente corregida y regresiones de privacidad/resultados tardíos.
-  189 pruebas Node y seis E2E Chromium locales aprobados; CI por registrar.
+  189 pruebas Node y seis E2E Chromium locales y en CI 39143385060 aprobados.
 - Maestro/roadmap/plan actualizados: 17 incrementos y tres bloques restantes.
   Sin fusión ni publicación. Se preparó el registro para réplica final en Gaston.
+- Commits cbe939a/e0a9764; CI final 39143385060 aprobado (189 Node + seis E2E).
+  https://github.com/Klymapo/RACOON/actions/runs/39143385060
+- Main verificado en a0be814. Maestro Gaston actualizado con control de revisión
+  y leído de vuelta; antecedentes conservados y PR #2 actualizado a 01–17.
