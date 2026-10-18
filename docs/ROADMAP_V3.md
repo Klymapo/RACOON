@@ -1,6 +1,6 @@
 # RACOON v3 — avance por entregas
 
-Corte: 17 de octubre de 2026. Implementación acumulada en el PR #2, sin fusionar
+Corte: 18 de octubre de 2026. Implementación acumulada en el PR #2, sin fusionar
 ni desplegar. Producción sigue en v2.2.1. Aplicación estática para Cloudflare Pages,
 sin Functions, D1 ni servicios de pago.
 
@@ -14,6 +14,7 @@ sin Functions, D1 ni servicios de pago.
 | 04 | Carpetas múltiples, filtros, orden y papelera recuperable | alpha.4 |
 | 05 | Importación CSV/TSV/XLSX, revisión y respaldo previo | alpha.5 |
 | 06 | Agrupación manual de temporadas y separación protegida | alpha.6 |
+| 07 | IndexedDB optativo con espejo local, respaldo y reversión | alpha.7 |
 
 ## Pendiente: 12 bloques funcionales
 
@@ -24,7 +25,7 @@ nota numérica tampoco equivale a completar Ratings.
 
 | Bloque | Trabajo restante |
 | --- | --- |
-| 1 | IndexedDB y migración con recuperación comprobada |
+| 1 | Transición reversible implementada; falta independencia de cuota localStorage y aceptación Android físico |
 | 2 | Colecciones inteligentes por filtros |
 | 3 | Disponibilidad regional, proveedores y suscripciones, con fuentes gratuitas verificadas |
 | 4 | Agenda v3: día/semana/mes, mis obras/todas |

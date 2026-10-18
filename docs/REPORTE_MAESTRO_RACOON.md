@@ -25,7 +25,7 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 El orden puede ajustarse con Admin. No prometer fuentes regionales detalladas
 antes de verificar que ofrecen los datos y permiten su uso gratuito.
 
-Conteo: 6 entregas implementadas; 12 bloques funcionales pendientes, desglosados
+Conteo: 7 entregas implementadas; 12 bloques funcionales pendientes, desglosados
 en [ROADMAP_V3.md](ROADMAP_V3.md). No equivalen a 13 entregas garantizadas.
 
 ## Registro de cambios
@@ -225,3 +225,5 @@ Validación remota 07C: ejecución 39132381549, Node 121/121 y QA general Chromi
 Revisión de 07D: reproducidos dos riesgos de arranque concurrente (cambio durante lectura IDB y entre preparación del runtime/carga de app). Ambas regresiones fallaron antes del arreglo y pasan tras comprobar nuevamente el espejo local; el dato reciente gana y se abandona la copia obsoleta. Suite 134/134; diff limpio. Esto protege la transición de arranque y no constituye sincronización completa entre pestañas.
 
 CI 07D inicial (64c74d1), run 39133242646: 132 pruebas Node, QA general y QA IndexedDB ampliado aprobados; publicación omitida. Incluye copia, respaldo descargado, activación, edición, recarga, fallo inyectado, reversión y arranque offline. El ajuste concurrente posterior añade dos regresiones (134 totales) y vuelve a pasar por CI. El PR se actualiza a entregas 01–07 y alpha.7; sin fusión ni publicación.
+
+Validación final 07D (3733f26): CI 39133366898 aprobó 134 pruebas Node y ambos flujos Chromium, incluidos activación, reversión, recuperación y offline. https://github.com/Klymapo/RACOON/actions/runs/39133366898 . PR #2 actualizado a entregas 01–07; sin fusión ni despliegue. Se actualiza el conteo a siete entregas. El bloque 1 queda parcialmente cubierto por la transición; la independencia de cuota local y aceptación Android no se dan por resueltas. El siguiente bloque funcional del roadmap es colecciones inteligentes.

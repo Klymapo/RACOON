@@ -22,3 +22,11 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 
 - GitHub Actions ejecución 39106535836: 118 pruebas Node correctas, 0 fallos; publicación Cloudflare omitida. https://github.com/Klymapo/RACOON/actions/runs/39106535836
 - El script Chromium/IndexedDB real se añadió, pero todavía NO se ejecutó; no se confunde con las pruebas Node. El flujo de CI actual solo ejecuta Node y no publica PR.
+
+## 2026-10-18 — Argos — entrega 07D, alpha.7
+
+- Admin autorizó continuar y aplazar la réplica a Gaston; registro en Klymapo.
+- Commits 64c74d1 y 3733f26: activación optativa y reversión IndexedDB, espejo local verificado, cola de guardado, recuperación ante fallo, respaldo previo descargable y protección de arranque concurrente. Versión y SW alpha.7.
+- PR #2 actualizado a entregas 01–07. Reporte maestro, plan y roadmap actualizados; siete entregas, doce bloques aún con trabajo pendiente (bloque 1 parcial: mantiene cuota localStorage y falta Android físico).
+- CI 39133366898: 134 pruebas Node y dos flujos Chromium aprobados. https://github.com/Klymapo/RACOON/actions/runs/39133366898
+- Sin fusión ni despliegue. Producción continúa en v2.2.1. Sin cambios en Drive; réplica diferida por instrucción de Admin.
