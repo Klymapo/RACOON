@@ -30,16 +30,19 @@ function awaitRequest(req) {
   });
 }
 
-export async function readIndexedSnapshot(db) {
+export async function readIndexedRecord(db) {
   const row = await awaitRequest(db.transaction(STORE, 'readonly').objectStore(STORE).get(KEY));
   if (!row) return null;
   if (row.schemaVersion !== STATE_SCHEMA_VERSION || typeof row.json !== 'string') throw Error('Esquema incompatible');
   const parsed = JSON.parse(row.json);
   if (parsed?.schemaVersion !== STATE_SCHEMA_VERSION) throw Error('Estado incompatible');
-  return validateState(parsed);
+  return {state: validateState(parsed), mirrorRaw: typeof row.mirrorRaw === 'string' ? row.mirrorRaw : null};
+}
+export async function readIndexedSnapshot(db) {
+  return (await readIndexedRecord(db))?.state ?? null;
 }
 
-export async function writeIndexedSnapshot(db, state) {
+export async function writeIndexedSnapshot(db, state, {mirrorRaw = null} = {}) {
   if (state?.schemaVersion !== STATE_SCHEMA_VERSION) throw Error('Esquema de origen incompatible');
   const json = JSON.stringify(validateState(state));
   const tx = db.transaction(STORE, 'readwrite');
@@ -48,11 +51,11 @@ export async function writeIndexedSnapshot(db, state) {
     tx.onerror = () => reject(tx.error || Error('Error de escritura'));
     tx.onabort = () => reject(tx.error || Error('Transacción cancelada'));
   });
-  tx.objectStore(STORE).put({id: KEY, schemaVersion: STATE_SCHEMA_VERSION, json, source: STATE_KEY});
+  tx.objectStore(STORE).put({id: KEY, schemaVersion: STATE_SCHEMA_VERSION, json, source: STATE_KEY, mirrorRaw});
   await complete;
-  const verified = await readIndexedSnapshot(db);
-  if (JSON.stringify(verified) !== json) throw Error('Verificación fallida');
-  return verified;
+  const verified = await readIndexedRecord(db);
+  if (JSON.stringify(verified?.state) !== json || verified?.mirrorRaw !== mirrorRaw) throw Error('Verificación fallida');
+  return verified.state;
 }
 
 export async function stageLocalStateMigration(storage, openDatabase = openRacoonDatabase) {

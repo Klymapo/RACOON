@@ -1,6 +1,6 @@
-// Transición reversible: lectura IndexedDB y espejo local antes de cada escritura.
+// En modo IndexedDB, la copia local es opcional: nunca bloquea la cuota del catálogo.
 import {STATE_KEY, STATE_SCHEMA_VERSION, validateState} from './storage.mjs';
-import {openRacoonDatabase, readIndexedSnapshot, writeIndexedSnapshot} from './indexeddb.mjs';
+import {openRacoonDatabase, readIndexedRecord, writeIndexedSnapshot} from './indexeddb.mjs';
 export const MODE_KEY = 'racoon-storage-mode';
 export const MIGRATION_KEY = `${STATE_KEY}:before-indexed-v1`;
 function parseSource(raw) {
@@ -9,87 +9,117 @@ function parseSource(raw) {
   return validateState(state);
 }
 export async function createStorageRuntime({storage, openDatabase = openRacoonDatabase, onStatus = () => {}}) {
-  let mode = 'local', queue = Promise.resolve(), pending = 0, busy = false;
-  const notify = status => { try {onStatus({status, mode, pending});} catch {} };
-  const setMode = value => {
-    storage.setItem(MODE_KEY, value);
-    if (storage.getItem(MODE_KEY) !== value) throw Error('No se pudo guardar el modo local.');
+  let mode = 'local', queue = Promise.resolve(), pending = 0, busy = false, volatileState = null, startMirror = null, started = false;
+  const auxiliary = new Map();
+  const notify = status => {try {onStatus({status,mode,pending});} catch {}};
+  const localGet = key => storage.getItem(key);
+  function setMode(value) {
+    storage.setItem(MODE_KEY,value);
+    if (localGet(MODE_KEY) !== value) throw Error('No se pudo guardar el modo local.');
     mode = value;
-  };
+  }
   async function withDatabase(action) {
     const db = await openDatabase();
     try {return await action(db);} finally {db.close();}
   }
   function fallback() {
+    volatileState = null;
     mode = 'local';
-    try {setMode('local');} catch { /* Al reiniciar se detectará la discrepancia. */ }
+    try {setMode('local');} catch {}
     notify('fallback');
   }
-  let startupRaw = null, startupSourceRaw = null;
-  if (storage.getItem(MODE_KEY) === 'indexeddb') {
-    // Sin espejo legible no arrancar con un estado vacío ni sobrescribir la base.
-    const raw = storage.getItem(STATE_KEY);
-    const local = parseSource(raw);
+  if (localGet(MODE_KEY) === 'indexeddb') {
+    const raw = localGet(STATE_KEY);
+    // No degradar silenciosamente ante una biblioteca corrupta.
+    if (raw !== null) parseSource(raw);
     try {
-      const indexed = await withDatabase(readIndexedSnapshot);
-      if (!indexed || JSON.stringify(indexed) !== JSON.stringify(local)) throw Error('Copias distintas');
-      if (storage.getItem(STATE_KEY) !== raw) throw Error('El origen cambió durante el arranque');
-      startupRaw = JSON.stringify(indexed);
-      startupSourceRaw = raw;
+      const record = await withDatabase(readIndexedRecord);
+      if (!record) throw Error('IndexedDB sin biblioteca');
+      const indexedRaw = JSON.stringify(record.state);
+      if (raw !== indexedRaw && record.mirrorRaw !== raw) throw Error('Edición local ajena, recuperando copia local');
+      startMirror = raw;
+      volatileState = indexedRaw;
       mode = 'indexeddb';
       notify('ready');
-    } catch {fallback();}
+    } catch (error) {
+      // Si se perdió el espejo y también IndexedDB, no abrir una biblioteca vacía.
+      if (raw === null) throw Error('No existe biblioteca recuperable. Importa tu respaldo JSON.');
+      fallback();
+    }
   }
   const facade = {
     getItem(key) {
-      if (key === STATE_KEY && startupRaw !== null) {
-        const value = startupRaw; startupRaw = null;
-        if (storage.getItem(STATE_KEY) !== startupSourceRaw) {
-          fallback(); return storage.getItem(STATE_KEY);
+      if (key === STATE_KEY && mode === 'indexeddb') {
+        // Si otro proceso modificó el espejo durante el arranque, conservar su edición.
+        if (!started) {
+          started = true;
+          if (localGet(STATE_KEY) !== startMirror) {fallback(); return localGet(STATE_KEY);}
         }
-        return value;
+        return volatileState;
       }
-      return storage.getItem(key);
+      return auxiliary.has(key) ? auxiliary.get(key) : localGet(key);
     },
-    setItem(key, value) {
-      // El guardado local síncrono debe verificarse antes de encolar IndexedDB.
-      storage.setItem(key, value);
-      if (storage.getItem(key) !== value) throw Error('No se pudo verificar el espejo local.');
-      if (key !== STATE_KEY || mode !== 'indexeddb') return;
+    setItem(key,value) {
+      value = String(value);
+      if (mode !== 'indexeddb') {
+        storage.setItem(key,value);
+        if(localGet(key)!==value) throw Error('No se pudo verificar la copia local.');
+        return;
+      }
+      // Los checkpoints pueden exceder la cuota: se conservan en memoria durante esta sesión.
+      if (key !== STATE_KEY) {
+        auxiliary.set(key,value);
+        try {storage.setItem(key,value);} catch {}
+        return;
+      }
       const state = parseSource(value);
-      pending++; notify('pending');
-      queue = queue.then(async () => {
-        if (mode === 'indexeddb') {
-          try {await withDatabase(db => writeIndexedSnapshot(db, state));}
-          catch {fallback();}
+      volatileState = value;
+      let mirrorRaw = null, mirrorOK = false;
+      try {
+        storage.setItem(key,value);
+        mirrorRaw = localGet(key);
+        mirrorOK = mirrorRaw === value;
+      } catch {mirrorRaw = localGet(key);}
+      // Capturar el espejo realmente escrito: diferencia cuota agotada de edición concurrente.
+      pending++;notify('pending');
+      queue = queue.catch(()=>{}).then(async()=>{
+        try {
+          await withDatabase(db=>writeIndexedSnapshot(db,state,{mirrorRaw}));
+          if(mode==='indexeddb' && pending===1) notify(mirrorOK?'saved':'independent');
+        } catch {
+          if(mirrorOK && localGet(STATE_KEY)===value) fallback();
+          else notify('failed');
         }
-      }).finally(() => {pending--; if (mode === 'indexeddb' && pending === 0) notify('saved');});
+      }).finally(()=>{pending--; if(mode==='indexeddb' && pending===0)notify(mirrorOK?'saved':'independent');});
     }
   };
   async function exclusive(action) {
-    if (busy) throw Error('Hay un cambio de almacenamiento en curso.');
+    if(busy) throw Error('Hay un cambio de almacenamiento en curso.');
     busy = true;
-    try {await queue; return await action();} finally {busy = false;}
+    try {await queue; return await action();} finally {busy=false;}
   }
   return {
-    storage: facade,
-    get mode() {return mode;},
-    flush: () => queue,
-    activate: () => exclusive(async () => {
-      if (mode === 'indexeddb') return;
-      const raw = storage.getItem(STATE_KEY), source = parseSource(raw);
-      if (storage.getItem(MIGRATION_KEY) === null) {
-        storage.setItem(MIGRATION_KEY, raw);
-        if (storage.getItem(MIGRATION_KEY) !== raw) throw Error('No se pudo verificar el respaldo previo.');
+    storage:facade,
+    get mode(){return mode;},
+    flush:()=>queue,
+    activate:()=>exclusive(async()=>{
+      if(mode==='indexeddb')return;
+      const raw=localGet(STATE_KEY),source=parseSource(raw);
+      if(localGet(MIGRATION_KEY)===null) {
+        storage.setItem(MIGRATION_KEY,raw);
+        if(localGet(MIGRATION_KEY)!==raw) throw Error('No se pudo verificar el respaldo previo.');
       }
-      await withDatabase(db => writeIndexedSnapshot(db, source));
-      if (storage.getItem(STATE_KEY) !== raw) throw Error('La biblioteca cambió durante la activación. Intenta nuevamente.');
-      setMode('indexeddb'); notify('ready');
+      await withDatabase(db=>writeIndexedSnapshot(db,source,{mirrorRaw:raw}));
+      if(localGet(STATE_KEY)!==raw)throw Error('La biblioteca cambió durante la activación. Intenta nuevamente.');
+      setMode('indexeddb');volatileState=raw;startMirror=raw;started=true;notify('ready');
     }),
-    deactivate: () => exclusive(async () => {
-      // Los cambios ya se guardaron primero en el espejo; no restaurar una copia vieja.
-      parseSource(storage.getItem(STATE_KEY));
-      setMode('local'); notify('local');
+    deactivate:()=>exclusive(async()=>{
+      if(mode==='local')return;
+      // No forzar reversión al espejo antiguo si la cuota impide copiar lo actual.
+      const latest=JSON.stringify(parseSource(volatileState));
+      storage.setItem(STATE_KEY,latest);
+      if(localGet(STATE_KEY)!==latest)throw Error('No cabe la biblioteca en localStorage. Exporta JSON antes de revertir.');
+      setMode('local');volatileState=null;notify('local');
     })
   };
 }

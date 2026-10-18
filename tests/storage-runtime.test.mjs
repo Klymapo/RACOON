@@ -91,3 +91,39 @@ test('an edit between runtime readiness and app load is not overwritten by cache
   assert.equal(JSON.parse(reopened.storage.getItem(STATE_KEY)).tracking.x.seen,13);
   assert.equal(reopened.mode,'local');
 });
+
+
+test('quota exhaustion in localStorage does not block IndexedDB persistence or reload',async()=>{
+  const f=fixture(),runtime1=await runtime.createStorageRuntime(f);await runtime1.activate();
+  const original=f.storage.getItem(STATE_KEY),setter=f.storage.setItem;
+  f.storage.setItem=(key,value)=>{if(key===STATE_KEY||key===STATE_KEY+':previous')throw Error('QuotaExceededError');setter(key,value);};
+  const next=createDefaultState();next.tracking.x={seen:22};
+  assert.equal(saveState(runtime1.storage,next),true);
+  await runtime1.flush();
+  assert.equal(runtime1.mode,'indexeddb');
+  assert.equal(f.storage.getItem(STATE_KEY),original);
+  assert.equal((await readIndexedSnapshot(f.db)).tracking.x.seen,22);
+  const runtime2=await runtime.createStorageRuntime(f);
+  assert.equal(runtime2.mode,'indexeddb');
+  assert.equal(JSON.parse(runtime2.storage.getItem(STATE_KEY)).tracking.x.seen,22);
+  await assert.rejects(()=>runtime2.deactivate(),/QuotaExceededError/);
+  assert.equal(runtime2.mode,'indexeddb');
+});
+test('local direct edits win over old IndexedDB data, but an unchanged stale mirror does not',async()=>{
+  const f=fixture(),r=await runtime.createStorageRuntime(f);await r.activate();
+  const next=createDefaultState();next.tracking.x={seen:26};
+  r.storage.setItem(STATE_KEY,JSON.stringify(next));await r.flush();
+  const old=JSON.parse(f.storage.getItem(STATE_KEY));old.tracking.x.seen=99;
+  f.storage.setItem(STATE_KEY,JSON.stringify(old));
+  assert.equal((await runtime.createStorageRuntime(f)).mode,'local');
+});
+test('failed IndexedDB writes with a stale mirror warn, do not silently downgrade to old progress',async()=>{
+  const f=fixture(),events=[],r=await runtime.createStorageRuntime({...f,onStatus:s=>events.push(s.status)});
+  await r.activate();const set=f.storage.setItem;
+  f.storage.setItem=(k,v)=>{if(k===STATE_KEY)throw Error('quota');set(k,v);};
+  f.fail();const s=createDefaultState();s.tracking.x={seen:77};
+  assert.equal(saveState(r.storage,s),true);await r.flush();
+  assert.equal(r.mode,'indexeddb');
+  assert.ok(events.includes('failed'));
+  assert.equal(JSON.parse(r.storage.getItem(STATE_KEY)).tracking.x.seen,77);
+});

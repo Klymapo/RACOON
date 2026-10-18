@@ -27,7 +27,7 @@ sin Functions, D1 ni servicios de pago.
 | 17 | OCR local de imágenes/fotogramas, corrección y confirmación | alpha.17 |
 | 18 | Identidad geométrica, seis gestos vectoriales, iconos y manifest PWA | alpha.18 |
 
-## Pendiente: 2 bloques con trabajo restante
+## Pendiente: 2 frentes de cierre; funcionalidad de cuota cubierta
 
 Esta es una agrupación para contar el alcance pendiente, no una promesa de 13
 entregas. Cada bloque puede dividirse en varias entregas con pruebas. El modelo
@@ -180,3 +180,7 @@ Quedan dos bloques con trabajo: dos parciales
 ## Entrega 18, 18 de octubre de 2026 — alpha.18
 
 Diseño geométrico SVG y monocromo, un mismo rostro para las expresiones del Racoonómetro. Íconos PWA normales y maskable generados reproduciblemente con librsvg libre en CI y deploy; pruebas de paleta, rangos y manifest. Sin publicación/fusión. Validación CI pendiente hasta observar ejecución; aceptación Android físico pendiente.
+
+## 2026-10-18 — entrega 19 (alpha.19, almacenamiento)
+
+IndexedDB acepta bibliotecas que exceden la cuota localStorage: el espejo se escribe cuando cabe; ante quota la escritura principal sigue mediante transacción verificada. El registro IDB conoce exactamente el último espejo para distinguir una copia antigua intacta de una edición local posterior. La reversión comprueba capacidad, los fallos combinados avisan y requieren respaldo JSON. Tests específicos de cuota y recuperación; Android físico pendiente.

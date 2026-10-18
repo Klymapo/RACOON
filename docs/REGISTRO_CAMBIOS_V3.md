@@ -93,3 +93,8 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 - GitHub Actions 39146611713 falló primero por dos contratos de nombre/versión. CI 39146711117 aprobó 192 pruebas Node y los seis E2E Chromium de la entrega. Los PNG se generaron correctamente desde SVG antes de las pruebas.
 - Capturas Chromium de QA pasan a publicarse como artefacto descargable de la CI para inspeccionar la app sin pretender que son un Android físico. Se añadirá vínculo a la primera ejecución validada.
 - Bloque identidad integrado en PR #2; dos frentes parciales restantes. Main/Cloudflare no modificados.
+
+## 2026-10-18 — Argos — entrega 19 (alpha.19)
+
+- IndexedDB principal resistente a falta de espacio localStorage, transacción verificada, espejo opcional, recuperación mediante registro del último espejo y reversión condicionada a capacidad. En doble fallo se informa claramente y mantiene el estado en memoria para exportar JSON. Tests nuevos de cuota, recuperación y error combinado.
+- PR #2 sin fusión ni despliegue. Android físico y proveedor regional automatizado continúan pendientes. CI en proceso de validación.

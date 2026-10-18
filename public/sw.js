@@ -1,4 +1,4 @@
-const VERSION = '3.0.0-alpha.18';
+const VERSION = '3.0.0-alpha.19';
 const CACHE = `racoon-wizard-${VERSION}`;
 const ASSETS = ['/', '/index.html', '/styles.css', '/manifest.webmanifest', '/version.json', '/icons/racoon-wizard.svg', '/icons/racoon-mono.svg', '/icons/racoon-maskable-512.png', '/js/brand.mjs', '/icons/racoon-wizard-192.png', '/icons/racoon-wizard-512.png', '/js/app.mjs', '/js/table-reader.mjs', '/js/table-import.mjs', '/js/table-import-ui.mjs', '/js/model.mjs', '/js/media.mjs', '/js/season-ui.mjs', '/js/movie-ui.mjs', '/js/detail-ui.mjs', '/js/folders.mjs', '/js/folder-ui.mjs', '/js/time.mjs', '/js/evidence.mjs', '/js/schedule.mjs', '/js/storage.mjs', '/js/indexeddb.mjs', '/js/indexeddb-ui.mjs', '/js/backup.mjs', '/js/catalog.mjs', '/js/pwa.mjs', '/js/refresh.mjs', '/js/providers/anilist.mjs'];
 

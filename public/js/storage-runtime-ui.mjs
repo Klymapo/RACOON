@@ -3,7 +3,7 @@ import {createBackup} from './backup.mjs';
 export function updateStorageRuntimeStatus(document, {status,mode}) {
   const node=document.getElementById('storageRuntimeStatus');
   if (!node) return;
-  node.textContent=status==='pending' ? 'Guardando en IndexedDB… La copia local ya está guardada.' : status==='fallback' ? 'IndexedDB no pudo verificarse. Se usa la copia local con tus últimos cambios. Exporta un respaldo JSON.' : mode==='indexeddb' ? 'IndexedDB activo y verificado; copia local de recuperación conservada.' : 'localStorage activo. La copia IndexedDB se conserva.';
+  node.textContent=status==='pending' ? 'Guardando en IndexedDB… Espera la confirmación antes de cerrar.' : status==='failed' ? 'No se confirmó el guardado en IndexedDB ni en la copia local. Exporta un JSON ahora; no cierres esta pestaña.' : status==='independent' ? 'Guardado en IndexedDB verificado. La copia local puede estar desactualizada por falta de espacio; exporta JSON periódicamente.' : status==='fallback' ? 'IndexedDB falló. Se usa la última copia local disponible; exporta un respaldo JSON.' : mode==='indexeddb' ? 'IndexedDB activo y verificado; copia local cuando hay espacio.' : 'localStorage activo. La copia IndexedDB se conserva.';
   const activate=document.getElementById('activateIndexedStorage'),deactivate=document.getElementById('deactivateIndexedStorage');
   if(activate)activate.disabled=mode==='indexeddb';
   if(deactivate)deactivate.disabled=mode!=='indexeddb';
@@ -29,7 +29,7 @@ export function mountStorageRuntimePanel(document,runtime,storage) {
   const view=document.getElementById('backupsView');
   if(!view||document.getElementById('activateIndexedStorage'))return;
   const panel=document.createElement('article');panel.className='panel-card';
-  panel.innerHTML='<h3>Almacenamiento local reversible</h3><p class="muted">Puedes activar IndexedDB con una copia de recuperación en localStorage. Ambos necesitan espacio en este dispositivo. Guarda también un respaldo JSON independiente. Al volver, se conservan los últimos cambios y la base IndexedDB.</p><button id="activateIndexedStorage" type="button" class="button button-soft">Activar IndexedDB</button> <button id="deactivateIndexedStorage" type="button" class="button button-soft">Volver a localStorage</button> <button id="downloadIndexedCheckpoint" type="button" class="button button-soft">Descargar respaldo previo</button><p id="storageRuntimeStatus" class="inline-status" role="status" aria-live="polite"></p>';
+  panel.innerHTML='<h3>Almacenamiento local reversible</h3><p class="muted">Puedes activar IndexedDB como biblioteca principal. Guarda un espejo en localStorage solo cuando hay espacio, sin bloquear el guardado por cuota. Revertir a localStorage exige que la biblioteca quepa. Exporta JSON periódicamente; no sincroniza entre dispositivos.</p><button id="activateIndexedStorage" type="button" class="button button-soft">Activar IndexedDB</button> <button id="deactivateIndexedStorage" type="button" class="button button-soft">Volver a localStorage</button> <button id="downloadIndexedCheckpoint" type="button" class="button button-soft">Descargar respaldo previo</button><p id="storageRuntimeStatus" class="inline-status" role="status" aria-live="polite"></p>';
   view.appendChild(panel);registerStorageRuntimeControls(document,runtime);
   document.getElementById('downloadIndexedCheckpoint').addEventListener('click',()=>{
     try {

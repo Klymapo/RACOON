@@ -336,3 +336,8 @@ incrementos 01–17. Sin fusión ni publicación; tres bloques restantes.
 - CI 39146711117 aprobada (192 Node y seis E2E Chromium) tras corregir fallos iniciales de versión/manifiesto. Main y producción v2.2.1 no modificados. Sin merge ni publicación.
 
 Actualización de pruebas entrega 18: evidencia cromática/geométrica revisada; CI 39146711117 aprobó seis flujos Chromium y 192 Node. Se habilitó exportación de capturas de QA como artefacto de Actions (no equivale a aceptación Android físico). Se mantiene pendiente de verificar primer artefacto descargable.
+
+### 2026-10-18 — Argos — entrega 19 (alpha.19)
+
+- Transición IndexedDB fortalecida para que el guardado grande no dependa de cuota localStorage. Espejo opcional; registro del último espejo evita reabrir un estado anterior cuando IDB contiene uno más reciente. Degradación visible y reversión protegida. Pruebas de cuota y conflictos de origen. Sin borrar datos.
+- Falta aceptación en Android físico y evidencia regional automática; sin merge/despliegue. CI pendiente al momento de generar el commit.

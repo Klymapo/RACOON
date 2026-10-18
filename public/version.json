@@ -1,8 +1,8 @@
 {
-  "version": "3.0.0-alpha.18",
+  "version": "3.0.0-alpha.19",
   "changes": [
-    "Identidad geométrica RACOON v3: iconos PWA y favicon",
-    "Racoonómetro con cinco gestos sobre el mismo rostro vectorial",
-    "PWA maskable y variante monocromática, generados sin servicios de pago"
+    "IndexedDB principal sin dependencia de cuota localStorage",
+    "Recuperación frente a espejo desactualizado y reversión protegida",
+    "Errores de guardado visibles y respaldo JSON"
   ]
 }
