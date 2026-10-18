@@ -813,7 +813,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
       pendingImport = parseBackup(JSON.parse(await file.text()));
       pendingImport.conflicts = Object.keys(pendingImport.state.tracking).filter((id) => state.tracking[id]);
       const details = elements('importDetails');
-      if (details) details.innerHTML = `<p class="muted">Respaldo: ${escapeHtml(pendingImport.exportedAt || 'sin fecha')} · ${pendingImport.counts.series} obras · ${pendingImport.counts.tracking} seguimientos · ${pendingImport.invalidRecords} registros inválidos · ${pendingImport.conflicts.length} progresos ya existentes.</p>${pendingImport.invalidRecords ? '<p class="error-state">Hay identificadores inválidos. No se importará este archivo.</p>' : ''}`;
+      if (details) details.innerHTML = `<p class="muted">Respaldo: ${escapeHtml(pendingImport.exportedAt || 'sin fecha')} · ${pendingImport.counts.series} obras · ${pendingImport.counts.tracking} seguimientos · ${pendingImport.invalidRecords} registros inválidos · ${pendingImport.conflicts.length} progresos ya existentes.</p>${pendingImport.invalidRecords ? '<p class="error-state">Hay registros inválidos o reglas incompatibles. No se importará este archivo.</p>' : ''}`;
       elements('mergeImport').disabled = !pendingImport.valid;
       elements('replaceImport').disabled = !pendingImport.valid;
       elements('importDialog')?.showModal?.();

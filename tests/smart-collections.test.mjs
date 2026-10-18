@@ -78,3 +78,9 @@ test('restoring refuses an active duplicate name without losing the trashed rule
  assert.throws(()=>smart.restoreSmartCollection(s,id,400),/existe/i);
  assert.equal(smart.listSmartCollections(s,true)[0].id,id);
 });
+test('backup preview rejects malformed smart rules rather than silently losing them',()=>{
+ const backup=createBackup(sample());
+ backup.smartCollections.items['smart:broken']={id:'smart:broken',name:'Regla dañada',rules:{status:'bogus'}};
+ const preview=parseBackup(backup);
+ assert.equal(preview.valid,false);assert.equal(preview.invalidRecords,1);
+});

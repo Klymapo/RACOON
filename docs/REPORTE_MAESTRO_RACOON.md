@@ -236,5 +236,7 @@ Validación final 07D (3733f26): CI 39133366898 aprobó 134 pruebas Node y ambos
 - smartCollections.version=1 extiende esquema 3. JSON conserva reglas y bajas; la fusión respeta cambios más recientes y no revive bajas con un respaldo antiguo. Compatibilidad con respaldos sin reglas.
 - Nota desconocida no equivale a cero; géneros usan el texto registrado sin traducción inferida; reglas incompatibles se excluyen sin ampliar resultados.
 - App, SW y metadatos alpha.8; módulos incluidos offline. Sigue estática para Cloudflare y sin dependencias de producto nuevas.
-- Validación local: 146 pruebas Node aprobadas, diff limpio y scripts sintácticamente válidos. QA nuevo scripts/qa-smart.mjs incluido en CI con los dos E2E existentes; resultado Chromium pendiente de ejecución.
+- Validación local: 147 pruebas Node aprobadas, diff limpio y scripts sintácticamente válidos. QA nuevo scripts/qa-smart.mjs incluido en CI con los dos E2E existentes; resultado Chromium pendiente de ejecución.
 - Revisión del propio autor. Sin fusión ni publicación. Registro en Klymapo; réplica a Gaston diferida por autorización de Admin.
+
+Revisión de entrega 08: reproducida aceptación silenciosa de una colección con reglas inválidas en la vista previa JSON. Ahora se cuenta como registro inválido y bloquea los controles de importación; la regresión falló antes del cambio y pasa después. Suite local 147/147, diff limpio. Las reglas ausentes o incompatibles tampoco se amplían a toda la biblioteca.

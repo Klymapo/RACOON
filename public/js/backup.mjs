@@ -33,6 +33,9 @@ function countState(state) {
 function sanitizeState(state) {
   const clean = validateState(state);
   const invalid = [];
+  for (const id of Object.keys(objectOrEmpty(state?.smartCollections?.items))) {
+    if (!Object.hasOwn(clean.smartCollections.items, id)) invalid.push(`smart-rule:${id}`);
+  }
   for (const layer of ['catalogOfficial', 'catalogCustom', 'tracking']) {
     for (const id of Object.keys(clean[layer])) {
       if (!VALID_ID.test(id)) {

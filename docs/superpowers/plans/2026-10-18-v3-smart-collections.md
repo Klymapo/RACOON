@@ -36,7 +36,7 @@ un dato ausente. Sin criterios equivale a toda la biblioteca.
 ## Registro
 
 - Primeras ejecuciones sin módulos fallaron; motor y UI posteriores pasan.
-- Suite local 146 pruebas correctas; 12 nuevas. QA real en scripts/qa-smart.mjs,
+- Suite local 147 pruebas correctas; 13 nuevas. QA real en scripts/qa-smart.mjs,
   incluido en el job de calidad. No declarar aprobación Chromium antes del resultado.
 - Revisión por el autor, sin revisión independiente. No incluye reglas OR, anidamiento,
   plataformas regionales inferidas ni expresiones arbitrarias.
