@@ -70,3 +70,7 @@ Adaptador IndexedDB optativo en public/js/indexeddb.mjs: lectura validada, escri
 ## Bloque 1: etapa 07B, 18 de octubre de 2026
 
 Se añadió un control optativo en Ajustes para preparar y verificar copia IndexedDB, con mensajes accesibles de éxito, copia obsoleta, origen incompatible, cambio concurrente y errores; reintento sin sobrescribir localStorage. El control se inicializa desde el módulo PWA, sin activar almacenamiento principal en IndexedDB. Nuevo módulo indexeddb-ui.mjs y pruebas unitarias; QA de Chromium/offline en scripts/qa-indexeddb.mjs. La versión visible permanece alpha.6 mientras se prepara la migración completa; no se publicó. Bloque 1 todavía abierto: faltan conmutación reversible, validación real en navegador y Android físico.
+
+## Bloque 1: etapa 07C, 18 de octubre de 2026
+
+Cerradas conexiones IndexedDB tardías tras apertura bloqueada y conexiones activas ante cambio de versión. Dos pruebas de regresión; 121 pruebas Node aprobadas. CI ahora exige QA Chromium general y de IndexedDB antes del job de publicación. La descarga local de Chromium falló: E2E todavía no se declara aprobado. Siguiente paso: comprobar CI y completar conmutación reversible; localStorage sigue como almacenamiento principal. Sin fusión ni publicación.

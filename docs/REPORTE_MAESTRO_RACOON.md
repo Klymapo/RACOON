@@ -197,3 +197,13 @@ Registro adicional: código, pruebas y plan de entrega 03 se agregan como commit
 - Pendiente: revisión en navegador y aceptación Android físico. Bloque siguiente: IndexedDB reversible.
 
 - Ajuste de QA de entrega 06: limpiar el número de temporada lo deja sin número (sin reponer el dato anterior), y las acciones de agrupar/separar fuerzan la actualización visible de la ficha tras guardar, manteniendo el foco en el control de agrupación.
+
+### 2026-10-18 — Argos — etapa 07C: conexiones y puerta de QA
+
+- Retomada la rama del PR #2 en f4ec63b; las etapas 07A/07B ya existían. No se repitieron.
+- Reproducida una fuga de conexión: `open.onblocked` rechaza la apertura, pero un `onsuccess` tardío dejaba abierta la base. Ahora esa conexión se cierra; las conexiones activas también se cierran ante `versionchange` para permitir actualizaciones desde otras pestañas.
+- Añadidas dos regresiones Node. Suite: 121 pruebas aprobadas; `git diff --check` limpio.
+- CI del PR ampliado con Playwright 1.51.1 y Chromium: ejecuta qa-browser.mjs y qa-indexeddb.mjs antes de permitir el job de publicación. Dependencias de QA solo en el runner; la aplicación sigue estática y sin dependencias nuevas.
+- Intento de QA local: no hay Chromium instalado; su descarga devolvió archivos ZIP inválidos. No se afirma aprobación E2E. El resultado remoto debe verificarse antes de avanzar a la conmutación del almacenamiento.
+- La migración principal y reversión siguen sin implementarse. localStorage continúa activo; no se borraron datos. Bloque 1 abierto; no hay fusión ni despliegue.
+- La réplica del registro en Gaston no pudo actualizarse: el conector Google Drive respondió `Unknown tool` al leer el documento identificado. Este registro del repositorio conserva el movimiento y el bloqueo.

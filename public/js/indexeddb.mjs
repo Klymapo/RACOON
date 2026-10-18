@@ -8,13 +8,18 @@ const KEY = 'primary';
 export function openRacoonDatabase(factory = globalThis.indexedDB) {
   if (!factory?.open) return Promise.reject(Error('IndexedDB no disponible'));
   return new Promise((resolve, reject) => {
+    let blocked = false;
     const req = factory.open(IDB_NAME, IDB_VERSION);
     req.onupgradeneeded = () => {
       if (!req.result.objectStoreNames.contains(STORE)) req.result.createObjectStore(STORE, {keyPath: 'id'});
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      if (blocked) { req.result.close(); return; }
+      req.result.onversionchange = () => req.result.close();
+      resolve(req.result);
+    };
     req.onerror = () => reject(req.error || Error('Error de IndexedDB'));
-    req.onblocked = () => reject(Error('IndexedDB bloqueada'));
+    req.onblocked = () => { blocked = true; reject(Error('IndexedDB bloqueada')); };
   });
 }
 

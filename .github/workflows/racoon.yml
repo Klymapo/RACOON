@@ -20,6 +20,16 @@ jobs:
         with:
           node-version: '22'
       - run: node --test tests/*.test.mjs
+      - name: Preparar Chromium para QA (solo CI)
+        run: |
+          npm install --prefix "$RUNNER_TEMP/racoon-qa" --no-save playwright@1.51.1
+          node "$RUNNER_TEMP/racoon-qa/node_modules/playwright/cli.js" install --with-deps chromium
+          echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/racoon-qa/node_modules/playwright/index.js" >> "$GITHUB_ENV"
+      - name: Verificar biblioteca, PWA y copia IndexedDB en Chromium
+        timeout-minutes: 10
+        run: |
+          node scripts/qa-browser.mjs
+          node scripts/qa-indexeddb.mjs
   publicar:
     name: Publicar sitio estático en Cloudflare Pages
     needs: calidad

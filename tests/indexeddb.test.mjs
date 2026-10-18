@@ -102,3 +102,27 @@ test('staging without readable storage reports unavailability without opening a 
   assert.equal(result.status, 'storage-unavailable');
   assert.equal(opened, false);
 });
+
+test('a blocked open closes a connection that succeeds after rejection', async () => {
+  const {openRacoonDatabase} = await import('../public/js/indexeddb.mjs');
+  const request = {};
+  let closed = false;
+  const opened = openRacoonDatabase({open: () => request});
+  request.onblocked();
+  await assert.rejects(opened, /bloqueada/);
+  request.result = {close() {closed = true;}};
+  request.onsuccess();
+  assert.equal(closed, true);
+});
+
+test('an open connection releases its database on version change', async () => {
+  const {openRacoonDatabase} = await import('../public/js/indexeddb.mjs');
+  const request = {};
+  let closed = false;
+  const opened = openRacoonDatabase({open: () => request});
+  request.result = {close() {closed = true;}};
+  request.onsuccess();
+  const db = await opened;
+  db.onversionchange();
+  assert.equal(closed, true);
+});
