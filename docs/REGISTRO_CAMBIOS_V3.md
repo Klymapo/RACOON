@@ -17,3 +17,8 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 - Control IndexedDB optativo desde Ajustes: preparación y verificación, aviso de copia obsoleta y errores, protección contra doble ejecución. La biblioteca original en localStorage permanece activa e intacta.
 - Nuevos public/js/indexeddb-ui.mjs, tests/indexeddb-ui.test.mjs, scripts/qa-indexeddb.mjs; public/js/pwa.mjs inicializa el control; SW precachea módulos para offline.
 - Pendiente verificar CI y QA de Chromium, migración reversible y Android físico. Sin fusión ni despliegue; producción v2.2.1.
+
+### Validación posterior 07B
+
+- GitHub Actions ejecución 39106535836: 118 pruebas Node correctas, 0 fallos; publicación Cloudflare omitida. https://github.com/Klymapo/RACOON/actions/runs/39106535836
+- El script Chromium/IndexedDB real se añadió, pero todavía NO se ejecutó; no se confunde con las pruebas Node. El flujo de CI actual solo ejecuta Node y no publica PR.
