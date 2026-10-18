@@ -19,6 +19,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Preparar PNG de identidad v3 (SVG local, librsvg libre)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y librsvg2-bin
+          node scripts/build-brand-icons.mjs
       - run: node --test tests/*.test.mjs
       - name: Preparar motor OCR autoalojado (versiones e integridad fijadas)
         run: |
@@ -29,11 +34,6 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/racoon-qa" --no-save playwright@1.51.1
           node "$RUNNER_TEMP/racoon-qa/node_modules/playwright/cli.js" install --with-deps chromium
           echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/racoon-qa/node_modules/playwright/index.js" >> "$GITHUB_ENV"
-      - name: Preparar PNG de identidad v3 (SVG local, librsvg libre)
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y librsvg2-bin
-          node scripts/build-brand-icons.mjs
       - name: Verificar biblioteca, PWA y copia IndexedDB en Chromium
         timeout-minutes: 10
         run: |

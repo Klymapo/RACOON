@@ -81,3 +81,8 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 - SVG monocromático adicional. Script local libre (librsvg) genera iconos PNG 192/512 y maskable 512 con zona de seguridad, sin CDN ni costes, antes de QA y antes de cualquier despliegue.
 - Manifest y precaché versionados; pruebas de contrato vectorial y rangos de expresión. Los PNG generados sustituyen a los antiguos en el artefacto de CI/despliegue; el repositorio conserva los PNG v2 hasta esa construcción, sin borrar archivos.
 - Entrega aplicada solamente a la rama del PR #2. Validación CI pendiente de observar; no se fusiona ni publica. Restan dos frentes funcionales parciales: almacenamiento/cuota/Android y disponibilidad regional automática.
+
+### Corrección de la primera CI de 18
+
+- La primera CI 39146611713 falló en dos pruebas de contrato, antes de Chromium: nombre anterior del manifest y constante de versión en app.mjs. No se trató como validación aprobada.
+- Actualizados manifest/test de instalación y constante alpha.18. Generación reproducible de PNG movida antes de los tests Node, que comprueban existencia de las rutas del manifest. Nueva CI por verificar.

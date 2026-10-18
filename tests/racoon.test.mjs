@@ -27,7 +27,7 @@ test('Los módulos JavaScript tienen sintaxis válida',()=>{
 });
 
 test('PWA instalable',()=>{
- assert.equal(manifest.name,'RACOON · Anime Wizard');
+ assert.equal(manifest.name,'RACOON · Biblioteca audiovisual');
  assert.equal(manifest.display,'standalone');
  for(const icon of manifest.icons)assert.ok(existsSync('public'+icon.src));
  assert.ok(existsSync('public/sw.js'));
