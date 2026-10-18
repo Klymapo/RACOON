@@ -29,6 +29,10 @@ try {
   await page.evaluate(async () => {
     const {createDefaultState, STATE_KEY} = await import('/js/storage.mjs');
     const state = createDefaultState();
+    // Esta prueba manipula el origen directamente para simular otra escritura.
+    // Evitar que el refresco remoto de arranque persista el estado en memoria
+    // durante ese experimento; el refresco se cubre en qa-browser.mjs.
+    state.updateMeta.lastChecked = Date.now();
     state.tracking['custom:copy-test'] = {seen:3, favorite:true, status:'Viendo'};
     localStorage.setItem(STATE_KEY, JSON.stringify(state));
   });

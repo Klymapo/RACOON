@@ -207,3 +207,5 @@ Registro adicional: código, pruebas y plan de entrega 03 se agregan como commit
 - Intento de QA local: no hay Chromium instalado; su descarga devolvió archivos ZIP inválidos. No se afirma aprobación E2E. El resultado remoto debe verificarse antes de avanzar a la conmutación del almacenamiento.
 - La migración principal y reversión siguen sin implementarse. localStorage continúa activo; no se borraron datos. Bloque 1 abierto; no hay fusión ni despliegue.
 - La réplica del registro en Gaston no pudo actualizarse: el conector Google Drive respondió `Unknown tool` al leer el documento identificado. Este registro del repositorio conserva el movimiento y el bloqueo.
+
+Validación remota 07C: ejecución 39132381549, Node 121/121 y QA general Chromium aprobados; QA IndexedDB falló (3 !== 4). La prueba modificaba localStorage por fuera de la API de la app mientras un refresco remoto pendiente podía persistir el estado en memoria. Se fija lastChecked en la biblioteca de prueba para aislar el experimento; el refresco mantiene su cobertura general. Se repite CI sin reducir las aserciones de integridad. No se declara IndexedDB aprobado hasta comprobar la repetición.
