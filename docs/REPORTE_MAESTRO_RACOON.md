@@ -7,7 +7,7 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 - Base de producción: v2.2.1, merge `a0be814`, 13 de octubre de 2026.
 - Primera entrega v3: `3.0.0-alpha.1`, rama `codex/racoon-v3-01-navigation`.
-- Estado de trabajo actual: `3.0.0-alpha.4`, cuarta entrega acumulada en el mismo
+- Estado de trabajo actual: `3.0.0-alpha.5`, quinta entrega acumulada en el mismo
   PR #2. Producción continúa en v2.2.1, sin fusionar ni desplegar estas entregas.
 - Alcance: Inicio, Agenda, Biblioteca, Explorar, Ajustes; barra inferior fija móvil,
   banner exclusivo de Inicio y navegación accesible por teclado.
@@ -18,13 +18,15 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 ## Próximos incrementos
 
-1. Importación CSV/Excel con vista previa y duplicados.
-2. Interfaz para agrupar temporadas; migración a IndexedDB con validación.
-3. Colecciones inteligentes por filtros.
-4. Fuentes regionales verificadas y suscripciones; Slice, Ratings y recomendaciones.
+1. Interfaz para agrupar temporadas; migración a IndexedDB con validación.
+2. Colecciones inteligentes por filtros.
+3. Fuentes regionales verificadas y suscripciones; Slice, Ratings y recomendaciones.
 
 El orden puede ajustarse con Admin. No prometer fuentes regionales detalladas
 antes de verificar que ofrecen los datos y permiten su uso gratuito.
+
+Conteo: 5 entregas implementadas; 13 bloques funcionales pendientes, desglosados
+en [ROADMAP_V3.md](ROADMAP_V3.md). No equivalen a 13 entregas garantizadas.
 
 ## Registro de cambios
 
@@ -154,3 +156,34 @@ Registro adicional: código, pruebas y plan de entrega 03 se agregan como commit
 - [racoon-v3-04-filter-mobile.png](https://drive.google.com/file/d/1Mck3dR1gh44O3tNPn0Ha3Lwb8KPBBKXw/view?usp=drivesdk)
 - Código, pruebas y plan se agregan al PR #2 como otro commit; título y descripción del PR y la bitácora maestra de Gaston se actualizan con la cuarta entrega. Sin fusión ni publicación.
 - Cloudflare Pages estático y modo offline conservados; no hay dependencias o servicios nuevos. No se verificó Android físico. Siguiente incremento propuesto: importación CSV/Excel con revisión previa.
+
+
+### 2026-10-17 — Argos/Codex — v3, entrega 05
+
+- Importación local CSV/TSV/XLSX sin dependencias ni servidores. Límites de
+  10 MB por archivo, 32 MB descomprimidos, 10 mil filas y 64 columnas por hoja.
+- Selección de hoja, encabezados y columnas, estado/formato de lote, carpeta
+  adicional, vista previa paginada y decisión por fila. Sin estado: Pendiente.
+- Duplicados locales o dentro del archivo se omiten por defecto; crear una ficha
+  distinta es explícito. Revalidación al aplicar, sin sobrescribir progreso previo.
+- Respaldo JSON verificado antes de guardar cada lote; descarga del estado previo
+  al último lote para restaurarlo con el flujo existente. Si falla el respaldo,
+  se cancela la escritura. La previsualización y cancelar no alteran la biblioteca.
+- Lectura XLSX con cadenas compartidas/inline, valores guardados, fechas 1900/1904;
+  no ejecuta fórmulas ni macros. XLS antiguo requiere exportar a CSV/XLSX.
+- alpha.5 coordinada en app, Service Worker y metadatos; módulos disponibles offline.
+- Hoja de ruta: 5 entregas realizadas y 13 bloques funcionales pendientes, sin
+  equiparar bloques con entregas ni prometer un porcentaje cerrado.
+- GitHub: nuevos módulos, pruebas y fixture XLSX, QA ampliado, roadmap y este registro;
+  acumulados en PR #2. Título/descripción actualizados para entregas 01–05.
+- Gaston: capturas nuevas en CAPTURAS Y QA y este mismo registro en documento maestro.
+  Evidencias iniciales: móvil https://drive.google.com/file/d/1qNgJCSi2_2ExwLobM6BL5-UMIUzLFJQe/view
+  y escritorio https://drive.google.com/file/d/1xD9gCTF-98BF6RHFTumHceWGJJZRk6xu/view.
+  Las capturas muestran alpha.6 porque QA simula una actualización desde alpha.5;
+  la versión entregada sigue siendo alpha.5.
+- Validación: 103 pruebas Node aprobadas; E2E Chromium 134 aprobado con CSV, XLSX
+  real de dos hojas (cadenas compartidas e inline), mapeo, duplicados, selección,
+  error de cuota simulado, restauración JSON y recarga/importación offline.
+  Revisión visual móvil/escritorio y git diff --check sin errores.
+- Estado: sin fusionar ni desplegar; producción permanece en v2.2.1. Cloudflare Pages
+  conservado: solo archivos estáticos, sin Functions, D1 ni servicios de pago.

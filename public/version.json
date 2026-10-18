@@ -1,8 +1,8 @@
 {
-  "version": "3.0.0-alpha.4",
+  "version": "3.0.0-alpha.5",
   "changes": [
-    "Carpetas personales con orden, nombres y papelera recuperable",
-    "Una obra en varias carpetas y filtro en Biblioteca",
-    "Carpetas en JSON y CSV, con fusión que respeta cambios recientes"
+    "Importación local CSV, TSV y XLSX con revisión de columnas y filas",
+    "Duplicados omitidos por defecto y progreso existente protegido",
+    "Respaldo verificable previo a importar y descarga para restaurar"
   ]
 }

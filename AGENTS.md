@@ -29,6 +29,10 @@ Las carpetas usan IDs internos de obra y pertenencias múltiples. Papelera y
 restauración conservan obras y progreso; las bajas llevan fecha para impedir
 que un respaldo viejo las reactive durante una fusión.
 
+La importación tabular requiere vista previa y respaldo JSON verificable antes de
+guardar. Omitir duplicados por defecto y no sobrescribir progreso existente.
+CSV/TSV/XLSX se procesan localmente; conservar los módulos en el caché offline.
+
 ## Validación
 
 Ejecutar `node --test tests/*.test.mjs` y `git diff --check`.

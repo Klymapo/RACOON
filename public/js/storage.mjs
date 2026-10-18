@@ -35,7 +35,8 @@ function cleanTrackingEntry(raw = {}) {
     availableOverride,
     totalOverride,
     manualFields,
-    ...(Object.hasOwn(input, 'watchedAt') ? {watchedAt: validDate(input.watchedAt)} : {})
+    ...(Object.hasOwn(input, 'watchedAt') ? {watchedAt: validDate(input.watchedAt)} : {}),
+    ...(Object.hasOwn(input, 'rating') ? {rating: typeof input.rating === 'number' && Number.isFinite(input.rating) && input.rating >= 0 && input.rating <= 10 ? input.rating : null} : {})
   };
 }
 
