@@ -60,8 +60,8 @@ test('quota-full local checkpoint is kept in IndexedDB; invalid source cannot ac
   f.storage.setItem=(k,v)=>{if(k===runtime.MIGRATION_KEY)throw Error('quota');write(k,v);};
   await r.activate();assert.equal(r.mode,'indexeddb');assert.equal(f.rows.has('before-indexed'),true);
   assert.equal(JSON.parse(await r.getCheckpoint()).tracking.x.seen,3);
-  f.storage.setItem=write;f.storage.setItem(STATE_KEY,'{"schemaVersion":2}');
-  await r.deactivate();await assert.rejects(()=>r.activate(),/incompatible/i);
+  f.storage.setItem=write;await r.deactivate();f.storage.setItem(STATE_KEY,'{"schemaVersion":2}');
+  await assert.rejects(()=>r.activate(),/incompatible/i);
 });
 test('an unreadable active local mirror blocks startup without replacing either copy',async()=>{
   const f=fixture(),r=await runtime.createStorageRuntime(f);await r.activate();
