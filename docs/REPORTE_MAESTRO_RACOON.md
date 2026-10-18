@@ -360,3 +360,11 @@ Actualización de pruebas entrega 18: evidencia cromática/geométrica revisada;
 - La ejecución de producción GitHub Actions 39151492844 aprobó Node y E2E iniciales, pero bloqueó el despliegue por lectura anticipada del texto de la importación CSV Letterboxd en `scripts/qa-discovery.mjs`. El `change` del selector es asíncrono y la prueba consultaba el resultado antes de terminar el parseo. Ningún despliegue v3 ocurrió en esa ejecución.
 - Corrección exclusiva de QA: esperar estado de vista previa para los archivos CSV de prueba (ratings, cuota y cancelación) antes de continuar. Se preservan todas las afirmaciones verificadas de la prueba; no se salta ninguna validación. El nuevo push a `main` ejecutará CI y publicará en Cloudflare solo si aprueba.
 - Aceptación Android físico y consulta TMDB real con token gratuito siguen pendientes de comprobar; no son bloqueos de publicación expresamente aprobada por Admin.
+
+### Registro de cambios — 2026-10-18 — Argos — despliegue confirmado en Cloudflare
+
+- Fusión PR #2 ya realizada: merge `eea2da6ae4d61dcad3b2a7890dd94cf56923ab14` a `main`.
+- Se corrigió la carrera asíncrona del E2E de importación Letterboxd, sin cambiar funcionalidad de la app: commit `e4d11701753be3baf9572b2efe49615cdfb036ae`. La ejecución anterior `39151492844` falló en Chromium y **no publicó**, conforme a la protección del workflow.
+- GitHub Actions `39151746231`: `calidad` aprobada (199 pruebas Node y siete E2E Chromium); `publicar` aprobada. La salida de Wrangler confirma subida estática de 63 archivos nuevos y despliegue en Cloudflare Pages: https://baee7752.racoon-radar-klymapo.pages.dev (URL de despliegue registrada por el sistema).
+- `public/` versión 3.0.0-alpha.20 desplegada sin Functions, D1 ni modificación de datos privados de usuario. La actualización de este registro es solo documental y utiliza `[skip ci]` para evitar relanzar un despliegue idéntico.
+- Limitaciones vigentes: falta aceptación en teléfono Android físico y consulta regional TMDB real con token de lectura gratuito. El E2E de TMDB usó un fixture; no debe interpretarse como comprobación real de plataformas en México. Publicación autorizada explícitamente por Admin; no equivale a certificar esos puntos.
