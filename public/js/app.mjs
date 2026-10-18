@@ -8,7 +8,8 @@ import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} f
 import {shouldRefresh, refreshCatalog, mergeCatalogObservation, FOUR_HOURS} from './refresh.mjs';
 import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '2.2.1';
+const RACOON_VERSION = '3.0.0-alpha.1';
+const VIEWS = ['home', 'calendar', 'progress', 'add', 'backups'];
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -157,7 +158,7 @@ function memoryStorage() {
 
 export function createApp({document = globalThis.document, storage = globalThis.localStorage || memoryStorage(), fetch = globalThis.fetch, now = Date.now} = {}) {
   let {state} = loadState(storage, CATALOG);
-  let currentView = state.preferences.view || 'home';
+  let currentView = VIEWS.includes(state.preferences.view) ? state.preferences.view : 'home';
   let searchResults = new Map();
   let selectedSeries = null;
   let pwaController = null;
@@ -382,12 +383,13 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const active = tab.dataset.view === currentView;
       tab.classList.toggle('is-active', active);
       tab.setAttribute('aria-selected', String(active));
+      tab.setAttribute('tabindex', active ? '0' : '-1');
     });
     if (document?.querySelectorAll) document.querySelectorAll('[role="tabpanel"]').forEach((panel) => panel.classList.toggle('is-hidden', panel.id !== `${currentView}View`));
   }
 
   function selectView(viewId) {
-    if (!['home', 'calendar', 'progress', 'add', 'backups'].includes(viewId)) return;
+    if (!VIEWS.includes(viewId)) return;
     currentView = viewId;
     state = {...state, preferences: {...state.preferences, view: viewId}};
     saveState(storage, state);
@@ -401,6 +403,17 @@ export function createApp({document = globalThis.document, storage = globalThis.
   }
 
   if (document?.addEventListener) {
+    document.addEventListener('keydown', (event) => {
+      const tab = event.target.closest?.('[data-view]');
+      if (!tab || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      const tabs = [...document.querySelectorAll('[data-view]')];
+      const index = tabs.indexOf(tab);
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+        : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+      event.preventDefault();
+      selectView(tabs[next].dataset.view);
+      tabs[next].focus();
+    });
     document.addEventListener('click', (event) => {
       const viewButton = event.target.closest?.('[data-view], [data-go]');
       if (viewButton) selectView(viewButton.dataset.view || viewButton.dataset.go);

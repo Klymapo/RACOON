@@ -25,11 +25,13 @@ const server = createServer(async (request, response) => {
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const port = server.address().port;
-const browser = await playwright.chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox']});
+const browser = await playwright.chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH || playwright.chromium.executablePath(), args: ['--no-sandbox']});
 const media = {id: 987654, type: 'ANIME', format: 'TV', season: 'FALL', seasonYear: 2026, title: {english: 'Coherence Show', romaji: 'Coherence Show'}, synonyms: [], description: 'Prueba de integración', genres: ['Fantasy'], episodes: 12, status: 'RELEASING', coverImage: {large: null}, startDate: {year: 2026, month: 10, day: 10}, nextAiringEpisode: {episode: 2, airingAt: Date.parse('2026-10-17T02:00:00Z') / 1000}, siteUrl: 'https://anilist.co/anime/987654'};
 try {
   const context = await browser.newContext({viewport: {width: 390, height: 844}, acceptDownloads: true, serviceWorkers: 'allow'});
   const page = await context.newPage();
+  // Calendar assertions use a known week, independent of the execution date.
+  await page.clock.setFixedTime(new Date('2026-10-17T18:00:00Z'));
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.route('https://graphql.anilist.co/**', async (route) => {
@@ -38,6 +40,36 @@ try {
     await route.fulfill({json: {data}});
   });
   await page.goto(`http://127.0.0.1:${port}/`);
+  assert.deepEqual(await page.getByRole('tab', {name: /^(Inicio|Agenda|Biblioteca|Explorar|Ajustes)$/}).allTextContents(), ['⌂Inicio', '▦Agenda', '◒Biblioteca', '⌕Explorar', '⚙Ajustes']);
+  for (const width of [320, 390, 800, 1440]) {
+    await page.setViewportSize({width, height: 844});
+    for (const view of ['home', 'calendar', 'progress', 'add', 'backups']) {
+      await page.locator(`[data-view="${view}"]`).click();
+      assert.equal(await page.locator('.hero-card').isVisible(), view === 'home');
+      assert.equal(await page.locator('[role="tabpanel"]:visible').count(), 1);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      const nav = await page.locator('.primary-nav').boundingBox();
+      if (width <= 800) {
+        assert.ok(Math.abs(nav.y + nav.height - 844) < 2, 'mobile tabs stay at the viewport bottom');
+        for (const tab of await page.locator('[data-view]').all()) assert.ok((await tab.boundingBox()).height >= 44);
+        await page.evaluate(() => scrollTo({top: document.documentElement.scrollHeight, behavior: 'instant'}));
+        const footer = await page.locator('.footer').boundingBox();
+        assert.ok(footer.y + footer.height <= nav.y, 'bottom bar must not cover the footer');
+      }
+    }
+  }
+  await page.setViewportSize({width: 390, height: 844});
+  await page.locator('[data-view="home"]').click();
+  await page.locator('[data-view="home"]').focus();
+  await page.keyboard.press('ArrowLeft');
+  await page.locator('[data-view="backups"][aria-selected="true"]').waitFor();
+  await page.keyboard.press('Home');
+  await page.locator('[data-view="home"][aria-selected="true"]').waitFor();
+  await page.screenshot({path: 'artifacts/qa/racoon-v3-01-home-mobile.png', fullPage: false});
+  await page.locator('[data-view="progress"]').click();
+  await page.reload();
+  await page.locator('#progressView:visible').waitFor();
+  assert.equal(await page.locator('.hero-card').isVisible(), false);
   await page.locator('[data-view="add"]').click();
   await page.locator('#animeSearch').fill('Coherence Show');
   await page.locator('#searchForm button').click();
@@ -116,9 +148,9 @@ try {
   await page.locator('#currentWeek').click();
   await page.locator('[data-calendar-day="2026-10-17"]').click();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  await page.screenshot({path: 'artifacts/qa/racoon-mobile-coherence.png', fullPage: true});
+  await page.screenshot({path: 'artifacts/qa/racoon-v3-01-agenda-mobile.png', fullPage: false});
   await page.setViewportSize({width: 1440, height: 1000});
-  await page.screenshot({path: 'artifacts/qa/racoon-desktop-coherence.png', fullPage: true});
+  await page.screenshot({path: 'artifacts/qa/racoon-v3-01-agenda-desktop.png', fullPage: true});
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await page.locator('[data-view="backups"]').click();
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);

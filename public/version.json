@@ -1,9 +1,8 @@
 {
-  "version": "2.2.1",
-  "publishedAt": "2026-10-13T17:27:47Z",
+  "version": "3.0.0-alpha.1",
   "changes": [
-    "Ediciones y eliminaciones de series protegidas durante consultas a AniList",
-    "La actualización conserva el catálogo local y el progreso personal",
-    "Caché de la PWA renovada sin borrar datos locales"
+    "Primera entrega de v3: Inicio, Agenda, Biblioteca, Explorar y Ajustes",
+    "Barra inferior fija en celular y banner exclusivo de Inicio",
+    "Navegación accesible con teclado; progreso y respaldos compatibles"
   ]
 }
