@@ -30,3 +30,10 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 - PR #2 actualizado a entregas 01–07. Reporte maestro, plan y roadmap actualizados; siete entregas, doce bloques aún con trabajo pendiente (bloque 1 parcial: mantiene cuota localStorage y falta Android físico).
 - CI 39133366898: 134 pruebas Node y dos flujos Chromium aprobados. https://github.com/Klymapo/RACOON/actions/runs/39133366898
 - Sin fusión ni despliegue. Producción continúa en v2.2.1. Sin cambios en Drive; réplica diferida por instrucción de Admin.
+
+## 2026-10-18 — Argos — entrega 08, alpha.8
+
+- Commits 967fcbf, 6e29800 y 5de2739: colecciones inteligentes por filtros AND, editor en Biblioteca, resultados automáticos, papelera/restauración y respaldo/fusión JSON. Protección ante reglas dañadas; desconocido no equivale a cero.
+- CI 39134171386: 147 pruebas Node y tres E2E Chromium aprobados. https://github.com/Klymapo/RACOON/actions/runs/39134171386
+- App y SW alpha.8, módulos precacheados. PR #2 actualizado a entregas 01–08; plan, maestro y roadmap actualizados. Ocho entregas y once bloques con trabajo restante; almacenamiento parcial y diez abiertos.
+- Siguiente bloque: disponibilidad regional, proveedores y suscripciones. Sin fusión ni despliegue; producción v2.2.1. Sin cambios en Drive; registro en Klymapo y réplica diferida por Admin.

@@ -15,8 +15,9 @@ sin Functions, D1 ni servicios de pago.
 | 05 | Importación CSV/TSV/XLSX, revisión y respaldo previo | alpha.5 |
 | 06 | Agrupación manual de temporadas y separación protegida | alpha.6 |
 | 07 | IndexedDB optativo con espejo local, respaldo y reversión | alpha.7 |
+| 08 | Colecciones inteligentes, filtros dinámicos y papelera recuperable | alpha.8 |
 
-## Pendiente: 12 bloques funcionales
+## Pendiente: 11 bloques con trabajo restante
 
 Esta es una agrupación para contar el alcance pendiente, no una promesa de 13
 entregas. Cada bloque puede dividirse en varias entregas con pruebas. El modelo
@@ -26,7 +27,6 @@ nota numérica tampoco equivale a completar Ratings.
 | Bloque | Trabajo restante |
 | --- | --- |
 | 1 | Transición reversible implementada; falta independencia de cuota localStorage y aceptación Android físico |
-| 2 | Colecciones inteligentes por filtros |
 | 3 | Disponibilidad regional, proveedores y suscripciones, con fuentes gratuitas verificadas |
 | 4 | Agenda v3: día/semana/mes, mis obras/todas |
 | 5 | Slice |
@@ -85,3 +85,15 @@ más reciente. Origen ilegible detiene el arranque sin sobrescribir datos. 134 p
 Node aprobadas; QA Chromium ampliado y sujeto a CI. La capacidad aún depende de la
 cuota localStorage y no hay sincronización de pestañas. La aceptación Android físico
 queda separada. Sin fusión ni publicación; siguiente bloque: colecciones inteligentes.
+
+## Bloque 2 completado: entrega 08, 18 de octubre de 2026 — alpha.8
+
+Colecciones inteligentes con criterios AND por título/alias, formato, estado,
+favorita, género y nota mínima personal. Crear/editar, papelera y restauración;
+resultados dinámicos, filtros combinados, conteos por ficha y respaldo/fusión JSON
+sin revivir bajas antiguas. Campos desconocidos no se inventan. CI 39134171386:
+147 pruebas Node y tres E2E Chromium aprobados, incluidos IndexedDB, geometría
+móvil y edición/recarga offline. No equivale a Ratings completo. Quedan once
+bloques con trabajo: almacenamiento parcial y diez abiertos. Siguiente bloque:
+disponibilidad regional, proveedores y suscripciones con fuentes gratuitas verificadas.
+Sin fusión ni publicación; aceptación física Android aún pendiente.

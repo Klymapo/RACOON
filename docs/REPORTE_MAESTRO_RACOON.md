@@ -7,7 +7,7 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 - Base de producción: v2.2.1, merge `a0be814`, 13 de octubre de 2026.
 - Primera entrega v3: `3.0.0-alpha.1`, rama `codex/racoon-v3-01-navigation`.
-- Estado de trabajo actual: `3.0.0-alpha.7`, séptima entrega acumulada en el mismo
+- Estado de trabajo actual: `3.0.0-alpha.8`, octava entrega acumulada en el mismo
   PR #2. Producción continúa en v2.2.1, sin fusionar ni desplegar estas entregas.
 - Alcance: Inicio, Agenda, Biblioteca, Explorar, Ajustes; barra inferior fija móvil,
   banner exclusivo de Inicio y navegación accesible por teclado.
@@ -18,14 +18,14 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 ## Próximos incrementos
 
-1. Migración a IndexedDB con validación.
-2. Colecciones inteligentes por filtros.
-3. Fuentes regionales verificadas y suscripciones; Slice, Ratings y recomendaciones.
+1. Fuentes regionales verificadas, proveedores y suscripciones.
+2. Independencia de la cuota localStorage para IndexedDB y aceptación Android.
+3. Agenda v3, Slice, Ratings y recomendaciones.
 
 El orden puede ajustarse con Admin. No prometer fuentes regionales detalladas
 antes de verificar que ofrecen los datos y permiten su uso gratuito.
 
-Conteo: 7 entregas implementadas; 12 bloques funcionales pendientes, desglosados
+Conteo: 8 entregas implementadas; 11 bloques con trabajo restante, desglosados
 en [ROADMAP_V3.md](ROADMAP_V3.md). No equivalen a 13 entregas garantizadas.
 
 ## Registro de cambios
@@ -242,3 +242,12 @@ Validación final 07D (3733f26): CI 39133366898 aprobó 134 pruebas Node y ambos
 Revisión de entrega 08: reproducida aceptación silenciosa de una colección con reglas inválidas en la vista previa JSON. Ahora se cuenta como registro inválido y bloquea los controles de importación; la regresión falló antes del cambio y pasa después. Suite local 147/147, diff limpio. Las reglas ausentes o incompatibles tampoco se amplían a toda la biblioteca.
 
 QA inicial 08, run 39133992904: Node y los E2E general/IndexedDB aprobados; el nuevo E2E llegó a recarga offline y falló al leer innerText dentro del panel details cerrado (texto vacío). Se corrige la prueba para abrir el gestor antes de inspeccionar el nombre; no se reduce la comprobación del contenido ni de persistencia. Se vuelve a ejecutar CI.
+
+Validación final entrega 08 (5de2739): CI 39134171386 aprobó 147 pruebas Node
+y tres E2E Chromium (general, IndexedDB y colecciones). Incluye crear/editar,
+recalcular al cambiar favorita, duplicados, papelera, fusión vieja, restauración,
+JSON, geometría 320/390/800/1440, persistencia IndexedDB y recarga/edición offline.
+https://github.com/Klymapo/RACOON/actions/runs/39134171386
+Conteo actualizado: ocho entregas realizadas; once bloques con trabajo restante
+(diez abiertos y almacenamiento parcial). El PR #2 se actualiza a 01–08/alpha.8;
+reporte maestro y roadmap registran la misma evidencia. Sin fusión ni publicación.
