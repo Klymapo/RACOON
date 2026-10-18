@@ -7,7 +7,7 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 - Base de producción: v2.2.1, merge `a0be814`, 13 de octubre de 2026.
 - Primera entrega v3: `3.0.0-alpha.1`, rama `codex/racoon-v3-01-navigation`.
-- Estado de trabajo actual: `3.0.0-alpha.6`, sexta entrega acumulada en el mismo
+- Estado de trabajo actual: `3.0.0-alpha.7`, séptima entrega acumulada en el mismo
   PR #2. Producción continúa en v2.2.1, sin fusionar ni desplegar estas entregas.
 - Alcance: Inicio, Agenda, Biblioteca, Explorar, Ajustes; barra inferior fija móvil,
   banner exclusivo de Inicio y navegación accesible por teclado.
@@ -209,3 +209,15 @@ Registro adicional: código, pruebas y plan de entrega 03 se agregan como commit
 - La réplica del registro en Gaston no pudo actualizarse: el conector Google Drive respondió `Unknown tool` al leer el documento identificado. Este registro del repositorio conserva el movimiento y el bloqueo.
 
 Validación remota 07C: ejecución 39132381549, Node 121/121 y QA general Chromium aprobados; QA IndexedDB falló (3 !== 4). La prueba modificaba localStorage por fuera de la API de la app mientras un refresco remoto pendiente podía persistir el estado en memoria. Se fija lastChecked en la biblioteca de prueba para aislar el experimento; el refresco mantiene su cobertura general. Se repite CI sin reducir las aserciones de integridad. No se declara IndexedDB aprobado hasta comprobar la repetición.
+
+### 2026-10-18 — Argos — entrega 07D: almacenamiento reversible (alpha.7)
+
+- Admin autorizó continuar v3 y posponer la réplica a Gaston: registro conservado en Klymapo.
+- Verificación final de 07C: ejecución 39132509865 aprobada, Node 121/121 y ambos E2E Chromium; publicación omitida.
+- Runtime optativo desde Ajustes. El arranque lee y verifica IndexedDB antes de crear la app cuando está activado. Un espejo local se escribe y verifica antes de encolar cada escritura IDB; permite recuperación ante fallos o discrepancias, con aviso visible.
+- Activación guarda respaldo previo inmutable, verifica la copia y comprueba cambios concurrentes. Volver a localStorage espera las escrituras pendientes y conserva los últimos datos y la base IndexedDB. Respaldo previo descargable y restaurable por JSON.
+- Arranque con espejo ilegible se detiene sin sobrescribir fuentes. No se inventa una biblioteca vacía sobre datos dañados.
+- Versiones de app, SW y metadatos alpha.7; módulos nuevos en caché offline. No hay migración automática, servidor ni servicios de pago.
+- Límite deliberado: el espejo sigue requiriendo espacio localStorage; esta entrega no aumenta la capacidad efectiva ni ofrece sincronización de pestañas/dispositivos. Android físico requiere aceptación de Admin.
+- Añadidas 11 pruebas Node y ampliado QA IndexedDB con activación, respaldo, edición real, recarga, fallo de escritura, recuperación, reversión y offline. Suite local: 132 aprobadas; diff limpio. QA de esta entrega se comprueba en CI antes de declararlo aprobado.
+- Revisión por el propio autor; sin revisión independiente. Sin fusión ni despliegue. Bloque 1 sigue en validación de esta entrega, no se cuenta como cerrado antes de CI.

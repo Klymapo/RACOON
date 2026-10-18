@@ -33,6 +33,7 @@ try {
     // Evitar que el refresco remoto de arranque persista el estado en memoria
     // durante ese experimento; el refresco se cubre en qa-browser.mjs.
     state.updateMeta.lastChecked = Date.now();
+    state.tracking['legacy:verm'] = {seen:2, favorite:true, status:'Viendo'};
     state.tracking['custom:copy-test'] = {seen:3, favorite:true, status:'Viendo'};
     localStorage.setItem(STATE_KEY, JSON.stringify(state));
   });
@@ -71,8 +72,71 @@ try {
   await page.locator('[data-view="backups"]').click();
   assert.equal(await page.locator('#prepareIndexedBackup').isVisible(), true);
   await context.setOffline(false);
+  // Activación explícita toma la biblioteca actual, incluso con copia previa obsoleta.
+  await page.locator('#activateIndexedStorage').click();
+  await page.locator('#storageRuntimeStatus').filter({hasText:'IndexedDB activo y verificado'}).waitFor();
+  assert.equal(await page.evaluate(() => localStorage.getItem('racoon-storage-mode')), 'indexeddb');
+  const checkpointDownload = page.waitForEvent('download');
+  await page.locator('#downloadIndexedCheckpoint').click();
+  const checkpoint = JSON.parse(await readFile(await (await checkpointDownload).path(), 'utf8'));
+  assert.equal(checkpoint.tracking['custom:copy-test'].seen, 4);
+  async function readSeen() {
+    return page.evaluate(async () => {
+      const {openRacoonDatabase, readIndexedSnapshot} = await import('/js/indexeddb.mjs');
+      const db=await openRacoonDatabase();
+      try {return (await readIndexedSnapshot(db)).tracking['legacy:verm'].seen;} finally {db.close();}
+    });
+  }
+  async function increment() {
+    await page.locator('[data-view="progress"]').click();
+    await page.locator('[data-library-id="legacy:verm"] [data-open-detail]').click();
+    await page.locator('#workDetail [data-progress-action="plus"]').click();
+    await page.locator('#workDetail [data-close-detail]').click();
+  }
+  await increment();
+  await page.waitForFunction(() => document.getElementById('storageRuntimeStatus').textContent.includes('IndexedDB activo y verificado'));
+  assert.equal(await readSeen(), 3);
+  await page.reload();
+  await page.locator('#activateIndexedStorage').waitFor({state:'attached'});
+  assert.equal(await page.locator('#activateIndexedStorage').isDisabled(), true);
+  assert.equal(await readSeen(), 3);
+  // Un fallo de escritura real no debe perder el último progreso del espejo.
+  await page.evaluate(() => {
+    const original=IDBDatabase.prototype.transaction;
+    IDBDatabase.prototype.transaction=function(stores,mode,...args) {
+      if(this.name==='racoon-v3-local'&&mode==='readwrite')throw Error('Injected write failure');
+      return original.call(this,stores,mode,...args);
+    };
+  });
+  await increment();
+  await page.waitForFunction(() => localStorage.getItem('racoon-storage-mode')==='local');
+  assert.equal(await readSeen(),3);
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('racoon-v2-state')).tracking['legacy:verm'].seen),4);
+  await page.reload();
+  await page.locator('[data-view="backups"]').click();
+  await page.locator('#activateIndexedStorage').click();
+  await page.locator('#storageRuntimeStatus').filter({hasText:'IndexedDB activo y verificado'}).waitFor();
+  await increment();
+  await page.waitForFunction(() => document.getElementById('storageRuntimeStatus').textContent.includes('IndexedDB activo y verificado'));
+  assert.equal(await readSeen(),5);
+  await page.locator('[data-view="backups"]').click();
+  await page.locator('#deactivateIndexedStorage').click();
+  await page.locator('#storageRuntimeStatus').filter({hasText:'localStorage activo'}).waitFor();
+  assert.equal(await readSeen(),5);
+  // Volver a activar no modifica la copia anterior a la primera migración.
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('racoon-v2-state:before-indexed-v1')).tracking['legacy:verm'].seen),2);
+  await context.setOffline(true);
+  await page.reload();
+  await page.locator('[data-view="backups"]').click();
+  await page.locator('#activateIndexedStorage').click();
+  await page.locator('#storageRuntimeStatus').filter({hasText:'IndexedDB activo y verificado'}).waitFor();
+  await page.reload();
+  await page.locator('#activateIndexedStorage').waitFor({state:'attached'});
+  assert.equal(await page.locator('#activateIndexedStorage').isDisabled(),true);
+  assert.equal(await readSeen(),5);
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('racoon-v2-state')).tracking['legacy:verm'].seen),5);
   assert.deepEqual(errors, []);
-  console.log('Chromium IndexedDB: copia, verificación, duplicado, conflicto, origen intacto y offline OK');
+  console.log('Chromium IndexedDB: copia, verificación, duplicado, conflicto, origen intacto, activación, edición, recarga, fallo, reversión y offline OK');
 } finally {
   await browser?.close();
   server.close();

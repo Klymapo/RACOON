@@ -1,8 +1,8 @@
 {
-  "version": "3.0.0-alpha.6",
+  "version": "3.0.0-alpha.7",
   "changes": [
-    "Agrupación manual y navegación entre temporadas de una obra",
-    "Separación reversible preservando progreso, favoritos y carpetas",
-    "Sin agrupación automática ni episodios inventados"
+    "Activación optativa y reversible de IndexedDB desde Ajustes",
+    "Espejo local verificado, respaldo previo y recuperación ante fallos",
+    "Guardados IndexedDB en cola y funcionamiento sin conexión"
   ]
 }

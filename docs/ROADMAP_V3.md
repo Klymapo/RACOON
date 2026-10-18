@@ -74,3 +74,13 @@ Se añadió un control optativo en Ajustes para preparar y verificar copia Index
 ## Bloque 1: etapa 07C, 18 de octubre de 2026
 
 Cerradas conexiones IndexedDB tardías tras apertura bloqueada y conexiones activas ante cambio de versión. Dos pruebas de regresión; 121 pruebas Node aprobadas. CI ahora exige QA Chromium general y de IndexedDB antes del job de publicación. La descarga local de Chromium falló: E2E todavía no se declara aprobado. Siguiente paso: comprobar CI y completar conmutación reversible; localStorage sigue como almacenamiento principal. Sin fusión ni publicación.
+
+## Bloque 1: entrega 07D, 18 de octubre de 2026 — alpha.7
+
+Activación optativa y reversión desde Ajustes, lectura verificada antes del arranque,
+cola de escrituras IDB y espejo local verificado. El respaldo previo no se reemplaza
+al volver a activar; se puede descargar. Fallo IDB o discrepancia recupera el espejo
+más reciente. Origen ilegible detiene el arranque sin sobrescribir datos. 132 pruebas
+Node aprobadas; QA Chromium ampliado y sujeto a CI. La capacidad aún depende de la
+cuota localStorage y no hay sincronización de pestañas. La aceptación Android físico
+queda separada. Sin fusión ni publicación; siguiente bloque: colecciones inteligentes.

@@ -15,7 +15,7 @@ import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} f
 import {shouldRefresh, refreshCatalog, mergeCatalogObservation, FOUR_HOURS} from './refresh.mjs';
 import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '3.0.0-alpha.6';
+const RACOON_VERSION = '3.0.0-alpha.7';
 const VIEWS = ['home', 'calendar', 'progress', 'add', 'backups'];
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -845,4 +845,24 @@ export function createApp({document = globalThis.document, storage = globalThis.
   return {selectView, setTracking, render, refreshRemote, getState: () => state, getView: () => currentView, fetch};
 }
 
-if (typeof document !== 'undefined') createApp();
+if (typeof document !== 'undefined') {
+  // Resolver el almacenamiento antes de construir el estado de la interfaz.
+  (async () => {
+    const {createStorageRuntime} = await import('./storage-runtime.mjs');
+    const {mountStorageRuntimePanel, updateStorageRuntimeStatus} = await import('./storage-runtime-ui.mjs');
+    let lastStatus;
+    const runtime = await createStorageRuntime({storage: globalThis.localStorage, onStatus: event => {
+      lastStatus = event;
+      updateStorageRuntimeStatus(document, event);
+    }});
+    createApp({storage: runtime.storage});
+    mountStorageRuntimePanel(document, runtime, globalThis.localStorage);
+    if (lastStatus) updateStorageRuntimeStatus(document, lastStatus);
+  })().catch(() => {
+    const warning = document.getElementById('saveWarning');
+    if (warning) {
+      warning.hidden = false;
+      warning.textContent = 'No se pudo abrir tu biblioteca de forma segura. No se sobrescribieron datos. Conserva tus respaldos y vuelve a intentar.';
+    }
+  });
+}
