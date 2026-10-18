@@ -114,3 +114,7 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 ### QA regional automática (fixture, Chromium)
 
 - Prueba E2E nueva: selección manual de obra, token sintético efímero, dos peticiones simuladas TMDB, país MX sin copiar Netflix US, Channel distinto de plan base, borrador no verificado, no persistencia de token ni ofertas sin confirmar. Capturas móvil y escritorio como artefactos en Actions. No se considera consulta real a TMDB ni Android físico.
+
+### Compatibilidad con QA preexistente
+
+- CI 39149388451: 199 pruebas Node y tres E2E iniciales pasaron, pero script de región antiguo detectó dos `<summary>` en un mismo panel. Se separó consulta TMDB del editor manual sin cambiar semántica ni cobertura de evidencia. QA nuevo comprueba el panel por separado. CI a repetir.

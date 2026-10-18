@@ -11,7 +11,7 @@ export function renderAutomaticRegionalPanel(entry) {
 export function mountAutomaticRegionalLookup({document,getState,fetch=globalThis.fetch,now=Date.now}) {
   let generation=0,controller=null,candidates=[],offerRows=[],selected=null;
   const show=(html)=>{
-    const target=document.querySelector('[data-regional-panel] [data-region-auto-results]');
+    const target=document.querySelector('#workDetail [data-region-auto-results]');
     if(target)target.innerHTML=html;
   };
   function fresh() {generation++;controller?.abort();controller=new AbortController();return {id:generation,signal:controller.signal};}
