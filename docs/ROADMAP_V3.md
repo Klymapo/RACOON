@@ -16,8 +16,11 @@ sin Functions, D1 ni servicios de pago.
 | 06 | Agrupación manual de temporadas y separación protegida | alpha.6 |
 | 07 | IndexedDB optativo con espejo local, respaldo y reversión | alpha.7 |
 | 08 | Colecciones inteligentes, filtros dinámicos y papelera recuperable | alpha.8 |
+| 09 | Evidencia regional y suscripciones locales; automatización pendiente | integrada en alpha.11 |
+| 10 | Agenda día/semana/mes, Mis obras/Todas del catálogo | integrada en alpha.11 |
+| 11 | Slice con gestos, historial y deshacer protegido | alpha.11 |
 
-## Pendiente: 11 bloques con trabajo restante
+## Pendiente: 9 bloques con trabajo restante
 
 Esta es una agrupación para contar el alcance pendiente, no una promesa de 13
 entregas. Cada bloque puede dividirse en varias entregas con pruebas. El modelo
@@ -27,9 +30,7 @@ nota numérica tampoco equivale a completar Ratings.
 | Bloque | Trabajo restante |
 | --- | --- |
 | 1 | Transición reversible implementada; falta independencia de cuota localStorage y aceptación Android físico |
-| 3 | Disponibilidad regional, proveedores y suscripciones, con fuentes gratuitas verificadas |
-| 4 | Agenda v3: día/semana/mes, mis obras/todas |
-| 5 | Slice |
+| 3 | Evidencia y suscripciones manuales implementadas; falta proveedor automático gratuito validado |
 | 6 | Recomendaciones locales |
 | 7 | Ratings / Racoonómetro |
 | 8 | Integración o intercambio con Letterboxd, según capacidades gratuitas verificadas |
@@ -97,3 +98,20 @@ móvil y edición/recarga offline. No equivale a Ratings completo. Quedan once
 bloques con trabajo: almacenamiento parcial y diez abiertos. Siguiente bloque:
 disponibilidad regional, proveedores y suscripciones con fuentes gratuitas verificadas.
 Sin fusión ni publicación; aceptación física Android aún pendiente.
+
+## Entregas 09–11, 18 de octubre de 2026 — alpha.11
+
+Bloque 3 parcialmente cubierto: evidencia regional manual por país, servicio, canal,
+modalidad y cobertura, fuentes y fechas, suscripciones por país y retiradas
+reversibles. No hay consulta automática; no se usa una API pagada ni se inventa
+verificación. Revisión de fuentes en FUENTES_REGIONALES.md.
+
+Bloques 4 y 5 implementados: Agenda día/semana/mes y mis obras/catálogo local;
+Slice con botones, flechas y gestos, historial, nota/favorito/carpeta opcionales y
+undo protegido frente a cambios posteriores y respaldos viejos. Sin inferir
+fechas, episodios vistos ni gusto. Todo persiste en JSON/IndexedDB y offline.
+
+CI 39138045660: 167 pruebas Node y cuatro E2E Chromium aprobados. Geometría
+320/390/800/1440 y recarga offline incluidas. Sin revisión independiente ni Android
+físico; sin fusión ni publicación. Hay once incrementos acumulados y nueve bloques
+con trabajo: siete abiertos y dos parciales (1 y 3). Siguiente: recomendaciones locales.

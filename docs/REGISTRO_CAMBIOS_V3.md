@@ -37,3 +37,11 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 - CI 39134171386: 147 pruebas Node y tres E2E Chromium aprobados. https://github.com/Klymapo/RACOON/actions/runs/39134171386
 - App y SW alpha.8, módulos precacheados. PR #2 actualizado a entregas 01–08; plan, maestro y roadmap actualizados. Ocho entregas y once bloques con trabajo restante; almacenamiento parcial y diez abiertos.
 - Siguiente bloque: disponibilidad regional, proveedores y suscripciones. Sin fusión ni despliegue; producción v2.2.1. Sin cambios en Drive; registro en Klymapo y réplica diferida por Admin.
+
+## 2026-10-18 — Argos — entregas 09–11, alpha.11
+
+- Admin autorizó los siguientes tres bloques. Commit 73cdede: disponibilidad por país/modalidad/canal y evidencia manual, suscripciones por país, Agenda v3 y Slice con gestos/historial/undo protegido. Nuevos datos en JSON; SW precachea módulos.
+- Consulta recuperada del maestro de Gaston con la cuenta correcta; extracto aprobado guardado en el repositorio. Revisión de fuentes primarias TMDB/JustWatch documentada, sin activar API de pago ni afirmar consulta automática.
+- CI 39138045660: 167 pruebas Node y cuatro E2E Chromium aprobados. https://github.com/Klymapo/RACOON/actions/runs/39138045660
+- PR #2, plan, roadmap y maestro actualizados. Once incrementos acumulados; nueve bloques pendientes (siete abiertos y almacenamiento/regional automático parciales). Próximo: recomendaciones locales.
+- Producción permanece v2.2.1, sin fusión ni despliegue. Se sincroniza en Gaston el registro de 07C/07D/08 y 09–11, conservando antecedentes; la escritura y lectura de verificación se registran en el maestro.

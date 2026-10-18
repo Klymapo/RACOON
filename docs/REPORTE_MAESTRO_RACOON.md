@@ -7,7 +7,7 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 - Base de producción: v2.2.1, merge `a0be814`, 13 de octubre de 2026.
 - Primera entrega v3: `3.0.0-alpha.1`, rama `codex/racoon-v3-01-navigation`.
-- Estado de trabajo actual: `3.0.0-alpha.8`, octava entrega acumulada en el mismo
+- Estado de trabajo actual: `3.0.0-alpha.11`, once incrementos acumulados en el mismo
   PR #2. Producción continúa en v2.2.1, sin fusionar ni desplegar estas entregas.
 - Alcance: Inicio, Agenda, Biblioteca, Explorar, Ajustes; barra inferior fija móvil,
   banner exclusivo de Inicio y navegación accesible por teclado.
@@ -18,14 +18,14 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 ## Próximos incrementos
 
-1. Fuentes regionales verificadas, proveedores y suscripciones.
+1. Recomendaciones locales, seguidas de Ratings/Racoonómetro.
 2. Independencia de la cuota localStorage para IndexedDB y aceptación Android.
-3. Agenda v3, Slice, Ratings y recomendaciones.
+3. Proveedor automático regional gratuito, conservando evidencia manual y suscripciones.
 
 El orden puede ajustarse con Admin. No prometer fuentes regionales detalladas
 antes de verificar que ofrecen los datos y permiten su uso gratuito.
 
-Conteo: 8 entregas implementadas; 11 bloques con trabajo restante, desglosados
+Conteo: 11 incrementos implementados; 9 bloques con trabajo restante, desglosados
 en [ROADMAP_V3.md](ROADMAP_V3.md). No equivalen a 13 entregas garantizadas.
 
 ## Registro de cambios
@@ -261,3 +261,15 @@ reporte maestro y roadmap registran la misma evidencia. Sin fusión ni publicaci
 - Slice: cola local, botones/gestos/teclado, favorito, nota 0–10 y carpeta opcionales; historial persistente paginado y undo protegido frente a cambios posteriores. Deshacer no revive al fusionar un respaldo anterior. No se asignan fechas ni episodios ni gusto por inferencia.
 - JSON preserva regionData y sliceData, bajas y preferencias. Registros incompatibles bloquean vista previa en lugar de desaparecer. Persistencia y versión de esquema de biblioteca 3 conservadas; versión app/SW alpha.11 y nuevos módulos offline.
 - Suite Node y cuatro E2E (tres anteriores más qa-next-three.mjs) se verifican antes del cierre. Sin fusión ni despliegue. Registro final de pruebas y réplica de bitácora a Gaston al terminar.
+
+Validación final 09–11 (73cdede): CI 39138045660 aprobó 167 pruebas Node y cuatro
+E2E Chromium: general, IndexedDB, colecciones y los tres módulos nuevos. El último
+comprueba país/canales, cobertura, día/semana/mes, navegación, Slice por botones,
+gestos y teclado, undo, protección de ediciones posteriores, carpetas, JSON,
+geometría 320/390/800/1440 e IndexedDB/offline.
+https://github.com/Klymapo/RACOON/actions/runs/39138045660
+Se actualizan roadmap y PR #2 a incrementos 01–11. Estado honesto: nueve bloques
+restantes, siete abiertos y dos parciales; regional automático y cuota IndexedDB
+no se consideran resueltos. Producción v2.2.1; sin fusión ni despliegue.
+
+Réplica a Gaston completada y verificada: maestro 1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA actualizado con el estado alpha.11, resumen ejecutivo y Registro de cambios de 07C/07D/08 y 09–11. Se conservaron antecedentes; revisión protegida contra cambios concurrentes y lectura posterior confirmó los párrafos nuevos. El acceso se recuperó seleccionando la cuenta Gaston correcta; no se cambiaron permisos ni credenciales. La consulta automática regional sigue pendiente también en el documento.
