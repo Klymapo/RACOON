@@ -1,4 +1,5 @@
 import {migrateLegacyTrack, validateState} from './storage.mjs';
+import {isMovie} from './media.mjs';
 
 const BACKUP_SCHEMA_VERSION = 3;
 const VALID_ID = /^(?:legacy|anilist|custom):[A-Za-z0-9._-]+$/;
@@ -50,6 +51,7 @@ export function createBackup(state, exportedAt = new Date().toISOString()) {
     catalogOfficial: clone(clean.catalogOfficial),
     catalogCustom: clone(clean.catalogCustom),
     tracking: clone(clean.tracking),
+    mediaLibrary: clone(clean.mediaLibrary),
     preferences: clone(clean.preferences),
     sourceCache: clone(clean.sourceCache),
     updateMeta: clone(clean.updateMeta)
@@ -80,8 +82,16 @@ export function mergeBackup(current, incoming) {
   const base = validateState(current);
   const preview = parseBackup(incoming);
   const next = preview.state;
+  const localLinks = base.mediaLibrary.catalogLinks;
   base.catalogOfficial = {...base.catalogOfficial, ...next.catalogOfficial};
   base.catalogCustom = {...base.catalogCustom, ...next.catalogCustom};
+  const seasonIds = new Map(Object.entries(next.mediaLibrary.catalogLinks).filter(([id, link]) => link.seasonId && localLinks[id]?.seasonId).map(([id, link]) => [link.seasonId, localLinks[id].seasonId]));
+  const importedEpisodes = Object.fromEntries(Object.entries(next.mediaLibrary.episodes).map(([id, episode]) => [id, {...episode, seasonId: seasonIds.get(episode.seasonId) || episode.seasonId}]));
+  base.mediaLibrary = Object.fromEntries(['works', 'seasons', 'episodes', 'catalogLinks'].map(key => [key, {...(key === 'episodes' ? importedEpisodes : next.mediaLibrary[key]), ...base.mediaLibrary[key]}]));
+  // Prefer local identities and explicit relationships for entries already here.
+  for (const layer of ['catalogOfficial', 'catalogCustom']) for (const [id, link] of Object.entries(localLinks)) {
+    if (base[layer][id]) base[layer][id] = {...base[layer][id], workId: link.workId};
+  }
   for (const [id, value] of Object.entries(next.tracking)) {
     const previous = base.tracking[id];
     if (!previous || Number(value.changedAt) >= Number(previous.changedAt)) base.tracking[id] = value;
@@ -91,7 +101,7 @@ export function mergeBackup(current, incoming) {
     base.sourceCache = {...base.sourceCache, ...next.sourceCache};
     base.updateMeta = {...base.updateMeta, ...next.updateMeta};
   }
-  return base;
+  return validateState(base);
 }
 
 export function replaceWithBackup(incoming) {
@@ -104,18 +114,20 @@ function csvCell(value) {
 
 export function stateToCsv(state, catalog = []) {
   const current = validateState(state);
-  const rows = [['ID', 'Título', 'Episodios vistos', 'Episodios disponibles', 'Total', 'Estado', 'Favorito', 'Último cambio']];
+  const rows = [['ID', 'Título', 'Episodios vistos', 'Episodios disponibles', 'Total', 'Estado', 'Favorito', 'Último cambio', 'Formato', 'Fecha vista']];
   for (const entry of catalog) {
     const track = current.tracking[entry.id] || {};
     rows.push([
       entry.id,
       entry.title || entry.name || 'Sin título',
-      track.seen || 0,
-      track.availableOverride ?? '',
-      track.totalOverride ?? '',
-      track.status || 'Pendiente',
+      isMovie(entry) ? '' : track.seen || 0,
+      isMovie(entry) ? '' : track.availableOverride ?? '',
+      isMovie(entry) ? '' : track.totalOverride ?? '',
+      isMovie(entry) && track.status === 'Terminada' ? 'Vista' : track.status || 'Pendiente',
       track.favorite ? 'Sí' : 'No',
-      track.changedAt || ''
+      track.changedAt || '',
+      isMovie(entry) ? 'Película' : 'Serie/temporada',
+      isMovie(entry) ? track.watchedAt || '' : ''
     ]);
   }
   return `\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\r\n')}`;

@@ -33,6 +33,7 @@
         <button id="backupsTab" class="nav-tab" type="button" role="tab" data-view="backups" aria-controls="backupsView" aria-selected="false" tabindex="-1"><span aria-hidden="true">⚙</span>Ajustes</button>
       </nav>
 
+      <p id="saveWarning" role="status" class="inline-status" hidden></p>
       <div id="liveRegion" class="sr-only" aria-live="polite"></div>
       <section id="homeView" class="view-panel" role="tabpanel" aria-labelledby="homeTab">
         <section class="hero-card" aria-labelledby="heroTitle">
@@ -65,15 +66,15 @@
       </section>
 
       <section id="addView" class="view-panel is-hidden" role="tabpanel" aria-labelledby="addTab">
-        <div class="section-heading"><div><p class="eyebrow">Catálogo ampliable</p><h2>Explorar</h2><p>Busca en AniList y revisa la ficha antes de guardarla.</p></div></div>
+        <div class="section-heading"><div><p class="eyebrow">Catálogo ampliable</p><h2>Explorar</h2><p>Busca anime en AniList o crea una serie o película manual. Revisa la ficha antes de guardarla.</p></div></div>
         <form id="searchForm" class="search-bar"><label class="sr-only" for="animeSearch">Buscar anime</label><input class="search-input" id="animeSearch" type="search" autocomplete="off" placeholder="Ej. Frieren, One Piece…"><button class="button button-primary" type="submit">Buscar</button></form>
-        <button class="button button-soft" id="createManualSeries" type="button">＋ Crear ficha manual sin AniList</button>
+        <div class="button-row"><button class="button button-soft" id="createManualSeries" type="button">＋ Crear serie manual</button><button class="button button-soft" id="createManualMovie" type="button">＋ Crear película manual</button></div>
         <div id="searchStatus" class="inline-status" aria-live="polite"></div><div id="searchResults" class="result-grid"></div><div id="seriesConfirmation" class="panel-card is-hidden"></div>
       </section>
 
       <section id="backupsView" class="view-panel is-hidden" role="tabpanel" aria-labelledby="backupsTab">
         <div class="section-heading"><div><p class="eyebrow">Tu biblioteca, a salvo</p><h2>Ajustes</h2><p>Exporta todo para conservarlo o moverlo a otro dispositivo.</p></div></div>
-        <div class="backup-grid"><article class="panel-card"><div class="panel-heading"><h3>Respaldo completo</h3><span class="badge badge-teal" id="backupSummary">0 series</span></div><p class="muted">Incluye progreso, favoritos, series agregadas, preferencias, fuentes y metadatos.</p><div class="button-row"><button class="button button-primary" id="exportBackup" type="button">↓ Exportar JSON</button><button class="button button-soft" id="exportCsv" type="button">↓ Exportar CSV</button><button class="button button-soft" id="importBackup" type="button">↑ Importar JSON</button><input id="backupFile" class="is-hidden" type="file" accept="application/json,.json"></div></article><article class="panel-card"><div class="panel-heading"><h3>Actualizaciones</h3><span class="badge" id="appVersion">RACOON v3 · avance 1</span></div><p class="muted" id="updateStatus">La aplicación comprobará versiones nuevas al iniciar.</p><button class="button button-soft" id="checkUpdate" type="button">↻ Comprobar versión</button></article></div>
+        <div class="backup-grid"><article class="panel-card"><div class="panel-heading"><h3>Respaldo completo</h3><span class="badge badge-teal" id="backupSummary">0 series</span></div><p class="muted">Incluye progreso, favoritos, series agregadas, preferencias, fuentes y metadatos.</p><div class="button-row"><button class="button button-primary" id="exportBackup" type="button">↓ Exportar JSON</button><button class="button button-soft" id="exportCsv" type="button">↓ Exportar CSV</button><button class="button button-soft" id="importBackup" type="button">↑ Importar JSON</button><button class="button button-soft" id="exportMigrationBackup" type="button" hidden>↓ Respaldo previo a v3</button><input id="backupFile" class="is-hidden" type="file" accept="application/json,.json"></div></article><article class="panel-card"><div class="panel-heading"><h3>Actualizaciones</h3><span class="badge" id="appVersion">RACOON v3 · avance 1</span></div><p class="muted" id="updateStatus">La aplicación comprobará versiones nuevas al iniciar.</p><button class="button button-soft" id="checkUpdate" type="button">↻ Comprobar versión</button></article></div>
         <article class="panel-card danger-safe"><h3>Antes de restaurar</h3><p class="muted">Verás una vista previa con cantidades y conflictos. Fusionar conserva lo más reciente; reemplazar pide confirmación antes de sobrescribir.</p><div id="backupPreview" class="inline-status"></div></article>
       </section>
     </main>

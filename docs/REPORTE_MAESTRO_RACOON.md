@@ -7,6 +7,8 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 - Base de producción: v2.2.1, merge `a0be814`, 13 de octubre de 2026.
 - Primera entrega v3: `3.0.0-alpha.1`, rama `codex/racoon-v3-01-navigation`.
+- Estado de trabajo actual: `3.0.0-alpha.2`, segunda entrega acumulada en el mismo
+  PR #2. Producción continúa en v2.2.1, sin fusionar ni desplegar estas entregas.
 - Alcance: Inicio, Agenda, Biblioteca, Explorar, Ajustes; barra inferior fija móvil,
   banner exclusivo de Inicio y navegación accesible por teclado.
 - Se conservan los identificadores de las vistas y `racoon-v2-state`, con esquema 3,
@@ -16,8 +18,8 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 ## Próximos incrementos
 
-1. Modelo universal Obra/Temporada/Episodio, películas y migración reversible.
-2. Ficha de detalle, tarjetas compactas y edición de progreso dentro de ficha.
+1. Ficha de detalle, tarjetas compactas y edición de progreso dentro de ficha.
+2. Interfaz para agrupar temporadas; migración a IndexedDB con validación.
 3. Carpetas e importación CSV/Excel con vista previa y duplicados.
 4. Fuentes regionales verificadas y suscripciones; Slice, Ratings y recomendaciones.
 
@@ -67,3 +69,39 @@ Registro adicional — 2026-10-17: creado PR #2 en borrador para revisión:
 https://github.com/Klymapo/RACOON/pull/2
 Commit de implementación: 7c33620dac8797569b749d6d530f47a853727080.
 El reporte maestro de Gaston se actualiza con el alcance, pruebas y enlaces de esta entrega.
+
+### 2026-10-17 — Argos/Codex — v3, entrega 02
+
+- Admin autorizó continuar y pidió confirmar compatibilidad con Cloudflare.
+- Añadido `media.mjs`: obras, temporadas y episodios explícitos; IDs internos
+  persistentes, enlaces al catálogo y vinculación de temporadas mediante API local.
+  No se agrupan títulos por similitud ni se inventan episodios a partir del total.
+- Progreso de temporadas independiente; favoritos y progreso conservan su fuente
+  original. Importar otra biblioteca preserva las identidades locales y remapea la
+  evidencia episódica entrante a las temporadas correctas.
+- `mediaLibrary.version = 1` extiende de forma compatible el esquema de estado 3.
+  Copia previa inmutable `racoon-v2-state:before-media-v1` antes de escribir sobre
+  datos anteriores. Si no puede guardarse la copia, no se reemplaza el estado.
+  Ajustes permite descargarla; la importación JSON permite restaurar el contenido.
+- Película manual en Explorar, ficha sin episodios, duración opcional, estados
+  Pendiente/Viendo/Vista, favorito y fecha vista opcional. Los estados antiguos
+  se preservan sin inferir una visualización ni inventar una fecha.
+- Las películas no inflan episodios pendientes ni series al corriente y no se
+  proyectan como una emisión semanal. CSV distingue formato, Vista y fecha vista.
+- Guardado fallido muestra aviso visible y conserva el estado anterior persistido.
+- Caché y app en `3.0.0-alpha.2`; módulos nuevos incluidos para funcionar offline.
+- Compatibilidad Cloudflare Pages: conservada. Módulos JS estáticos, sin servidor,
+  base remota ni API pagada. El workflow sigue publicando exclusivamente `public/`.
+  No se realizó un despliegue de esta entrega.
+- Validación: 87 pruebas Node aprobadas, `git diff --check` limpio y Chromium E2E
+  aprobado, incluida migración desde un JSON anterior, copia previa descargable,
+  alta de película, Vista/fecha/favorito, identidad tras recarga, restauración y offline.
+  Capturas móvil/escritorio revisadas; no equivalen a Android físico.
+- Subidas dos capturas nuevas a Gaston/APPS/RACOON/CAPTURAS Y QA:
+  [Película móvil](https://drive.google.com/file/d/1CBknH28OweQUpw7KDuTfU5JyzjC3da44/view)
+  y [Película escritorio](https://drive.google.com/file/d/1rShBTTzPParojqOPmaZtIfoWF750UCcU/view).
+- Código, plan y pruebas se agregan al mismo PR #2 en un commit separado; el título
+  y la descripción del PR y el reporte maestro de Gaston se actualizan para cubrir
+  las dos entregas. Sin fusión ni publicación.
+- Pendiente de incrementos posteriores: interfaz de agrupación de temporadas,
+  IndexedDB, catálogo cinematográfico remoto y rediseño universal de la ficha.

@@ -1,8 +1,8 @@
 {
-  "version": "3.0.0-alpha.1",
+  "version": "3.0.0-alpha.2",
   "changes": [
-    "Primera entrega de v3: Inicio, Agenda, Biblioteca, Explorar y Ajustes",
-    "Barra inferior fija en celular y banner exclusivo de Inicio",
-    "Navegación accesible con teclado; progreso y respaldos compatibles"
+    "Obras y temporadas con identidades internas y progreso independiente",
+    "Películas manuales con estado Vista, duración y fecha de visualización",
+    "Respaldo previo a la migración y exportaciones compatibles"
   ]
 }

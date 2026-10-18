@@ -1,5 +1,7 @@
 import {CATALOG} from './catalog.mjs';
-import {createDefaultState, loadState, saveState} from './storage.mjs';
+import {createDefaultState, loadState, saveState, validateState} from './storage.mjs';
+import {isMovie} from './media.mjs';
+import {renderMovieCard, renderMovieForm} from './movie-ui.mjs';
 import {buildCalendarModel} from './schedule.mjs';
 import {mexicoDate} from './time.mjs';
 import {searchAnime, fetchAnimeDetails, fetchSeasonalAnime, matchLegacyAnime, seasonForEntry} from './providers/anilist.mjs';
@@ -8,7 +10,7 @@ import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} f
 import {shouldRefresh, refreshCatalog, mergeCatalogObservation, FOUR_HOURS} from './refresh.mjs';
 import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '3.0.0-alpha.1';
+const RACOON_VERSION = '3.0.0-alpha.2';
 const VIEWS = ['home', 'calendar', 'progress', 'add', 'backups'];
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -18,14 +20,17 @@ function entryMap(catalog, state) {
 }
 
 function availableFor(entry, tracking = {}) {
+  if (isMovie(entry)) return 0;
   return tracking.availableOverride ?? entry.availableEpisodes ?? 0;
 }
 
 function availableValue(entry, tracking = {}) {
+  if (isMovie(entry)) return null;
   return tracking.availableOverride ?? entry.availableEpisodes ?? null;
 }
 
 function totalFor(entry, tracking = {}) {
+  if (isMovie(entry)) return null;
   return tracking.totalOverride ?? entry.totalEpisodes ?? null;
 }
 
@@ -69,7 +74,7 @@ export function buildDashboardModel(catalog, state, today = mexicoDate(Date.now(
     .map(([id, raw]) => ({id, entry: entries[id], tracking: normalizeTracking(raw)}))
     .filter(({entry, tracking}) => entry && !['Terminada', 'Descartada'].includes(tracking.status));
   const pending = tracked.map(({id, entry, tracking}) => ({id, entry, tracking, available: availableFor(entry, tracking), remaining: Math.max(0, availableFor(entry, tracking) - tracking.seen)}))
-    .filter((item) => item.remaining > 0)
+    .filter((item) => !isMovie(item.entry) && item.remaining > 0)
     .sort((left, right) => right.remaining - left.remaining || String(left.entry.title || left.entry.name).localeCompare(String(right.entry.title || right.entry.name)));
   const upcoming = Object.values(entries).filter((entry) => !['Terminada', 'Descartada'].includes(state.tracking[entry.id]?.status)).map((entry) => {
     const event = nextWeeklyDate(entry, today);
@@ -81,10 +86,10 @@ export function buildDashboardModel(catalog, state, today = mexicoDate(Date.now(
   }).slice(0, 6);
   return {
     stats: {
-      tracked: tracked.length,
+      tracked: tracked.filter(({entry}) => !isMovie(entry)).length,
       pendingSeries: pending.length,
       pendingEpisodes: pending.reduce((sum, item) => sum + item.remaining, 0),
-      upToDate: tracked.filter(({entry, tracking}) => availableFor(entry, tracking) > 0 && tracking.seen >= availableFor(entry, tracking)).length
+      upToDate: tracked.filter(({entry, tracking}) => !isMovie(entry) && availableFor(entry, tracking) > 0 && tracking.seen >= availableFor(entry, tracking)).length
     },
     pending,
     upcoming
@@ -104,8 +109,8 @@ export function saveCatalogEntry(state, entry, edits = {}) {
   const changedFields = Object.keys(edits).filter((field) => JSON.stringify(edits[field]) !== JSON.stringify(entry[field] ?? null));
   const saved = {...previous, ...entry, ...edits, id: entry.id, savedAt: Date.now(), manualCatalogFields: [...new Set([...(previous.manualCatalogFields || []), ...changedFields])]};
   const tracking = state.tracking[entry.id] ? state.tracking : {...state.tracking, [entry.id]: normalizeTracking()};
-  if (entry.id.startsWith('custom:')) return {...state, tracking, catalogCustom: {...state.catalogCustom, [entry.id]: saved}};
-  return {...state, tracking, catalogOfficial: {...state.catalogOfficial, [entry.id]: saved}};
+  if (entry.id.startsWith('custom:')) return validateState({...state, tracking, catalogCustom: {...state.catalogCustom, [entry.id]: saved}});
+  return validateState({...state, tracking, catalogOfficial: {...state.catalogOfficial, [entry.id]: saved}});
 }
 
 export function filterProgressEntries(catalog, state, {query = '', filter = 'all', sort = 'title'} = {}) {
@@ -119,8 +124,8 @@ export function filterProgressEntries(catalog, state, {query = '', filter = 'all
     const haystack = `${entry.title || entry.name} ${entry.alternativeTitles?.join(' ') || ''}`.toLocaleLowerCase();
     if (normalizedQuery && !haystack.includes(normalizedQuery)) return false;
     if (filter === 'watching' && tracking.status !== 'Viendo') return false;
-    if (filter === 'pending' && !(remaining !== null && remaining > 0)) return false;
-    if (filter === 'uptodate' && !(available !== null && available > 0 && tracking.seen >= available)) return false;
+    if (filter === 'pending' && !(isMovie(entry) ? ['Pendiente', 'Viendo'].includes(tracking.status) : remaining !== null && remaining > 0)) return false;
+    if (filter === 'uptodate' && (isMovie(entry) || !(available !== null && available > 0 && tracking.seen >= available))) return false;
     if (filter === 'finished' && tracking.status !== 'Terminada') return false;
     if (filter === 'favorites' && !tracking.favorite) return false;
     return true;
@@ -136,6 +141,7 @@ export function filterProgressEntries(catalog, state, {query = '', filter = 'all
 }
 
 export function progressPercentage(entry, tracking = {}) {
+  if (isMovie(entry)) return tracking.status === 'Terminada' ? 100 : 0;
   const denominator = tracking.totalOverride ?? entry.totalEpisodes ?? tracking.availableOverride ?? entry.availableEpisodes;
   return denominator > 0 ? Math.min(100, Math.round(((tracking.seen || 0) / denominator) * 100)) : 0;
 }
@@ -171,6 +177,17 @@ export function createApp({document = globalThis.document, storage = globalThis.
     if (node) node.textContent = value;
   }
 
+  function persist() {
+    state = validateState(state);
+    const saved = saveState(storage, state);
+    const warning = elements('saveWarning');
+    if (warning) {
+      warning.hidden = saved;
+      warning.textContent = saved ? '' : 'No se pudo guardar en este dispositivo. Tus datos anteriores se conservaron; exporta un respaldo antes de cerrar.';
+    }
+    return saved;
+  }
+
   function renderHome() {
     const model = buildDashboardModel(CATALOG, state, mexicoDate(now()));
     const stats = elements('homeStats');
@@ -200,6 +217,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const percent = progressPercentage(entry, tracking);
       const poster = safeHttpUrl(entry.poster) ? `<img src="${escapeHtml(entry.poster)}" alt="" loading="lazy">` : escapeHtml(entry.icon || '✦');
       const availableLabel = available === null ? 'pendiente' : available;
+      if (isMovie(entry)) return renderMovieCard(entry, tracking, poster);
       return `<article class="library-card" data-library-id="${escapeHtml(id)}"><div class="poster">${poster}</div><div class="card-content"><div class="card-topline"><select class="status-select" data-progress-field="status" data-id="${escapeHtml(id)}" aria-label="Estado de ${escapeHtml(entry.title || entry.name)}">${['Pendiente', 'Viendo', 'Al día', 'Terminada', 'Descartada'].map((value) => `<option value="${value}"${tracking.status === value ? ' selected' : ''}>${value}</option>`).join('')}</select><button class="favorite-button ${tracking.favorite ? 'is-favorite' : ''}" type="button" data-progress-action="favorite" data-id="${escapeHtml(id)}" aria-label="${tracking.favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}">${tracking.favorite ? '★' : '☆'}</button></div><h3>${escapeHtml(entry.title || entry.name)}</h3><div class="card-meta"><span>${tracking.seen} vistos · ${availableLabel} disponibles · ${total ?? '?'} total</span></div><div class="progress-line"><span style="width:${percent}%"></span></div><div class="progress-edit-grid"><label>Vistos<input type="number" min="0" max="9999" value="${tracking.seen}" data-progress-field="seen" data-id="${escapeHtml(id)}"></label><label>Disponibles<input type="number" min="0" max="9999" value="${available ?? ''}" placeholder="?" data-progress-field="availableOverride" data-id="${escapeHtml(id)}"></label><label>Total<input type="number" min="0" max="9999" value="${total ?? ''}" placeholder="?" data-progress-field="totalOverride" data-id="${escapeHtml(id)}"></label></div><div class="card-actions"><button class="mini-button" type="button" data-progress-action="minus" data-id="${escapeHtml(id)}">−1</button><button class="mini-button" type="button" data-progress-action="plus" data-id="${escapeHtml(id)}">＋1</button><button class="mini-button" type="button" data-progress-action="catchup" data-id="${escapeHtml(id)}"${available === null ? ' disabled' : ''}>Al corriente</button></div></div></article>`;
     });
     target.innerHTML = cards.join('') || '<div class="empty-state"><strong>Tu biblioteca está vacía</strong>Agrega tu primera serie.</div>';
@@ -207,6 +225,10 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const id = card.dataset.libraryId;
       const entry = entryMap(CATALOG, state)[id];
       const tracking = normalizeTracking(state.tracking[id]);
+      if (isMovie(entry)) {
+        card.querySelector('.card-actions')?.insertAdjacentHTML('beforeend', `<button class="mini-button" type="button" data-series-edit="${escapeHtml(id)}">Editar ficha</button><button class="mini-button" type="button" data-series-delete="${escapeHtml(id)}">Eliminar</button>`);
+        return;
+      }
       const denominator = totalFor(entry, tracking) ?? availableValue(entry, tracking);
       card.querySelector('.card-meta')?.insertAdjacentHTML('beforeend', `<span> · ${denominator > 0 ? `${progressPercentage(entry, tracking)}% de ${totalFor(entry, tracking) ? 'la temporada' : 'lo disponible'}` : 'porcentaje pendiente'}</span>`);
       const availabilityTrust = tracking.availableOverride !== null ? 'disponibles: ajuste local' : entry.availableConfidence === 'confirmed' ? 'disponibles: confirmado' : 'disponibles: sin verificar';
@@ -258,6 +280,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
     const target = elements('seriesConfirmation');
     if (!target) return;
     target.classList.remove('is-hidden');
+    if (isMovie(entry)) { target.innerHTML = renderMovieForm(entry); return; }
     target.innerHTML = `<div class="panel-heading"><h3>Confirmar serie</h3><span class="badge badge-teal">${escapeHtml(entry.id)}</span></div><div class="series-form"><label>Título<input data-series-field="title" value="${escapeHtml(entry.title || '')}"></label><label>Títulos alternativos<input data-series-field="alternativeTitles" value="${escapeHtml((entry.alternativeTitles || []).join(', '))}"></label><label>Sinopsis<textarea data-series-field="synopsis" rows="4">${escapeHtml(entry.synopsis || '')}</textarea></label><div class="form-grid"><label>Géneros<input data-series-field="genres" value="${escapeHtml((entry.genres || []).join(', '))}" placeholder="Pendiente de verificar"></label><label>Temporada<input data-series-field="season" value="${escapeHtml(entry.season || '')}" placeholder="Pendiente"></label><label>Año<input type="number" data-series-field="seasonYear" value="${entry.seasonYear ?? ''}" placeholder="Pendiente"></label><label>Estreno<input type="date" data-series-field="premiereDate" value="${escapeHtml(entry.premiereDate || '')}"></label><label>Total de episodios<input type="number" min="0" data-series-field="totalEpisodes" value="${entry.totalEpisodes ?? ''}" placeholder="Pendiente"></label><label>Estado de emisión<input data-series-field="airingStatus" value="${escapeHtml(entry.airingStatus || '')}" placeholder="Pendiente"></label><label>Plataforma<input data-series-field="platform" value="${escapeHtml(entry.platform || entry.platforms?.[0] || '')}" placeholder="Pendiente de verificar"></label><label>Disponibilidad México<input data-series-field="regionalAvailability" value="${escapeHtml(entry.regionalAvailability || '')}" placeholder="Pendiente de verificar"></label></div></div><div class="tag-row"><span class="status-pill">ID permanente: ${escapeHtml(entry.id)}</span><span class="status-pill">Fuente consultada: AniList</span></div><p class="muted">Fuente: <a href="${escapeHtml(entry.sources?.[0]?.url || '#')}" target="_blank" rel="noopener noreferrer">AniList ↗</a>. Los campos regionales quedan sin verificar hasta confirmar una fuente mexicana.</p><div class="button-row"><button class="button button-primary" type="button" data-save-series="${escapeHtml(entry.id)}">Guardar en mi biblioteca</button><button class="button button-ghost" type="button" data-cancel-series>Cancelar</button></div>`;
     const sourceLink = target.querySelector('.tag-row + p.muted a');
     if (sourceLink && !safeHttpUrl(entry.sources?.[0]?.url)) sourceLink.removeAttribute('href');
@@ -277,7 +300,12 @@ export function createApp({document = globalThis.document, storage = globalThis.
 
   function renderBackupSummary() {
     const summary = elements('backupSummary');
-    if (summary) summary.textContent = `${allEntries().length} series · ${Object.keys(state.tracking).length} con seguimiento · ${state.updateMeta?.lastBackupAt ? `respaldo ${String(state.updateMeta.lastBackupAt).slice(0, 10)}` : 'sin respaldo reciente'}`;
+    if (summary) summary.textContent = `${allEntries().length} obras · ${Object.keys(state.tracking).length} con seguimiento · ${state.updateMeta?.lastBackupAt ? `respaldo ${String(state.updateMeta.lastBackupAt).slice(0, 10)}` : 'sin respaldo reciente'}`;
+    const rollback = elements('exportMigrationBackup');
+    if (rollback) {
+      try { rollback.hidden = !storage.getItem('racoon-v2-state:before-media-v1'); }
+      catch { rollback.hidden = true; }
+    }
   }
 
   function downloadFile(name, content, type) {
@@ -368,7 +396,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
       providers: {...state.updateMeta.providers, catalog: result.state.updateMeta.providers.catalog}
     }};
     if (result.status !== 'failed' && known.length) state.updateMeta.anilistCursor = (cursor + processedKnown) % known.length;
-    saveState(storage, state);
+    persist();
     setText('freshness', result.status === 'completed' ? `Fuentes actualizadas · ${new Date(now()).toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit'})}` : result.status === 'no-update' ? 'Fuentes revisadas · sin novedades' : result.status === 'partial' ? 'Consulta parcial · algunos datos conservados' : 'Fuentes sin conexión · último dato conservado');
     render();
     return result;
@@ -392,13 +420,13 @@ export function createApp({document = globalThis.document, storage = globalThis.
     if (!VIEWS.includes(viewId)) return;
     currentView = viewId;
     state = {...state, preferences: {...state.preferences, view: viewId}};
-    saveState(storage, state);
+    persist();
     render();
   }
 
   function setTracking(id, patch) {
     state = applyTrackingPatch(state, id, patch, now());
-    saveState(storage, state);
+    persist();
     render();
   }
 
@@ -448,7 +476,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
         const tracking = {...state.tracking};
         delete catalogOfficial[id]; delete catalogCustom[id]; delete tracking[id];
         state = {...state, catalogOfficial, catalogCustom, tracking};
-        saveState(storage, state);
+        persist();
         render();
         return;
       }
@@ -456,11 +484,12 @@ export function createApp({document = globalThis.document, storage = globalThis.
       if (saveSeries && selectedSeries?.id === saveSeries.dataset.saveSeries) {
         const fields = Object.fromEntries([...document.querySelectorAll?.('[data-series-field]') || []].map((field) => [field.dataset.seriesField, field.value]));
         if (!fields.title?.trim()) { renderAddStatus('Escribe un título antes de guardar.'); return; }
-        if (fields.weeklyDay !== '' && !fields.premiereDate) { renderAddStatus('Para proyectar un día semanal, indica primero una fecha de estreno.'); return; }
+        if (!isMovie(selectedSeries) && fields.weeklyDay !== '' && !fields.premiereDate) { renderAddStatus('Para proyectar un día semanal, indica primero una fecha de estreno.'); return; }
+        if (isMovie(selectedSeries) && fields.durationMinutes && !(optionalFormInteger(fields.durationMinutes) > 0)) { renderAddStatus('Escribe una duración positiva o deja el campo vacío.'); return; }
         const patternUrl = /^https?:\/\//i.test(fields.patternUrl || '') ? fields.patternUrl.trim() : null;
         if (fields.patternUrl && !patternUrl) { renderAddStatus('La fuente del patrón debe ser una URL http o https.'); return; }
         const weeklyDay = fields.weeklyDay === '' ? null : Number(fields.weeklyDay);
-        const schedule = Number.isInteger(weeklyDay) && weeklyDay >= 0 && weeklyDay < 7 ? {frequency: 'weekly', day: weeklyDay, startDate: fields.premiereDate, confidence: 'estimated'} : null;
+        const schedule = !isMovie(selectedSeries) && Number.isInteger(weeklyDay) && weeklyDay >= 0 && weeklyDay < 7 ? {frequency: 'weekly', day: weeklyDay, startDate: fields.premiereDate, confidence: 'estimated'} : null;
         const edited = {
           title: fields.title?.trim() || selectedSeries.title,
           alternativeTitles: fields.alternativeTitles?.split(',').map((value) => value.trim()).filter(Boolean) || selectedSeries.alternativeTitles || [],
@@ -469,7 +498,8 @@ export function createApp({document = globalThis.document, storage = globalThis.
           season: fields.season?.trim() || null,
           seasonYear: optionalFormInteger(fields.seasonYear),
           premiereDate: fields.premiereDate || null,
-          totalEpisodes: optionalFormInteger(fields.totalEpisodes),
+          totalEpisodes: isMovie(selectedSeries) ? null : optionalFormInteger(fields.totalEpisodes),
+          ...(isMovie(selectedSeries) ? {durationMinutes: optionalFormInteger(fields.durationMinutes), availableEpisodes: null, nextAiring: null} : {}),
           airingStatus: fields.airingStatus?.trim() || 'UNKNOWN',
           platform: fields.platform?.trim() || null,
           platforms: fields.platform?.trim() ? [fields.platform.trim()] : [],
@@ -483,9 +513,9 @@ export function createApp({document = globalThis.document, storage = globalThis.
           sources: patternUrl ? [...(selectedSeries.sources || []), {kind: 'secondary', name: 'Fuente indicada por usuario', url: patternUrl, queriedAt: new Date(now()).toISOString()}] : selectedSeries.sources || []
         };
         state = saveCatalogEntry(state, selectedSeries, edited);
-        saveState(storage, state);
+        persist();
         render();
-        renderAddStatus('Serie guardada en tu biblioteca local.');
+        renderAddStatus('Obra guardada en tu biblioteca local.');
         selectedSeries = null;
         elements('seriesConfirmation')?.classList.add('is-hidden');
         return;
@@ -499,7 +529,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const calendarDay = event.target.closest?.('[data-calendar-day]');
       if (calendarDay) {
         state.preferences.selectedDay = calendarDay.dataset.calendarDay;
-        saveState(storage, state);
+        persist();
         renderCalendar();
         return;
       }
@@ -508,7 +538,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
         const current = state.preferences.calendarWeek || mondayOf(mexicoDate(now()));
         state.preferences.calendarWeek = addDays(current, Number(goWeek.dataset.calendarWeek));
         state.preferences.selectedDay = state.preferences.calendarWeek;
-        saveState(storage, state);
+        persist();
         renderCalendar();
         return;
       }
@@ -516,6 +546,11 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const id = action.dataset.id;
       const entry = entryMap(CATALOG, state)[id];
       const tracking = normalizeTracking(state.tracking[id]);
+      if (isMovie(entry)) {
+        if (action.dataset.progressAction === 'watched') setTracking(id, {status: 'Terminada'});
+        if (action.dataset.progressAction === 'favorite') setTracking(id, {favorite: !tracking.favorite});
+        return;
+      }
       const available = availableFor(entry, tracking);
       const manualStatus = tracking.manualFields.includes('status');
       if (action.dataset.progressAction === 'plus') setTracking(id, {seen: Math.min(9999, tracking.seen + 1), ...(manualStatus ? {} : {status: 'Viendo'})});
@@ -527,6 +562,11 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const field = event.target.closest?.('[data-progress-field]');
       if (!field) return;
       const id = field.dataset.id;
+      if (field.dataset.progressField === 'watchedAt') {
+        const date = field.value;
+        if (isMovie(entryMap(CATALOG, state)[id]) && (!date || /^\d{4}-\d{2}-\d{2}$/.test(date))) setTracking(id, {watchedAt: date || null});
+        return;
+      }
       const value = field.dataset.progressField === 'status' ? field.value : field.dataset.progressField === 'seen' && field.value === '' ? 0 : optionalFormInteger(field.value);
       if (field.dataset.progressField === 'status' && !['Pendiente', 'Viendo', 'Al día', 'Terminada', 'Descartada'].includes(value)) return;
       if (field.dataset.progressField !== 'status' && field.value !== '' && value === null) return;
@@ -539,31 +579,42 @@ export function createApp({document = globalThis.document, storage = globalThis.
     const button = {dataset: {calendarWeek: '-7'}};
     state.preferences.calendarWeek = addDays(state.preferences.calendarWeek || mondayOf(mexicoDate(now())), -7);
     state.preferences.selectedDay = state.preferences.calendarWeek;
-    saveState(storage, state);
+    persist();
     renderCalendar();
   });
   elements('nextWeek')?.addEventListener?.('click', () => {
     state.preferences.calendarWeek = addDays(state.preferences.calendarWeek || mondayOf(mexicoDate(now())), 7);
     state.preferences.selectedDay = state.preferences.calendarWeek;
-    saveState(storage, state);
+    persist();
     renderCalendar();
   });
   elements('currentWeek')?.addEventListener?.('click', () => {
     const week = mondayOf(mexicoDate(now()));
     state.preferences.calendarWeek = week;
     state.preferences.selectedDay = week;
-    saveState(storage, state);
+    persist();
     renderCalendar();
   });
-  elements('calendarPlatform')?.addEventListener?.('change', (event) => { state.preferences.platform = event.target.value; saveState(storage, state); renderCalendar(); });
-  elements('calendarStatus')?.addEventListener?.('change', (event) => { state.preferences.status = event.target.value; saveState(storage, state); renderCalendar(); });
+  elements('calendarPlatform')?.addEventListener?.('change', (event) => { state.preferences.platform = event.target.value; persist(); renderCalendar(); });
+  elements('calendarStatus')?.addEventListener?.('change', (event) => { state.preferences.status = event.target.value; persist(); renderCalendar(); });
   elements('progressSearch')?.addEventListener?.('input', () => renderProgress());
   elements('progressFilter')?.addEventListener?.('change', () => renderProgress());
-  elements('progressSort')?.addEventListener?.('change', (event) => { state.preferences.sort = event.target.value; saveState(storage, state); renderProgress(); });
+  elements('progressSort')?.addEventListener?.('change', (event) => { state.preferences.sort = event.target.value; persist(); renderProgress(); });
   elements('createManualSeries')?.addEventListener?.('click', () => {
     selectedSeries = {id: createCustomId(), title: '', mediaKind: 'series', sources: [], airingStatus: 'UNKNOWN', totalEpisodes: null, availableEpisodes: null};
     renderSeriesConfirmation(selectedSeries);
     renderAddStatus('Ficha manual: completa al menos el título. Los datos sin fuente seguirán sin verificar.');
+  });
+  elements('createManualMovie')?.addEventListener?.('click', () => {
+    selectedSeries = {id: createCustomId(), title: '', mediaKind: 'movie', sources: []};
+    renderSeriesConfirmation(selectedSeries);
+    renderAddStatus('Película manual: agrega el título; duración y estreno son opcionales.');
+  });
+  elements('exportMigrationBackup')?.addEventListener?.('click', () => {
+    try {
+      const previous = storage.getItem('racoon-v2-state:before-media-v1');
+      if (previous) downloadFile('racoon-antes-v3.json', previous, 'application/json');
+    } catch { setText('saveWarning', 'No se pudo leer el respaldo previo.'); }
   });
   elements('searchForm')?.addEventListener?.('submit', async (event) => {
     event.preventDefault();
@@ -596,7 +647,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   elements('exportBackup')?.addEventListener?.('click', () => {
     const exportedAt = new Date(now()).toISOString();
     state = {...state, updateMeta: {...state.updateMeta, lastBackupAt: exportedAt}};
-    saveState(storage, state);
+    persist();
     downloadFile('racoon-respaldo.json', JSON.stringify(createBackup(state, exportedAt), null, 2), 'application/json;charset=utf-8');
     renderBackupSummary();
   });
@@ -609,7 +660,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
       pendingImport = parseBackup(JSON.parse(await file.text()));
       pendingImport.conflicts = Object.keys(pendingImport.state.tracking).filter((id) => state.tracking[id]);
       const details = elements('importDetails');
-      if (details) details.innerHTML = `<p class="muted">Respaldo: ${escapeHtml(pendingImport.exportedAt || 'sin fecha')} · ${pendingImport.counts.series} series · ${pendingImport.counts.tracking} seguimientos · ${pendingImport.invalidRecords} registros inválidos · ${pendingImport.conflicts.length} progresos ya existentes.</p>${pendingImport.invalidRecords ? '<p class="error-state">Hay identificadores inválidos. No se importará este archivo.</p>' : ''}`;
+      if (details) details.innerHTML = `<p class="muted">Respaldo: ${escapeHtml(pendingImport.exportedAt || 'sin fecha')} · ${pendingImport.counts.series} obras · ${pendingImport.counts.tracking} seguimientos · ${pendingImport.invalidRecords} registros inválidos · ${pendingImport.conflicts.length} progresos ya existentes.</p>${pendingImport.invalidRecords ? '<p class="error-state">Hay identificadores inválidos. No se importará este archivo.</p>' : ''}`;
       elements('mergeImport').disabled = !pendingImport.valid;
       elements('replaceImport').disabled = !pendingImport.valid;
       elements('importDialog')?.showModal?.();
@@ -619,7 +670,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   elements('mergeImport')?.addEventListener?.('click', () => {
     if (!pendingImport || !globalThis.confirm?.('¿Fusionar este respaldo con tu biblioteca actual?')) return;
     state = mergeBackup(state, pendingImport);
-    saveState(storage, state);
+    persist();
     elements('importDialog')?.close?.();
     pendingImport = null;
     render();
@@ -627,7 +678,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   elements('replaceImport')?.addEventListener?.('click', () => {
     if (!pendingImport || !globalThis.confirm?.('¿Reemplazar toda tu biblioteca? Esta acción requiere un respaldo para deshacerla.')) return;
     state = replaceWithBackup(pendingImport);
-    saveState(storage, state);
+    persist();
     elements('importDialog')?.close?.();
     pendingImport = null;
     render();

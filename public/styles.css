@@ -197,3 +197,5 @@ h1 em { color: var(--lilac); font-style: normal; }
   .footer { align-items: flex-start; flex-direction: column; }
   .progress-edit-grid, .form-grid { grid-template-columns: 1fr; }
 }
+
+.movie-progress { grid-template-columns: 1fr; max-width: 280px; }
