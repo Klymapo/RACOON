@@ -1,3 +1,7 @@
+import {validDay} from './ratings.mjs';
+import {mountShareCards,shareButton} from './share-ui.mjs';
+import {mountWrap} from './wrap-ui.mjs';
+import {mountOcr} from './ocr-ui.mjs';
 import {renderRecommendations,renderRatingsPanel,renderRatingSummary,mountDiscovery} from './discovery-ui.mjs';
 import {registerTableImporter} from './table-import-ui.mjs';
 import {CATALOG} from './catalog.mjs';
@@ -21,7 +25,7 @@ import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} f
 import {shouldRefresh, refreshCatalog, mergeCatalogObservation, FOUR_HOURS} from './refresh.mjs';
 import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '3.0.0-alpha.14';
+const RACOON_VERSION = '3.0.0-alpha.17';
 const VIEWS = ['home', 'calendar', 'progress', 'add', 'backups'];
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -266,7 +270,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
     if (!entry) { closeDetail(); detailId = null; return; }
     const target = elements('workDetailContent');
     if (!target) return;
-    const markup = renderWorkDetail(entry, normalizeTracking(state.tracking[detailId]), {folderContent: renderFolderChoices(state, detailId), seasonContent: renderSeasonGrouping(state, detailId)}) + renderRegionalPanel(state, entry, mexicoDate(now())) + renderRatingsPanel(state, entry, mexicoDate(now()));
+    const markup = renderWorkDetail(entry, normalizeTracking(state.tracking[detailId]), {folderContent: renderFolderChoices(state, detailId), seasonContent: renderSeasonGrouping(state, detailId)}) + renderRegionalPanel(state, entry, mexicoDate(now())) + renderRatingsPanel(state, entry, mexicoDate(now())) + shareButton(entry.id);
     if (elements('workDetail')?.open && target.dataset.detailId === detailId && target.dataset.detailKind === entry.mediaKind) {
       // Keep live form nodes: replacing them on blur can swallow the click on
       // the next button before mouseup (for example, edit count then favorite).
@@ -724,7 +728,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const id = field.dataset.id;
       if (field.dataset.progressField === 'watchedAt') {
         const date = field.value;
-        if (isMovie(entryMap(CATALOG, state)[id]) && (!date || /^\d{4}-\d{2}-\d{2}$/.test(date))) setTracking(id, {watchedAt: date || null});
+        if (entryMap(CATALOG, state)[id] && (!date || validDay(date))) setTracking(id, {watchedAt: date || null});
         return;
       }
       const value = field.dataset.progressField === 'status' ? field.value : field.dataset.progressField === 'seen' && field.value === '' ? 0 : optionalFormInteger(field.value);
@@ -855,6 +859,10 @@ export function createApp({document = globalThis.document, storage = globalThis.
     render();
   });
   elements('cancelImport')?.addEventListener?.('click', () => elements('importDialog')?.close?.());
+  const commitVerified = candidate => { if (!saveState(storage, candidate)) return false; state = validateState(candidate); render(); return true; };
+  const shareCards = mountShareCards({document, getState: () => state, today: () => mexicoDate(now())});
+  mountWrap({document, getState: () => state, commitState: commitVerified, share: shareCards, today: () => mexicoDate(now()), now});
+  mountOcr({document, getState: () => state, commitState: commitVerified, share: shareCards, fetch, now});
   const commitLocal = candidate => { state = validateState(candidate); const saved = persist(); render(); return saved; };
   mountDiscovery({document, storage, download: downloadFile, getState: () => state, commitState: candidate => { if (!saveState(storage, candidate)) return false; state = validateState(candidate); render(); return true; }, now});
   mountRegionalControls({document, getState: () => state, commitState: commitLocal, now});

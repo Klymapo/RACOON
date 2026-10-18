@@ -1,3 +1,4 @@
+import {normalizeWrapData} from './wrap.mjs';
 import {normalizeSocialData} from './ratings.mjs';
 import {STATUS_VALUES} from './model.mjs';
 import {synchronizeMediaLibrary} from './media.mjs';
@@ -61,6 +62,7 @@ export function createDefaultState(catalog = []) {
     regionData: normalizeRegionData(),
     sliceData: normalizeSliceData(),
     socialData: normalizeSocialData(),
+    wrapData: normalizeWrapData(),
     preferences: {view: 'home', calendarWeek: null, selectedDay: null, platform: 'all', status: 'all', sort: 'title'},
     sourceCache: {},
     updateMeta: {lastChecked: 0, providers: {}}
@@ -81,6 +83,7 @@ export function validateState(value) {
   state.regionData = normalizeRegionData(input.regionData);
   state.sliceData = normalizeSliceData(input.sliceData);
   state.socialData = normalizeSocialData(input.socialData);
+  state.wrapData = normalizeWrapData(input.wrapData);
   for (const [id, raw] of Object.entries(objectOrEmpty(input.tracking))) state.tracking[id] = cleanTrackingEntry(raw);
   return synchronizeMediaLibrary(state);
 }

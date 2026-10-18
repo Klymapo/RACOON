@@ -7,7 +7,7 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 - Base de producción: v2.2.1, merge `a0be814`, 13 de octubre de 2026.
 - Primera entrega v3: `3.0.0-alpha.1`, rama `codex/racoon-v3-01-navigation`.
-- Estado de trabajo actual: `3.0.0-alpha.14`, catorce incrementos acumulados en el mismo
+- Estado de trabajo actual: `3.0.0-alpha.17`, diecisiete incrementos acumulados en el mismo
   PR #2. Producción continúa en v2.2.1, sin fusionar ni desplegar estas entregas.
 - Alcance: Inicio, Agenda, Biblioteca, Explorar, Ajustes; barra inferior fija móvil,
   banner exclusivo de Inicio y navegación accesible por teclado.
@@ -18,14 +18,14 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 ## Próximos incrementos
 
-1. Tarjetas para compartir, WRAP y OCR revisable; mascota e iconos.
+1. Identidad vectorial definitiva del mapache e iconos v3.
 2. Independencia de la cuota localStorage para IndexedDB y aceptación Android.
 3. Proveedor automático regional gratuito, conservando evidencia manual y suscripciones.
 
 El orden puede ajustarse con Admin. No prometer fuentes regionales detalladas
 antes de verificar que ofrecen los datos y permiten su uso gratuito.
 
-Conteo: 14 incrementos implementados; 6 bloques con trabajo restante, desglosados
+Conteo: 17 incrementos implementados; 3 bloques con trabajo restante, desglosados
 en [ROADMAP_V3.md](ROADMAP_V3.md). No equivalen a 13 entregas garantizadas.
 
 ## Registro de cambios
@@ -292,3 +292,26 @@ Réplica a Gaston completada y verificada: maestro 1BaFvQhV8LTm6aFFeGFjsjoKariId
   réplica del registro final sin borrar antecedentes.
 
 Réplica final 12–14 en Gaston completada y leída de vuelta: estado alpha.14, resumen ejecutivo y registro histórico actualizados con protección de revisión concurrente; antecedentes conservados. El maestro confirma catorce incrementos, seis bloques restantes y CI 39141291923 (180 Node + cinco E2E). https://github.com/Klymapo/RACOON/actions/runs/39141291923
+
+### 2026-10-18 — Argos/Codex — entregas 15–17, alpha.17
+
+- Admin autorizó continuar con tres bloques. Tarjetas PNG 1080×1080/1080×1920,
+  opciones privadas desactivadas por defecto, compartir nativo o descarga;
+  atribución de fuentes y protección contra lienzos viejos de fichas retiradas.
+- WRAP mensual/anual/bajo demanda con fechas explícitas, notas actuales,
+  géneros/formatos, comparación pública y recomendaciones. Sin horas ni récords
+  inventados. Fecha opcional de visionado también en temporadas/series;
+  instantáneas JSON/IDB para comparar registros reales.
+- OCR local real Tesseract.js 6.0.1/core 6.0.0, modelos eng/spa libres y
+  autoalojados. Texto corregible, búsqueda local o consulta textual explícita,
+  candidato confirmado y seguimiento existente preservado. Imágenes/fotogramas
+  solo en memoria, sin envío ni respaldo de originales. Preparación offline
+  optativa (~22 MB) sin aumentar el shell; versiones exactas y lock npm.
+- Revisión independiente: corregidas respuestas tardías OCR/búsqueda, privacidad
+  de tarjeta WRAP y texto sobre fechas futuras. Regresiones observadas fallar y
+  pasar. Fixture WebM propio generado para lectura real de fotogramas.
+- Validación local: 189 pruebas Node; seis E2E Chromium aprobados (general, IDB,
+  colecciones, región/Agenda/Slice, descubrimiento y tarjetas/WRAP/OCR). La nueva
+  prueba verifica OCR real sin tráfico externo, envío exclusivo de texto elegido,
+  PNG, confirmación, duplicados, cancelación, geometría, JSON/IDB y OCR offline.
+- Producción v2.2.1; sin fusión ni despliegue. Se prepara CI y réplica Gaston final.

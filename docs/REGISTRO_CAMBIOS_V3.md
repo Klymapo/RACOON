@@ -57,3 +57,16 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 - Roadmap/maestro: catorce incrementos, seis bloques restantes (dos parciales).
   Sin fusión ni despliegue. Lectura Gaston realizada para preparar réplica final.
 - Réplica Gaston escrita con revisión protegida y verificada mediante lectura posterior: estado alpha.14, resumen y registro 12–14, sin borrar antecedentes. https://github.com/Klymapo/RACOON/actions/runs/39141291923
+
+## 2026-10-18 — Argos — entregas 15–17, alpha.17
+
+- Tarjetas PNG cuadradas/verticales, compartir/descargar y campos privados optativos.
+- WRAP por periodo con fechas explícitas e instantáneas; fecha opcional en series
+  sin inferir avance ni actividad. Respaldo/fusión JSON y espejo IDB preservados.
+- OCR local real de imágenes/video, revisión textual y candidatos confirmables.
+  Motor/modelos autoalojados, licencias libres, npm lock e integridad; caché
+  offline optativa. Los originales no se envían ni se guardan.
+- Revisión independiente corregida y regresiones de privacidad/resultados tardíos.
+  189 pruebas Node y seis E2E Chromium locales aprobados; CI por registrar.
+- Maestro/roadmap/plan actualizados: 17 incrementos y tres bloques restantes.
+  Sin fusión ni publicación. Se preparó el registro para réplica final en Gaston.

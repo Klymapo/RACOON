@@ -1,0 +1,6 @@
+# Recursos reproducibles generados por scripts/prepare-ocr-assets.mjs
+/public/vendor/ocr/
+/scripts/ocr-deps/node_modules/
+
+# Capturas de comprobación reproducibles, no archivos del usuario
+/artifacts/qa/*.png

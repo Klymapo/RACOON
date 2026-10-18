@@ -1,4 +1,4 @@
 {
- "version":"3.0.0-alpha.14",
- "changes":["Recomendaciones locales explicables", "Ratings: nota personal, fuente pública y Racoonómetro independientes", "Letterboxd: CSV revisable, respaldo previo y enlaces externos"]
+ "version":"3.0.0-alpha.17",
+ "changes":["Tarjetas PNG cuadradas y verticales con datos seleccionables", "WRAP local por periodo e instantáneas para comparar registros", "OCR local de capturas y fotogramas, texto corregible y confirmación antes de guardar"]
 }

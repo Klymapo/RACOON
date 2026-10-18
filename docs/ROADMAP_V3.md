@@ -22,8 +22,11 @@ sin Functions, D1 ni servicios de pago.
 | 12 | Recomendaciones locales explicables, diversidad y afinidad cualitativa | integrada en alpha.14 |
 | 13 | Ratings: fuente pública, nota personal y Racoonómetro independientes | integrada en alpha.14 |
 | 14 | Letterboxd: intercambio CSV revisable y enlaces externos | alpha.14 |
+| 15 | Tarjetas PNG cuadradas/verticales y menú Compartir | integrada en alpha.17 |
+| 16 | WRAP local por periodo e instantáneas de registros | integrada en alpha.17 |
+| 17 | OCR local de imágenes/fotogramas, corrección y confirmación | alpha.17 |
 
-## Pendiente: 6 bloques con trabajo restante
+## Pendiente: 3 bloques con trabajo restante
 
 Esta es una agrupación para contar el alcance pendiente, no una promesa de 13
 entregas. Cada bloque puede dividirse en varias entregas con pruebas. El modelo
@@ -34,9 +37,6 @@ nota numérica tampoco equivale a completar Ratings.
 | --- | --- |
 | 1 | Transición reversible implementada; falta independencia de cuota localStorage y aceptación Android físico |
 | 3 | Evidencia y suscripciones manuales implementadas; falta proveedor automático gratuito validado |
-| 9 | Tarjetas para compartir |
-| 10 | WRAP |
-| 11 | OCR con revisión antes de guardar |
 | 12 | Nueva mascota e iconos |
 
 Después del alcance funcional: revisión integral, aceptación en Android físico
@@ -140,3 +140,39 @@ Revisión independiente identificó compatibilidad de género/año y costo de
 normalizar carpetas por candidato; corregidos con regresiones. 180 pruebas Node
 y cinco E2E Chromium aprobados en CI 39141291923 (49fe9ef). Sin fusión ni
 publicación. Permanecen seis bloques (cuatro abiertos y dos parciales).
+
+## Entregas 15–17, 18 de octubre de 2026 — alpha.17
+
+Tarjetas PNG exactas de 1080×1080 y 1080×1920, vista previa, selección explícita
+de nota personal/seguimiento/nota pública, atribución de fuentes y descarga o
+menú Compartir cuando admite archivos. Cancelar menú no descarga por sorpresa.
+Sin carteles remotos; la tarjeta es tipográfica con marca RACOON. Una ficha
+retirada no puede exportar un lienzo privado anterior.
+
+WRAP por mes/año/bajo demanda: géneros de favoritas o notas ≥7, formatos, notas
+actuales, comparación pública con fuente y recomendaciones locales explicables.
+Humor solo si tres obras distintas sostienen el patrón. Deduplicación por obra.
+Mes/año usan únicamente fechas explícitas de visionado, nunca changedAt; las
+fechas ausentes/futuras se explican. En la ficha de temporada/serie se puede
+registrar esa fecha opcional sin alterar progreso ni inferir un visionado.
+Instantáneas voluntarias en JSON/IDB permiten comparar registros guardados, sin
+reconstruir gustos ni actividad pasada. Tarjeta WRAP omite detalles privados por defecto.
+
+OCR Tesseract real autoalojado: imagen local o fotograma de video, modelos eng/spa,
+texto corregible, consultas propuestas, búsqueda local o por texto en AniList
+solo al pulsar, candidatos y confirmación de estado/nota/favorito/carpeta. No
+se envían ni persisten imágenes originales, ni se interpreta OCR como identidad
+segura. Vincular fichas existentes conserva todo su seguimiento. Capturas
+PNG/JPEG/WebP ≤12 MB y 4096 px/lado; video compatible ≤100 MB. Motor/modelos
+bajo demanda (~22 MB), preparación offline optativa y separada del shell PWA.
+Sin identificación visual universal ni envío de fotogramas a otra API; si no hay
+texto útil se ofrece corrección o ficha manual. Assets reproducibles con lock e
+integridad npm; véase OCR_LOCAL.md. No se instala nada en el equipo del propietario.
+
+Revisión independiente corregida: cancelación de resultados tardíos al cambiar
+fotograma/selección, privacidad de tarjeta WRAP y claridad de fechas futuras.
+También se protege exportación tras retirar una ficha. Validación local: 189
+pruebas Node y seis flujos Chromium (incluido OCR real de imagen/video y offline);
+CI y réplica final se registran al cerrar la entrega. Sin fusión ni publicación.
+Quedan tres bloques con trabajo: identidad vectorial final y dos parciales
+(almacenamiento independiente de cuota/Android y proveedor regional automático).
