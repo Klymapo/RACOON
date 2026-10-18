@@ -1,3 +1,4 @@
+import {mergeSocialData} from './ratings.mjs';
 import {migrateLegacyTrack, validateState} from './storage.mjs';
 import {isMovie} from './media.mjs';
 import {mergeCollections, foldersForWork} from './folders.mjs';
@@ -35,7 +36,7 @@ function countState(state) {
 function sanitizeState(state) {
   const clean = validateState(state);
   const invalid = [];
-  for (const [group, layer] of [['regionData','offers'], ['regionData','subscriptions'], ['sliceData','records']]) {
+  for (const [group, layer] of [['regionData','offers'], ['regionData','subscriptions'], ['sliceData','records'], ['socialData','public'], ['socialData','links']]) {
     for (const id of Object.keys(objectOrEmpty(state?.[group]?.[layer]))) {
       if (!Object.hasOwn(clean[group][layer], id)) invalid.push(`${group}:${id}`);
     }
@@ -68,6 +69,7 @@ export function createBackup(state, exportedAt = new Date().toISOString()) {
     smartCollections: clone(clean.smartCollections),
     regionData: clone(clean.regionData),
     sliceData: clone(clean.sliceData),
+    socialData: clone(clean.socialData),
     preferences: clone(clean.preferences),
     sourceCache: clone(clean.sourceCache),
     updateMeta: clone(clean.updateMeta)
@@ -107,6 +109,7 @@ export function mergeBackup(current, incoming) {
   base.smartCollections = mergeSmartCollections(base.smartCollections, next.smartCollections);
   base.regionData = mergeRegionData(base.regionData, next.regionData);
   base.sliceData = mergeSliceData(base.sliceData, next.sliceData);
+  base.socialData = mergeSocialData(base.socialData, next.socialData);
   base.catalogOfficial = {...base.catalogOfficial, ...next.catalogOfficial};
   base.catalogCustom = {...base.catalogCustom, ...next.catalogCustom};
   const seasonIds = new Map(Object.entries(next.mediaLibrary.catalogLinks).filter(([id, link]) => link.seasonId && localLinks[id]?.seasonId).map(([id, link]) => [link.seasonId, localLinks[id].seasonId]));

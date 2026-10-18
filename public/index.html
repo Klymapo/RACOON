@@ -36,6 +36,7 @@
       <p id="saveWarning" role="status" class="inline-status" hidden></p>
       <div id="liveRegion" class="sr-only" aria-live="polite"></div>
       <section id="homeView" class="view-panel" role="tabpanel" aria-labelledby="homeTab">
+        <article class="panel-card" id="recommendations"></article>
         <section class="hero-card" aria-labelledby="heroTitle">
           <div class="hero-copy">
             <p class="eyebrow">✦ Tu radar personal · CDMX</p>
@@ -86,6 +87,10 @@
             <div class="button-row"><button id="tablePrevious" class="button button-soft" type="button">Página anterior</button><button id="tableNext" class="button button-soft" type="button">Página siguiente</button></div><div class="button-row"><button id="applyTableImport" class="button button-primary" type="button" disabled>Importar seleccionadas</button><button id="cancelTableImport" class="button button-soft" type="button">Cancelar</button></div>
           </div><p id="tableStatusMessage" role="status" class="inline-status"></p><button id="exportTableRollback" class="button button-soft" type="button" hidden>↓ Respaldo previo a la última importación</button>
         </article>
+        <article class="panel-card"><h3>Letterboxd · intercambio local</h3><p>Importa un CSV de tu cuenta (hasta 1 MB) y revisa las filas antes de guardar. No conecta tu cuenta ni copia reseñas. Para CSV de un ZIP, extrae primero el archivo.</p>
+<label>Tipo de archivo<select id="letterboxdKind"><option value="ratings">Notas (no infiere vistas)</option><option value="watched">Películas vistas</option><option value="diary">Diario</option><option value="watchlist">Watchlist</option></select></label><label>CSV Letterboxd<input id="letterboxdFile" type="file" accept=".csv,text/csv"></label>
+<div id="letterboxdOptions" hidden><p>Las coincidencias se omiten por defecto. Vincular conserva estado, avance y favoritos. Solo WatchedDate es una fecha de visionado.</p><label><input id="letterboxdOverwrite" type="checkbox"> Reemplazar notas personales existentes en filas vinculadas</label><div class="table-import-scroll" tabindex="0" aria-label="Vista previa Letterboxd"><table><thead><tr><th>Fila</th><th>Película y revisión</th><th>Acción</th></tr></thead><tbody id="letterboxdRows"></tbody></table></div><div class="button-row"><button type="button" class="button button-soft" id="letterboxdPrevious">Anterior</button><button type="button" class="button button-soft" id="letterboxdNext">Siguiente</button><button type="button" class="button button-primary" id="letterboxdApply">Importar seleccionadas</button><button type="button" class="button button-soft" id="letterboxdCancel">Cancelar</button></div></div>
+<p>Exporta vistas al perfil y pendientes a la watchlist por separado. Solo películas. Letterboxd admite notas enteras de 1 a 10: cero y decimales se omiten, sin redondearlos. El respaldo JSON conserva todo.</p><div class="button-row"><button type="button" class="button button-soft" id="letterboxdExport-watched">↓ Vistas CSV</button><button type="button" class="button button-soft" id="letterboxdExport-watchlist">↓ Watchlist CSV</button><button type="button" class="button button-soft" id="letterboxdRollback" hidden>↓ Respaldo previo a Letterboxd</button></div><p id="letterboxdStatus" role="status"></p></article>
         <article class="panel-card danger-safe"><h3>Antes de restaurar</h3><p class="muted">Verás una vista previa con cantidades y conflictos. Fusionar conserva lo más reciente; reemplazar pide confirmación antes de sobrescribir.</p><div id="backupPreview" class="inline-status"></div></article>
       </section>
     </main>

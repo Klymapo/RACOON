@@ -256,3 +256,5 @@ h1 em { color: var(--lilac); font-style: normal; }
 .slice-gesture-area { touch-action:none; min-height:140px; padding:18px; border:1px solid var(--line); border-radius:14px; margin:12px 0; overflow-wrap:anywhere; }
 .slice-gesture-area:focus-visible { outline:3px solid var(--lilac); }
 #slicePanel .button-row { flex-wrap:wrap; }
+
+.discovery-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:1rem}.discovery-card{border:1px solid var(--border,#ccc);border-radius:1rem;padding:1rem;overflow-wrap:anywhere}.racoon-meter{position:relative;height:22px;border-radius:8px;background:linear-gradient(to right,#ad4958 0% 30%,#bc8244 30% 50%,#888b99 50% 70%,#3d947a 70% 85%,#665ac6 85% 100%);max-width:100%;margin-top:1rem}.racoon-meter span{position:absolute;transform:translateX(-50%);top:-17px;color:currentColor}[data-ratings-id] form{margin-block:1rem}[data-ratings-id] input{max-width:100%}[data-ratings-id] label{display:grid;gap:.35rem;margin-block:.5rem}[data-ratings-id] label:has([type=checkbox]){display:block}

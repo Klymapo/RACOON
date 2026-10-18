@@ -1,9 +1,9 @@
-const VERSION = '3.0.0-alpha.11';
+const VERSION = '3.0.0-alpha.14';
 const CACHE = `racoon-wizard-${VERSION}`;
 const ASSETS = ['/', '/index.html', '/styles.css', '/manifest.webmanifest', '/version.json', '/icons/racoon-wizard.svg', '/icons/racoon-wizard-192.png', '/icons/racoon-wizard-512.png', '/js/app.mjs', '/js/table-reader.mjs', '/js/table-import.mjs', '/js/table-import-ui.mjs', '/js/model.mjs', '/js/media.mjs', '/js/season-ui.mjs', '/js/movie-ui.mjs', '/js/detail-ui.mjs', '/js/folders.mjs', '/js/folder-ui.mjs', '/js/time.mjs', '/js/evidence.mjs', '/js/schedule.mjs', '/js/storage.mjs', '/js/indexeddb.mjs', '/js/indexeddb-ui.mjs', '/js/backup.mjs', '/js/catalog.mjs', '/js/pwa.mjs', '/js/refresh.mjs', '/js/providers/anilist.mjs'];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([...ASSETS, '/js/storage-runtime.mjs', '/js/storage-runtime-ui.mjs', '/js/smart-collections.mjs', '/js/smart-ui.mjs', '/js/regional.mjs', '/js/regional-ui.mjs', '/js/agenda.mjs', '/js/slice.mjs', '/js/slice-ui.mjs'])));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([...ASSETS, '/js/storage-runtime.mjs', '/js/storage-runtime-ui.mjs', '/js/smart-collections.mjs', '/js/smart-ui.mjs', '/js/regional.mjs', '/js/regional-ui.mjs', '/js/agenda.mjs', '/js/slice.mjs', '/js/slice-ui.mjs', '/js/recommendations.mjs', '/js/ratings.mjs', '/js/letterboxd.mjs', '/js/discovery-ui.mjs'])));
 });
 
 self.addEventListener('activate', (event) => {

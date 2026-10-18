@@ -1,3 +1,4 @@
+import {renderRecommendations,renderRatingsPanel,renderRatingSummary,mountDiscovery} from './discovery-ui.mjs';
 import {registerTableImporter} from './table-import-ui.mjs';
 import {CATALOG} from './catalog.mjs';
 import {createDefaultState, loadState, saveState, validateState} from './storage.mjs';
@@ -20,7 +21,7 @@ import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} f
 import {shouldRefresh, refreshCatalog, mergeCatalogObservation, FOUR_HOURS} from './refresh.mjs';
 import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '3.0.0-alpha.11';
+const RACOON_VERSION = '3.0.0-alpha.14';
 const VIEWS = ['home', 'calendar', 'progress', 'add', 'backups'];
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -211,6 +212,8 @@ export function createApp({document = globalThis.document, storage = globalThis.
   }
 
   function renderHome() {
+    const discovery = elements('recommendations');
+    if (discovery) discovery.innerHTML = renderRecommendations(state, mexicoDate(now()));
     const model = buildDashboardModel(CATALOG, state, mexicoDate(now()));
     const stats = elements('homeStats');
     if (stats) stats.innerHTML = [
@@ -263,7 +266,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
     if (!entry) { closeDetail(); detailId = null; return; }
     const target = elements('workDetailContent');
     if (!target) return;
-    const markup = renderWorkDetail(entry, normalizeTracking(state.tracking[detailId]), {folderContent: renderFolderChoices(state, detailId), seasonContent: renderSeasonGrouping(state, detailId)}) + renderRegionalPanel(state, entry, mexicoDate(now()));
+    const markup = renderWorkDetail(entry, normalizeTracking(state.tracking[detailId]), {folderContent: renderFolderChoices(state, detailId), seasonContent: renderSeasonGrouping(state, detailId)}) + renderRegionalPanel(state, entry, mexicoDate(now())) + renderRatingsPanel(state, entry, mexicoDate(now()));
     if (elements('workDetail')?.open && target.dataset.detailId === detailId && target.dataset.detailKind === entry.mediaKind) {
       // Keep live form nodes: replacing them on blur can swallow the click on
       // the next button before mouseup (for example, edit count then favorite).
@@ -292,6 +295,8 @@ export function createApp({document = globalThis.document, storage = globalThis.
         else choices.innerHTML = nextChoices.innerHTML;
       }
       const seasons = target.querySelector('[data-detail-seasons]');
+      const ratings = target.querySelector('[data-ratings-summary]');
+      if (ratings) ratings.innerHTML = renderRatingSummary(state, detailId, mexicoDate(now()));
       const regional = target.querySelector('[data-regional-results]');
       if (regional) regional.innerHTML = renderRegionalResults(state, detailId, mexicoDate(now()));
       const nextSeasons = fresh.querySelector('[data-detail-seasons]');
@@ -851,6 +856,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   });
   elements('cancelImport')?.addEventListener?.('click', () => elements('importDialog')?.close?.());
   const commitLocal = candidate => { state = validateState(candidate); const saved = persist(); render(); return saved; };
+  mountDiscovery({document, storage, download: downloadFile, getState: () => state, commitState: candidate => { if (!saveState(storage, candidate)) return false; state = validateState(candidate); render(); return true; }, now});
   mountRegionalControls({document, getState: () => state, commitState: commitLocal, now});
   sliceController = mountSlice({document, getState: () => state, commitState: commitLocal, now});
   mountSmartCollectionManager({document, getState: () => state, commitState: commitLocal, now});
