@@ -27,6 +27,15 @@ await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const port = server.address().port;
 const browser = await playwright.chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH || playwright.chromium.executablePath(), args: ['--no-sandbox']});
 const media = {id: 987654, type: 'ANIME', format: 'TV', season: 'FALL', seasonYear: 2026, title: {english: 'Coherence Show', romaji: 'Coherence Show'}, synonyms: [], description: 'Prueba de integración', genres: ['Fantasy'], episodes: 12, status: 'RELEASING', coverImage: {large: null}, startDate: {year: 2026, month: 10, day: 10}, nextAiringEpisode: {episode: 2, airingAt: Date.parse('2026-10-17T02:00:00Z') / 1000}, siteUrl: 'https://anilist.co/anime/987654'};
+async function openDetail(page, id) {
+  await page.locator(`[data-library-id="${id}"] [data-open-detail]`).click();
+  await page.locator('#workDetail').waitFor({state: 'visible'});
+  return page.locator('#workDetail');
+}
+async function closeDetail(page) {
+  await page.locator('#workDetail [data-close-detail]').click();
+  await page.locator('#workDetail').waitFor({state: 'hidden'});
+}
 try {
   const context = await browser.newContext({viewport: {width: 390, height: 844}, acceptDownloads: true, serviceWorkers: 'allow'});
   const page = await context.newPage();
@@ -81,10 +90,34 @@ try {
   await page.locator('[data-view="progress"]').click();
   const card = page.locator('[data-library-id="anilist:987654"]');
   await card.waitFor();
-  await card.locator('[data-progress-action="favorite"]').click();
-  await card.locator('[data-progress-action="plus"]').click();
+  assert.equal(await card.locator('input, select, [data-progress-action]').count(), 0);
+  const detail = await openDetail(page, 'anilist:987654');
+  await detail.locator('[data-progress-field="availableOverride"]').fill('4');
+  await detail.locator('[data-progress-action="favorite"]').click();
+  await detail.locator('[data-progress-action="plus"]').click();
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.progressAction), 'plus');
+  assert.match(await detail.locator('[data-detail-summary]').innerText(), /1 vistos/);
+  for (const width of [320, 390, 800, 1440]) {
+    await page.setViewportSize({width, height: 844});
+    const bounds = await detail.boundingBox();
+    assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width + 1, `detail fits width ${width}`);
+    assert.ok(bounds.y >= 0 && bounds.y + bounds.height <= 845, `detail fits height at ${width}: ${JSON.stringify(bounds)}`);
+    assert.equal(await detail.evaluate(node => node.scrollWidth > node.clientWidth), false);
+  }
+  await page.setViewportSize({width: 390, height: 844});
+
+  await page.screenshot({path: 'artifacts/qa/racoon-v3-03-series-detail-mobile.png'});
+  await page.setViewportSize({width: 1440, height: 1000});
+  await page.screenshot({path: 'artifacts/qa/racoon-v3-03-series-detail-desktop.png'});
+  await page.setViewportSize({width: 390, height: 844});
+  await page.keyboard.press('Escape');
+  await page.locator('#workDetail').waitFor({state: 'hidden'});
+  await page.waitForFunction(() => document.activeElement?.dataset.openDetail === 'anilist:987654');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.openDetail), 'anilist:987654');
   await page.locator('#progressFilter').selectOption('favorites');
   assert.equal(await page.locator('[data-library-id="anilist:987654"]').count(), 1);
+  await page.evaluate(() => scrollTo({top: 0, behavior: 'instant'}));
+  await page.screenshot({path: 'artifacts/qa/racoon-v3-03-library-mobile.png'});
   await page.locator('#progressFilter').selectOption('all');
   await page.locator('[data-view="calendar"]').click();
   const next = page.locator('#nextWeek');
@@ -110,7 +143,9 @@ try {
   assert.equal(JSON.parse(backup).tracking['anilist:987654'].favorite, true);
   assert.match(await page.locator('#backupSummary').innerText(), /respaldo \d{4}-\d{2}-\d{2}/);
   await page.locator('[data-view="progress"]').click();
-  await page.locator('[data-library-id="anilist:987654"] [data-progress-action="minus"]').click();
+  await openDetail(page, 'anilist:987654');
+  await page.locator('#workDetail [data-progress-action="minus"]').click();
+  await closeDetail(page);
   await page.locator('[data-view="backups"]').click();
   page.once('dialog', (dialog) => dialog.accept());
   await page.locator('#backupFile').setInputFiles({name: 'racoon-backup.json', mimeType: 'application/json', buffer: backup});
@@ -128,7 +163,8 @@ try {
   await page.locator('[data-save-series]').click();
   const customId = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('racoon-v2-state')).catalogCustom)[0]);
   await page.locator('[data-view="progress"]').click();
-  await page.locator(`[data-library-id="${customId}"] [data-series-edit]`).click();
+  await openDetail(page, customId);
+  await page.locator('#workDetail [data-series-edit]').click();
   await page.locator('[data-series-field="title"]').fill('Manual Continuity Edited');
   await page.locator('[data-save-series]').click();
   await page.reload();
@@ -168,8 +204,9 @@ try {
   await page.locator('[data-view="progress"]').click();
   assert.match(await page.locator('[data-library-id="anilist:987654"]').innerText(), /1 vistos/);
   await context.setOffline(false);
+  await openDetail(page, customId);
   page.once('dialog', (dialog) => dialog.accept());
-  await page.locator(`[data-library-id="${customId}"] [data-series-delete]`).click();
+  await page.locator('#workDetail [data-series-delete]').click();
   assert.equal(await page.locator(`[data-library-id="${customId}"]`).count(), 0);
   assert.deepEqual(errors, []);
   const movieContext = await browser.newContext({viewport: {width: 390, height: 844}, acceptDownloads: true, serviceWorkers: 'allow'});
@@ -196,18 +233,21 @@ try {
   const movieCard = moviePage.locator(`[data-library-id="${movieId}"]`);
   assert.match(await movieCard.innerText(), /Película.*110 min/);
   assert.equal(await movieCard.locator('[data-progress-field="seen"], [data-progress-action="plus"]').count(), 0);
-  await movieCard.locator('[data-progress-action="watched"]').click();
-  await movieCard.locator('[data-progress-field="watchedAt"]').fill('2026-10-16');
-  await movieCard.locator('[data-progress-action="favorite"]').click();
+  const movieDetail = await openDetail(moviePage, movieId);
+  await movieDetail.locator('[data-progress-action="watched"]').click();
+  await movieDetail.locator('[data-progress-field="watchedAt"]').fill('2026-10-16');
+  await movieDetail.locator('[data-progress-action="favorite"]').click();
   await moviePage.reload();
   assert.equal(await moviePage.evaluate((id) => JSON.parse(localStorage.getItem('racoon-v2-state')).mediaLibrary.catalogLinks[id].workId, movieId), identity);
   await moviePage.locator('#progressSearch').fill('Una película');
   await moviePage.evaluate(() => scrollTo({top: 0, behavior: 'instant'}));
-  assert.equal(await movieCard.locator('[data-progress-field="status"]').inputValue(), 'Terminada');
-  assert.equal(await movieCard.locator('[data-progress-field="watchedAt"]').inputValue(), '2026-10-16');
-  await moviePage.screenshot({path: 'artifacts/qa/racoon-v3-02-movie-mobile.png'});
+  await openDetail(moviePage, movieId);
+  assert.equal(await movieDetail.locator('[data-progress-field="status"]').inputValue(), 'Terminada');
+  assert.equal(await movieDetail.locator('[data-progress-field="watchedAt"]').inputValue(), '2026-10-16');
+  await moviePage.screenshot({path: 'artifacts/qa/racoon-v3-03-movie-detail-mobile.png'});
   await moviePage.setViewportSize({width: 1440, height: 1000});
-  await moviePage.screenshot({path: 'artifacts/qa/racoon-v3-02-movie-desktop.png'});
+  await moviePage.screenshot({path: 'artifacts/qa/racoon-v3-03-movie-detail-desktop.png'});
+  await closeDetail(moviePage);
   await moviePage.locator('[data-view="backups"]').click();
   const oldDownload = moviePage.waitForEvent('download');
   await moviePage.locator('#exportMigrationBackup').click();
@@ -220,7 +260,9 @@ try {
   assert.equal(exported.tracking['legacy:verm'].seen, 2);
   assert.equal(exported.tracking['legacy:verm'].favorite, true);
   await moviePage.locator('[data-view="progress"]').click();
-  await movieCard.locator('[data-progress-field="status"]').selectOption('Pendiente');
+  await openDetail(moviePage, movieId);
+  await movieDetail.locator('[data-progress-field="status"]').selectOption('Pendiente');
+  await closeDetail(moviePage);
   await moviePage.locator('[data-view="backups"]').click();
   await moviePage.locator('#backupFile').setInputFiles({name: 'movie-backup.json', mimeType: 'application/json', buffer: movieBackup});
   moviePage.once('dialog', dialog => dialog.accept());
@@ -229,12 +271,13 @@ try {
   await movieContext.setOffline(true);
   await moviePage.reload();
   await moviePage.locator('[data-view="progress"]').click();
-  assert.equal(await movieCard.locator('[data-progress-field="status"]').inputValue(), 'Terminada');
+  await openDetail(moviePage, movieId);
+  assert.equal(await movieDetail.locator('[data-progress-field="status"]').inputValue(), 'Terminada');
   assert.equal(await moviePage.evaluate((id) => JSON.parse(localStorage.getItem('racoon-v2-state')).mediaLibrary.catalogLinks[id].workId, movieId), identity);
   assert.equal(await moviePage.locator('#saveWarning').isVisible(), false);
   await movieContext.close();
   assert.deepEqual(errors, []);
-  console.log('Browser E2E: navegación, progreso, respaldos, migración con copia previa, película manual/Vista/fecha/favorito, identidad estable y offline: OK');
+  console.log('Browser E2E: navegación, progreso, respaldos, migración con copia previa, película manual/Vista/fecha/favorito, identidad estable, tarjetas compactas, ficha universal/Escape/foco y offline: OK');
 } finally {
   await browser.close();
   server.close();

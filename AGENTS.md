@@ -22,6 +22,9 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 Cinco pestañas: Inicio, Agenda, Biblioteca, Explorar y Ajustes. Barra inferior fija
 hasta 800 px; banner solo en Inicio. Conservar los IDs internos existentes en el
 primer incremento para mantener preferencias y flujos compatibles.
+Desde la entrega 03, Biblioteca muestra tarjetas de solo lectura. Progreso,
+estado y favoritos se editan dentro de la ficha universal; Inicio abre esa ficha.
+El diálogo debe cerrar con Escape y devolver el foco a un acceso visible.
 
 ## Validación
 

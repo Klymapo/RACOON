@@ -7,7 +7,7 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 - Base de producción: v2.2.1, merge `a0be814`, 13 de octubre de 2026.
 - Primera entrega v3: `3.0.0-alpha.1`, rama `codex/racoon-v3-01-navigation`.
-- Estado de trabajo actual: `3.0.0-alpha.2`, segunda entrega acumulada en el mismo
+- Estado de trabajo actual: `3.0.0-alpha.3`, tercera entrega acumulada en el mismo
   PR #2. Producción continúa en v2.2.1, sin fusionar ni desplegar estas entregas.
 - Alcance: Inicio, Agenda, Biblioteca, Explorar, Ajustes; barra inferior fija móvil,
   banner exclusivo de Inicio y navegación accesible por teclado.
@@ -18,9 +18,9 @@ https://docs.google.com/document/d/1BaFvQhV8LTm6aFFeGFjsjoKariIdSP7PoVTN8ubwImA/
 
 ## Próximos incrementos
 
-1. Ficha de detalle, tarjetas compactas y edición de progreso dentro de ficha.
+1. Carpetas personales y asignación de obras.
 2. Interfaz para agrupar temporadas; migración a IndexedDB con validación.
-3. Carpetas e importación CSV/Excel con vista previa y duplicados.
+3. Importación CSV/Excel con vista previa y duplicados.
 4. Fuentes regionales verificadas y suscripciones; Slice, Ratings y recomendaciones.
 
 El orden puede ajustarse con Admin. No prometer fuentes regionales detalladas
@@ -105,3 +105,37 @@ El reporte maestro de Gaston se actualiza con el alcance, pruebas y enlaces de e
   las dos entregas. Sin fusión ni publicación.
 - Pendiente de incrementos posteriores: interfaz de agrupación de temporadas,
   IndexedDB, catálogo cinematográfico remoto y rediseño universal de la ficha.
+
+### 2026-10-17 — Argos/Codex — v3, entrega 03
+
+- Admin autorizó continuar con la ficha universal y tarjetas compactas.
+- Biblioteca ahora muestra estado, favorito y resumen vistos/disponibles/
+  pendientes/total; películas con estado y duración. Sin formularios ni cambios de
+  progreso en tarjetas. Los valores desconocidos se mantienen como `?`.
+- Botón Abrir ficha en Biblioteca e Inicio. Diálogo nativo compartido para series
+  y películas, con sinopsis, géneros, progreso, fuentes y disponibilidad regional.
+- Progreso, estado, fecha vista y favorito se editan en el diálogo. Los controles
+  de episodios no aparecen en películas. La edición de metadatos conserva el
+  formulario existente, accesible desde la ficha.
+- Fuentes con enlaces seguros y fecha de consulta; los datos regionales sin
+  evidencia continúan explícitamente sin verificar.
+- Cierre con botón o Escape, devolución de foco a un acceso visible y conservación
+  del foco del campo al actualizar progreso; tamaños de diálogo comprobados.
+- Nueva versión `3.0.0-alpha.3`, módulo `detail-ui.mjs` incluido en caché offline.
+- Se conservan esquema, IDs, progreso, respaldos, copia previa de migración y
+  arquitectura estática de Cloudflare Pages. Sin fusión ni despliegue.
+- Validación Node: 91 pruebas aprobadas, 0 fallos; `git diff --check` limpio.
+- QA Chromium ampliado a tarjetas sin edición, ficha de serie/película,
+  actualización de resumen, Escape/foco, geometría a 320/390/800/1440 px y
+  edición/restauración/offline. Capturas y resultado final se registran abajo.
+
+Validación final de entrega 03: 91 pruebas Node y Chromium E2E aprobados. Corregidos dos casos reproducidos: devolución del foco al acceso visible cuando Inicio y Biblioteca muestran la misma obra, y pérdida del clic al modificar un número y pulsar Favorita. La ficha conserva los controles vivos al actualizar datos. Verificada geometría sin desbordamiento en 320/390/800/1440 px, recarga, respaldo/restauración y offline. No es una prueba de Android físico.
+
+Capturas reales nuevas guardadas en Gaston/APPS/RACOON/CAPTURAS Y QA:
+- [racoon-v3-03-library-mobile.png](https://drive.google.com/file/d/1kA_omlBd9mDU1kEOBpwA2byxurW68yMW/view?usp=drivesdk)
+- [racoon-v3-03-series-detail-mobile.png](https://drive.google.com/file/d/1LubjCg2GIhC65nxaz0otmHnV6gMI7d5-/view?usp=drivesdk)
+- [racoon-v3-03-series-detail-desktop.png](https://drive.google.com/file/d/1wkQs8cHUxZylRnm-Plx9-UaBzyN-waYY/view?usp=drivesdk)
+- [racoon-v3-03-movie-detail-mobile.png](https://drive.google.com/file/d/1IgCYMah0nH1LwznOKLTBV3nilU7hy8_s/view?usp=drivesdk)
+- [racoon-v3-03-movie-detail-desktop.png](https://drive.google.com/file/d/1RI95FLSmVqaXJhYrhHfdMqImH_A924BK/view?usp=drivesdk)
+
+Registro adicional: código, pruebas y plan de entrega 03 se agregan como commit separado al PR #2; su título y descripción y la bitácora maestra de Gaston se actualizan para reflejar las tres entregas. Se preservan evidencias históricas. Sin fusionar ni publicar.

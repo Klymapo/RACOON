@@ -1,7 +1,8 @@
 import {CATALOG} from './catalog.mjs';
 import {createDefaultState, loadState, saveState, validateState} from './storage.mjs';
 import {isMovie} from './media.mjs';
-import {renderMovieCard, renderMovieForm} from './movie-ui.mjs';
+import {renderMovieForm} from './movie-ui.mjs';
+import {renderLibraryCard, renderWorkDetail} from './detail-ui.mjs';
 import {buildCalendarModel} from './schedule.mjs';
 import {mexicoDate} from './time.mjs';
 import {searchAnime, fetchAnimeDetails, fetchSeasonalAnime, matchLegacyAnime, seasonForEntry} from './providers/anilist.mjs';
@@ -10,7 +11,7 @@ import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} f
 import {shouldRefresh, refreshCatalog, mergeCatalogObservation, FOUR_HOURS} from './refresh.mjs';
 import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '3.0.0-alpha.2';
+const RACOON_VERSION = '3.0.0-alpha.3';
 const VIEWS = ['home', 'calendar', 'progress', 'add', 'backups'];
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -167,6 +168,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   let currentView = VIEWS.includes(state.preferences.view) ? state.preferences.view : 'home';
   let searchResults = new Map();
   let selectedSeries = null;
+  let detailId = null;
   let pwaController = null;
   let pendingImport = null;
   let refreshInFlight = null;
@@ -198,7 +200,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
       ['upcoming', model.upcoming.length, 'Próximas emisiones']
     ].map(([, value, label]) => `<article class="stat-card"><strong>${value}</strong><span>${label}</span></article>`).join('');
     const pending = elements('pendingList');
-    if (pending) pending.innerHTML = model.pending.length ? model.pending.slice(0, 4).map((item) => `<div class="stack-item"><div class="stack-icon">${escapeHtml(item.entry.icon || '✦')}</div><div class="stack-copy"><strong>${escapeHtml(item.entry.title || item.entry.name)}</strong><span>${item.remaining} episodio${item.remaining === 1 ? '' : 's'} pendiente${item.remaining === 1 ? '' : 's'}</span></div><button class="mini-button" type="button" data-progress-action="plus" data-id="${escapeHtml(item.id)}" aria-label="Marcar un episodio visto de ${escapeHtml(item.entry.title || item.entry.name)}">+1</button></div>`).join('') : '<div class="empty-state"><strong>Todo en calma</strong>No tienes episodios pendientes.</div>';
+    if (pending) pending.innerHTML = model.pending.length ? model.pending.slice(0, 4).map((item) => `<div class="stack-item"><div class="stack-icon">${escapeHtml(item.entry.icon || '✦')}</div><div class="stack-copy"><strong>${escapeHtml(item.entry.title || item.entry.name)}</strong><span>${item.remaining} episodio${item.remaining === 1 ? '' : 's'} pendiente${item.remaining === 1 ? '' : 's'}</span></div><button class="mini-button" type="button" data-open-detail="${escapeHtml(item.id)}" aria-label="Abrir ficha de ${escapeHtml(item.entry.title || item.entry.name)}">Abrir ficha</button></div>`).join('') : '<div class="empty-state"><strong>Todo en calma</strong>No tienes episodios pendientes.</div>';
     const upcoming = elements('upcomingList');
     if (upcoming) upcoming.innerHTML = model.upcoming.length ? model.upcoming.slice(0, 4).map((entry) => `<div class="stack-item"><div class="stack-icon">${escapeHtml(entry.icon || '✦')}</div><div class="stack-copy"><strong>${escapeHtml(entry.title || entry.name)}</strong><span>${escapeHtml(entry.date)} · ${escapeHtml(entry.platformLabel || 'Fuente pendiente')} · ${escapeHtml(entry.statusLabel)}</span></div></div>`).join('') : '<div class="empty-state"><strong>Sin próximas emisiones</strong>Agrega una serie para verla aquí.</div>';
     const checked = Number(state.updateMeta?.lastChecked);
@@ -211,32 +213,53 @@ export function createApp({document = globalThis.document, storage = globalThis.
     const target = elements('progressList');
     if (!target) return;
     const entries = filterProgressEntries(CATALOG, state, {query: elements('progressSearch')?.value || '', filter: elements('progressFilter')?.value || 'all', sort: elements('progressSort')?.value || state.preferences.sort || 'title'});
-    const cards = entries.map(({entry, tracking, available}) => {
-      const id = entry.id;
-      const total = totalFor(entry, tracking);
-      const percent = progressPercentage(entry, tracking);
-      const poster = safeHttpUrl(entry.poster) ? `<img src="${escapeHtml(entry.poster)}" alt="" loading="lazy">` : escapeHtml(entry.icon || '✦');
-      const availableLabel = available === null ? 'pendiente' : available;
-      if (isMovie(entry)) return renderMovieCard(entry, tracking, poster);
-      return `<article class="library-card" data-library-id="${escapeHtml(id)}"><div class="poster">${poster}</div><div class="card-content"><div class="card-topline"><select class="status-select" data-progress-field="status" data-id="${escapeHtml(id)}" aria-label="Estado de ${escapeHtml(entry.title || entry.name)}">${['Pendiente', 'Viendo', 'Al día', 'Terminada', 'Descartada'].map((value) => `<option value="${value}"${tracking.status === value ? ' selected' : ''}>${value}</option>`).join('')}</select><button class="favorite-button ${tracking.favorite ? 'is-favorite' : ''}" type="button" data-progress-action="favorite" data-id="${escapeHtml(id)}" aria-label="${tracking.favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}">${tracking.favorite ? '★' : '☆'}</button></div><h3>${escapeHtml(entry.title || entry.name)}</h3><div class="card-meta"><span>${tracking.seen} vistos · ${availableLabel} disponibles · ${total ?? '?'} total</span></div><div class="progress-line"><span style="width:${percent}%"></span></div><div class="progress-edit-grid"><label>Vistos<input type="number" min="0" max="9999" value="${tracking.seen}" data-progress-field="seen" data-id="${escapeHtml(id)}"></label><label>Disponibles<input type="number" min="0" max="9999" value="${available ?? ''}" placeholder="?" data-progress-field="availableOverride" data-id="${escapeHtml(id)}"></label><label>Total<input type="number" min="0" max="9999" value="${total ?? ''}" placeholder="?" data-progress-field="totalOverride" data-id="${escapeHtml(id)}"></label></div><div class="card-actions"><button class="mini-button" type="button" data-progress-action="minus" data-id="${escapeHtml(id)}">−1</button><button class="mini-button" type="button" data-progress-action="plus" data-id="${escapeHtml(id)}">＋1</button><button class="mini-button" type="button" data-progress-action="catchup" data-id="${escapeHtml(id)}"${available === null ? ' disabled' : ''}>Al corriente</button></div></div></article>`;
-    });
-    target.innerHTML = cards.join('') || '<div class="empty-state"><strong>Tu biblioteca está vacía</strong>Agrega tu primera serie.</div>';
-    target.querySelectorAll?.('[data-library-id]')?.forEach((card) => {
-      const id = card.dataset.libraryId;
-      const entry = entryMap(CATALOG, state)[id];
-      const tracking = normalizeTracking(state.tracking[id]);
-      if (isMovie(entry)) {
-        card.querySelector('.card-actions')?.insertAdjacentHTML('beforeend', `<button class="mini-button" type="button" data-series-edit="${escapeHtml(id)}">Editar ficha</button><button class="mini-button" type="button" data-series-delete="${escapeHtml(id)}">Eliminar</button>`);
-        return;
+    target.innerHTML = entries.map(({entry, tracking}) => renderLibraryCard(entry, tracking)).join('') || '<div class="empty-state"><strong>Tu biblioteca está vacía</strong>Agrega tu primera obra.</div>';
+  }
+
+  function closeDetail() {
+    elements('workDetail')?.close?.();
+  }
+
+  function renderDetail() {
+    if (!detailId) return;
+    const entry = entryMap(CATALOG, state)[detailId];
+    if (!entry) { closeDetail(); detailId = null; return; }
+    const target = elements('workDetailContent');
+    if (!target) return;
+    const markup = renderWorkDetail(entry, normalizeTracking(state.tracking[detailId]));
+    if (elements('workDetail')?.open && target.dataset.detailId === detailId && target.dataset.detailKind === entry.mediaKind) {
+      // Keep live form nodes: replacing them on blur can swallow the click on
+      // the next button before mouseup (for example, edit count then favorite).
+      const fresh = document.createElement('div');
+      fresh.innerHTML = markup;
+      for (const selector of ['[data-detail-summary]', '#workDetailTitle', '.detail-heading p']) {
+        const node = target.querySelector(selector);
+        if (node) node.textContent = fresh.querySelector(selector)?.textContent || '';
       }
-      const denominator = totalFor(entry, tracking) ?? availableValue(entry, tracking);
-      card.querySelector('.card-meta')?.insertAdjacentHTML('beforeend', `<span> · ${denominator > 0 ? `${progressPercentage(entry, tracking)}% de ${totalFor(entry, tracking) ? 'la temporada' : 'lo disponible'}` : 'porcentaje pendiente'}</span>`);
-      const availabilityTrust = tracking.availableOverride !== null ? 'disponibles: ajuste local' : entry.availableConfidence === 'confirmed' ? 'disponibles: confirmado' : 'disponibles: sin verificar';
-      const totalTrust = tracking.totalOverride !== null ? 'total: ajuste local' : entry.totalConfidence === 'confirmed' ? 'total: confirmado' : entry.totalEpisodes !== null && entry.totalEpisodes !== undefined ? 'total: previsto' : 'total: sin verificar';
-      card.querySelector('.card-meta')?.insertAdjacentHTML('beforeend', `<small>${availabilityTrust} · ${totalTrust}</small>`);
-      if (id.startsWith('legacy:')) return;
-      card.querySelector('.card-actions')?.insertAdjacentHTML('beforeend', `<button class="mini-button" type="button" data-series-edit="${escapeHtml(id)}">Editar ficha</button><button class="mini-button" type="button" data-series-delete="${escapeHtml(id)}">Eliminar</button>`);
-    });
+      target.querySelectorAll('[data-progress-field]').forEach(node => {
+        const value = fresh.querySelector(`[data-progress-field="${node.dataset.progressField}"]`)?.value;
+        if (node !== document.activeElement && value !== undefined) node.value = value;
+      });
+      for (const action of ['favorite', 'catchup']) {
+        const selector = `[data-progress-action="${action}"]`;
+        const node = target.querySelector(selector);
+        const next = fresh.querySelector(selector);
+        if (node && next) { node.textContent = next.textContent; node.disabled = next.disabled; }
+      }
+      for (const selector of ['[data-detail-description]', '[data-detail-evidence]', '[data-detail-trust]', '.detail-heading .poster']) {
+        const node = target.querySelector(selector);
+        if (node) node.innerHTML = fresh.querySelector(selector)?.innerHTML || '';
+      }
+      return;
+    }
+    const active = document?.activeElement;
+    const field = active?.dataset?.progressField;
+    const action = active?.dataset?.progressAction;
+    target.innerHTML = markup;
+    target.dataset.detailId = detailId;
+    target.dataset.detailKind = entry.mediaKind;
+    if (field) target.querySelector?.(`[data-progress-field="${field}"]`)?.focus?.({preventScroll: true});
+    else if (action) target.querySelector?.(`[data-progress-action="${action}"]`)?.focus?.({preventScroll: true});
   }
 
   function renderCalendarEntry(entry) {
@@ -407,6 +430,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
     renderProgress();
     renderCalendar();
     renderBackupSummary();
+    renderDetail();
     if (document?.querySelectorAll) document.querySelectorAll('[data-view]').forEach((tab) => {
       const active = tab.dataset.view === currentView;
       tab.classList.toggle('is-active', active);
@@ -445,6 +469,16 @@ export function createApp({document = globalThis.document, storage = globalThis.
     document.addEventListener('click', (event) => {
       const viewButton = event.target.closest?.('[data-view], [data-go]');
       if (viewButton) selectView(viewButton.dataset.view || viewButton.dataset.go);
+      const detailButton = event.target.closest?.('[data-open-detail]');
+      if (detailButton) {
+        const id = detailButton.dataset.openDetail;
+        if (!entryMap(CATALOG, state)[id]) return;
+        detailId = id;
+        renderDetail();
+        elements('workDetail')?.showModal?.();
+        return;
+      }
+      if (event.target.closest?.('[data-close-detail]')) { closeDetail(); return; }
       const seriesButton = event.target.closest?.('[data-series-select]');
       if (seriesButton) {
         const result = searchResults.get(seriesButton.dataset.seriesSelect);
@@ -463,7 +497,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
       const editSeries = event.target.closest?.('[data-series-edit]');
       if (editSeries) {
         selectedSeries = entryMap(CATALOG, state)[editSeries.dataset.seriesEdit] || null;
-        if (selectedSeries) { selectView('add'); renderSeriesConfirmation(selectedSeries); renderAddStatus('Edita la ficha y guarda los cambios.'); }
+        if (selectedSeries) { detailId = null; closeDetail(); selectView('add'); renderSeriesConfirmation(selectedSeries); renderAddStatus('Edita la ficha y guarda los cambios.'); }
         return;
       }
       const deleteSeries = event.target.closest?.('[data-series-delete]');
@@ -471,6 +505,8 @@ export function createApp({document = globalThis.document, storage = globalThis.
         const id = deleteSeries.dataset.seriesDelete;
         const entry = entryMap(CATALOG, state)[id];
         if (!entry || id.startsWith('legacy:') || !globalThis.confirm?.(`¿Eliminar ${entry.title || entry.name} y su progreso local? Exporta un respaldo si quieres poder recuperarlo.`)) return;
+        closeDetail();
+        detailId = null;
         const catalogOfficial = {...state.catalogOfficial};
         const catalogCustom = {...state.catalogCustom};
         const tracking = {...state.tracking};
@@ -575,6 +611,14 @@ export function createApp({document = globalThis.document, storage = globalThis.
       setTracking(id, {[field.dataset.progressField]: value, manualFields: [...manualFields]});
     });
   }
+  elements('workDetail')?.addEventListener?.('close', () => {
+    const id = detailId;
+    detailId = null;
+    if (id) {
+      const opener = [...document.querySelectorAll?.('[data-open-detail]') || []].find(button => button.dataset.openDetail === id && button.getClientRects?.().length);
+      (opener || elements(`${currentView}Tab`))?.focus?.({preventScroll: true});
+    }
+  });
   elements('previousWeek')?.addEventListener?.('click', () => {
     const button = {dataset: {calendarWeek: '-7'}};
     state.preferences.calendarWeek = addDays(state.preferences.calendarWeek || mondayOf(mexicoDate(now())), -7);

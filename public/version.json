@@ -1,8 +1,8 @@
 {
-  "version": "3.0.0-alpha.2",
+  "version": "3.0.0-alpha.3",
   "changes": [
-    "Obras y temporadas con identidades internas y progreso independiente",
-    "Películas manuales con estado Vista, duración y fecha de visualización",
-    "Respaldo previo a la migración y exportaciones compatibles"
+    "Biblioteca con tarjetas compactas y resumen de progreso",
+    "Ficha universal para consultar fuentes y editar series o películas",
+    "Apertura accesible, cierre con Escape y recuperación del foco"
   ]
 }
