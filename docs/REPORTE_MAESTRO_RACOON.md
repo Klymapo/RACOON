@@ -346,3 +346,10 @@ Actualización de pruebas entrega 18: evidencia cromática/geométrica revisada;
 
 - Consulta TMDB/JustWatch mediante token libre no guardado, selección explícita y país estricto; se protege contra confundir países, modalidades, canales, cobertura de temporada o confirmación de inclusión. No registra datos como verificados sin revisión propia del usuario. Funciona como complemento a evidencia manual.
 - Requiere credencial gratuita del usuario y atribución/licencia TMDB para operar realmente; sin ella solo se prueba con fixtures. Android físico pendiente de aceptación. Sin fusión ni publicación.
+
+### 2026-10-18 — Argos — cierre técnico de 19–20, CI validada
+
+- Persistencia IndexedDB independiente de cuota localStorage: un checkpoint verificado queda guardado en IDB cuando no cabe la duplicación local; espejo de recuperación opcional, detección de cambios externos, aviso de fallo y reversión segura. Tests Node + Chromium simulan cuota llena, editan, recargan y recuperan avance real en IndexedDB.
+- Región: búsqueda TMDB por nombre y tipo, selección humana de candidato, país exacto, listas de proveedor, clasificación conservadora de Channels y ofertas nunca auto-verificadas. Credencial libre de lectura no persistida. Pruebas de respuesta simulada MX/US, privacidad, UI móvil y escritorio; no hubo verificación en vivo de disponibilidad.
+- CI 39149703930 aprobó 199 pruebas Node y siete E2E Chromium sobre el código 111cf63. Artefacto de capturas disponible en https://github.com/Klymapo/RACOON/actions/runs/39149703930 .
+- Estado actual: 20 incrementos de código en PR #2, alpha.20; dos aceptaciones externas imposibles de acreditar solo con CI: Android físico y consulta real con token TMDB gratuito/licencia/atribución. No fusionado, no desplegado. Producción v2.2.1 intacta.

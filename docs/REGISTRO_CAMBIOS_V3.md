@@ -118,3 +118,9 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 ### Compatibilidad con QA preexistente
 
 - CI 39149388451: 199 pruebas Node y tres E2E iniciales pasaron, pero script de región antiguo detectó dos `<summary>` en un mismo panel. Se separó consulta TMDB del editor manual sin cambiar semántica ni cobertura de evidencia. QA nuevo comprueba el panel por separado. CI a repetir.
+
+## 2026-10-18 — Argos — cierre técnico alpha.20, CI final
+
+- Commit 6eeb7df corrigió el test del origen incompatible; CI 39148948833 pasó almacenamiento. Commits 17fed0e, b80f670, a052a84 y 8f203c7 implementaron/adaptaron consulta regional y QA sin reemplazar el controlador original; el primer E2E detectó selector duplicado y se corrigió.
+- Commit 111cf63 añadió E2E de cuota llena del navegador real con recarga/restauración. CI 39149703930: 199/199 Node y siete E2E Chromium aprobados, con capturas auténticas como artefacto. No son Android físico. El token de pruebas y los proveedores de ejemplo son sintéticos; cero peticiones reales a TMDB sin credencial del usuario.
+- Registrada aceptación externa pendiente en docs/ACEPTACION_ANDROID_V3.md. No se fusionó ni publicó; producción permanece v2.2.1.

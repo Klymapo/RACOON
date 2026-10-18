@@ -26,8 +26,10 @@ sin Functions, D1 ni servicios de pago.
 | 16 | WRAP local por periodo e instantáneas de registros | integrada en alpha.17 |
 | 17 | OCR local de imágenes/fotogramas, corrección y confirmación | alpha.17 |
 | 18 | Identidad geométrica, seis gestos vectoriales, iconos y manifest PWA | alpha.18 |
+| 19 | IndexedDB principal independiente de cuota local y restauración protegida | alpha.19 |
+| 20 | Consulta TMDB/JustWatch optativa, candidatos y país estricto | alpha.20 |
 
-## Pendiente: 2 frentes de cierre; funcionalidad de cuota cubierta
+## Pendiente: 2 aceptaciones externas; núcleo técnico completado y probado
 
 Esta es una agrupación para contar el alcance pendiente, no una promesa de 13
 entregas. Cada bloque puede dividirse en varias entregas con pruebas. El modelo
@@ -36,8 +38,8 @@ nota numérica tampoco equivale a completar Ratings.
 
 | Bloque | Trabajo restante |
 | --- | --- |
-| 1 | Transición reversible implementada; falta independencia de cuota localStorage y aceptación Android físico |
-| 3 | Evidencia y suscripciones manuales implementadas; falta proveedor automático gratuito validado |
+| 1 | Cuota localStorage resuelta y probada en Chromium; falta aceptación en Android físico |
+| 3 | Adaptador automático TMDB/JustWatch opcional integrado; falta consulta real con token gratuito y atribución/licencia validada, y no demuestra cobertura por temporada |
 
 Después del alcance funcional: revisión integral, aceptación en Android físico
 y decisión del propietario sobre fusión/publicación. Sin fecha ni porcentaje
@@ -188,3 +190,9 @@ IndexedDB acepta bibliotecas que exceden la cuota localStorage: el espejo se esc
 ## 2026-10-18 — entrega 20 (alpha.20)
 
 Se integra una consulta opcional de TMDB por país con token de lectura gratuito no persistido y búsqueda con selección explícita de identidad. Las modalidades de JustWatch/TMDB aparecen solo como indicativas; se distinguen canales adicionales de plan base y no se infiere cobertura de temporadas o episodios. Borradores manuales conservan `verified=false`. Uso comercial y despliegue requieren revisar las condiciones/atribución de TMDB (incluido logo oficial). Sin credencial externa no se puede ejecutar una verificación real en vivo: el proveedor automático queda técnicamente integrado, no certificado en MX por prueba viva. Android físico sigue pendiente.
+
+### Evidencia final alpha.20, 18 de octubre de 2026
+
+- PR #2 hasta 111cf63, no fusionado. CI 39149703930 terminó correctamente: 199 tests Node y 7 E2E Chromium, incluido almacenamiento con cuota local simulada, recarga desde IDB, reversión controlada y consulta regional con respuesta fixture MX/US y Channel.
+- Evidencia gráfica: artefacto racoon-v3-capturas-chromium de la CI, con Inicio, Agenda, Biblioteca, detalles y panel regional móvil/escritorio. Oferta regional en las capturas es un *fixture*, no dato mexicano actualizado.
+- Pendientes no automatizables aquí: aceptar en Android físico real y usar una credencial TMDB gratuita válida para consultar realmente un título, verificar enlace/origen y cumplir atribución TMDB/JustWatch. Sin esos dos pasos, no se declara 100% cerrado ni se publica.
