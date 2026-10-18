@@ -62,3 +62,7 @@ requieren evaluación separada; no son dependencias implícitas de la aplicació
 ## Entrega 06
 
 Desde la ficha de una serie se elige explícitamente a qué obra vincular su temporada, un número de temporada opcional, se navega entre temporadas agrupadas y se puede separar. Los progresos y favoritos individuales no cambian; las carpetas de ambos grupos se conservan y al separar se heredan las asignaciones del grupo. No se agrupa por similitud de títulos. Se añadieron pruebas en tests/season-grouping.test.mjs; revisión visual y Android físico quedan pendientes. No fusionada ni publicada.
+
+## Bloque 1: etapa 07A, 18 de octubre de 2026
+
+Adaptador IndexedDB optativo en public/js/indexeddb.mjs: lectura validada, escritura transaccional verificada y preparación explícita desde localStorage. Se detectan estados inválidos, instantáneas obsoletas, errores y cambios concurrentes. Pruebas en tests/indexeddb.test.mjs. La aplicación todavía usa localStorage: NO se activó migración automática ni se borraron datos. Faltan integración, reversión y pruebas en navegador real. El bloque 1 sigue pendiente; restan 12 bloques funcionales. Sin fusión ni publicación.
