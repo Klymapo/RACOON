@@ -1,6 +1,6 @@
 // En modo IndexedDB, la copia local es opcional: nunca bloquea la cuota del catálogo.
 import {STATE_KEY, STATE_SCHEMA_VERSION, validateState} from './storage.mjs';
-import {openRacoonDatabase, readIndexedRecord, writeIndexedSnapshot} from './indexeddb.mjs';
+import {openRacoonDatabase, readIndexedRecord, writeIndexedSnapshot, ensureIndexedCheckpoint, readIndexedCheckpoint} from './indexeddb.mjs';
 export const MODE_KEY = 'racoon-storage-mode';
 export const MIGRATION_KEY = `${STATE_KEY}:before-indexed-v1`;
 function parseSource(raw) {
@@ -36,7 +36,7 @@ export async function createStorageRuntime({storage, openDatabase = openRacoonDa
       const record = await withDatabase(readIndexedRecord);
       if (!record) throw Error('IndexedDB sin biblioteca');
       const indexedRaw = JSON.stringify(record.state);
-      if (raw !== indexedRaw && record.mirrorRaw !== raw) throw Error('Edición local ajena, recuperando copia local');
+      if (localGet(STATE_KEY) !== raw || (raw !== indexedRaw && record.mirrorRaw !== raw)) throw Error('Edición local ajena, recuperando copia local');
       startMirror = raw;
       volatileState = indexedRaw;
       mode = 'indexeddb';
@@ -74,7 +74,7 @@ export async function createStorageRuntime({storage, openDatabase = openRacoonDa
       }
       const state = parseSource(value);
       volatileState = value;
-      let mirrorRaw = null, mirrorOK = false;
+      let mirrorRaw = null, mirrorOK = false, saveOutcome = 'failed';
       try {
         storage.setItem(key,value);
         mirrorRaw = localGet(key);
@@ -85,12 +85,12 @@ export async function createStorageRuntime({storage, openDatabase = openRacoonDa
       queue = queue.catch(()=>{}).then(async()=>{
         try {
           await withDatabase(db=>writeIndexedSnapshot(db,state,{mirrorRaw}));
-          if(mode==='indexeddb' && pending===1) notify(mirrorOK?'saved':'independent');
+          saveOutcome = mirrorOK?'saved':'independent';
         } catch {
           if(mirrorOK && localGet(STATE_KEY)===value) fallback();
-          else notify('failed');
+          else {saveOutcome = 'failed'; notify('failed');}
         }
-      }).finally(()=>{pending--; if(mode==='indexeddb' && pending===0)notify(mirrorOK?'saved':'independent');});
+      }).finally(()=>{pending--; if(mode==='indexeddb' && pending===0)notify(saveOutcome);});
     }
   };
   async function exclusive(action) {
@@ -102,14 +102,22 @@ export async function createStorageRuntime({storage, openDatabase = openRacoonDa
     storage:facade,
     get mode(){return mode;},
     flush:()=>queue,
+    getCheckpoint:async()=>{
+      const local=localGet(MIGRATION_KEY);
+      if(local)return local;
+      const stored=await withDatabase(readIndexedCheckpoint);
+      return stored ? JSON.stringify(stored) : null;
+    },
     activate:()=>exclusive(async()=>{
       if(mode==='indexeddb')return;
       const raw=localGet(STATE_KEY),source=parseSource(raw);
+      await withDatabase(async db=>{
+        await ensureIndexedCheckpoint(db,source);
+        await writeIndexedSnapshot(db,source,{mirrorRaw:raw});
+      });
       if(localGet(MIGRATION_KEY)===null) {
-        storage.setItem(MIGRATION_KEY,raw);
-        if(localGet(MIGRATION_KEY)!==raw) throw Error('No se pudo verificar el respaldo previo.');
+        try {storage.setItem(MIGRATION_KEY,raw);} catch {}
       }
-      await withDatabase(db=>writeIndexedSnapshot(db,source,{mirrorRaw:raw}));
       if(localGet(STATE_KEY)!==raw)throw Error('La biblioteca cambió durante la activación. Intenta nuevamente.');
       setMode('indexeddb');volatileState=raw;startMirror=raw;started=true;notify('ready');
     }),

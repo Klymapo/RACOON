@@ -31,9 +31,9 @@ export function mountStorageRuntimePanel(document,runtime,storage) {
   const panel=document.createElement('article');panel.className='panel-card';
   panel.innerHTML='<h3>Almacenamiento local reversible</h3><p class="muted">Puedes activar IndexedDB como biblioteca principal. Guarda un espejo en localStorage solo cuando hay espacio, sin bloquear el guardado por cuota. Revertir a localStorage exige que la biblioteca quepa. Exporta JSON periódicamente; no sincroniza entre dispositivos.</p><button id="activateIndexedStorage" type="button" class="button button-soft">Activar IndexedDB</button> <button id="deactivateIndexedStorage" type="button" class="button button-soft">Volver a localStorage</button> <button id="downloadIndexedCheckpoint" type="button" class="button button-soft">Descargar respaldo previo</button><p id="storageRuntimeStatus" class="inline-status" role="status" aria-live="polite"></p>';
   view.appendChild(panel);registerStorageRuntimeControls(document,runtime);
-  document.getElementById('downloadIndexedCheckpoint').addEventListener('click',()=>{
+  document.getElementById('downloadIndexedCheckpoint').addEventListener('click',async()=>{
     try {
-      const raw=storage.getItem(MIGRATION_KEY);if(!raw)throw Error('Sin respaldo');
+      const raw=await runtime.getCheckpoint();if(!raw)throw Error('Sin respaldo');
       const backup=createBackup(JSON.parse(raw));
       const url=URL.createObjectURL(new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}));
       const link=document.createElement('a');link.href=url;link.download='racoon-antes-indexeddb.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);

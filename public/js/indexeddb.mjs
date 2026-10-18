@@ -80,3 +80,24 @@ export async function stageLocalStateMigration(storage, openDatabase = openRacoo
     return {status: 'failed', reason: String(error?.message || error)};
   } finally { db?.close?.(); }
 }
+
+export async function readIndexedCheckpoint(db) {
+  const row=await awaitRequest(db.transaction(STORE,'readonly').objectStore(STORE).get('before-indexed'));
+  if(!row)return null;
+  if(row.schemaVersion!==STATE_SCHEMA_VERSION||typeof row.json!=='string')throw Error('Respaldo inicial incompatible');
+  return validateState(JSON.parse(row.json));
+}
+export async function ensureIndexedCheckpoint(db,state) {
+  const initial=await readIndexedCheckpoint(db);
+  if(initial)return initial;
+  const json=JSON.stringify(validateState(state)),tx=db.transaction(STORE,'readwrite');
+  const done=new Promise((resolve,reject)=>{
+    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('Error en checkpoint'));
+    tx.onabort=()=>reject(tx.error||Error('Checkpoint abortado'));
+  });
+  tx.objectStore(STORE).put({id:'before-indexed',schemaVersion:STATE_SCHEMA_VERSION,json});
+  await done;
+  const recorded=await readIndexedCheckpoint(db);
+  if(JSON.stringify(recorded)!==json)throw Error('Checkpoint no verificado');
+  return recorded;
+}

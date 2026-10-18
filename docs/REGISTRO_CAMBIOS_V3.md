@@ -98,3 +98,9 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 
 - IndexedDB principal resistente a falta de espacio localStorage, transacción verificada, espejo opcional, recuperación mediante registro del último espejo y reversión condicionada a capacidad. En doble fallo se informa claramente y mantiene el estado en memoria para exportar JSON. Tests nuevos de cuota, recuperación y error combinado.
 - PR #2 sin fusión ni despliegue. Android físico y proveedor regional automatizado continúan pendientes. CI en proceso de validación.
+
+### Corrección de regresión de almacenamiento
+
+- CI 39148685870 identificó regresión de edición concurrente al arrancar. Se añadió segunda comparación tras la lectura asincrónica y prueba compatible.
+- La copia previa de migración se verifica en IndexedDB aunque la cuota local impida duplicarla; Ajustes puede descargarla desde allí. El estado de error combinado ya no queda tapado por un mensaje posterior de éxito.
+- Se revisaron pruebas para conservación del primer respaldo y ausencia de borrado. Nueva CI por verificar.

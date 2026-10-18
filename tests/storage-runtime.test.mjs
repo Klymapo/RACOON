@@ -55,12 +55,13 @@ test('activation refuses a concurrent edit and never sets the active pointer',as
   assert.notEqual(f.storage.getItem(runtime.MODE_KEY),'indexeddb');
   assert.equal(JSON.parse(f.storage.getItem(STATE_KEY)).tracking.x.seen,10);
 });
-test('a failed checkpoint or invalid source cannot activate IndexedDB',async()=>{
+test('quota-full local checkpoint is kept in IndexedDB; invalid source cannot activate',async()=>{
   const f=fixture(),r=await runtime.createStorageRuntime(f),write=f.storage.setItem;
   f.storage.setItem=(k,v)=>{if(k===runtime.MIGRATION_KEY)throw Error('quota');write(k,v);};
-  await assert.rejects(()=>r.activate());assert.equal(r.mode,'local');assert.equal(f.rows.size,0);
+  await r.activate();assert.equal(r.mode,'indexeddb');assert.equal(f.rows.has('before-indexed'),true);
+  assert.equal(JSON.parse(await r.getCheckpoint()).tracking.x.seen,3);
   f.storage.setItem=write;f.storage.setItem(STATE_KEY,'{"schemaVersion":2}');
-  await assert.rejects(()=>r.activate(),/incompatible/i);
+  await r.deactivate();await assert.rejects(()=>r.activate(),/incompatible/i);
 });
 test('an unreadable active local mirror blocks startup without replacing either copy',async()=>{
   const f=fixture(),r=await runtime.createStorageRuntime(f);await r.activate();
@@ -126,4 +127,14 @@ test('failed IndexedDB writes with a stale mirror warn, do not silently downgrad
   assert.equal(r.mode,'indexeddb');
   assert.ok(events.includes('failed'));
   assert.equal(JSON.parse(r.storage.getItem(STATE_KEY)).tracking.x.seen,77);
+});
+
+test('failed writes with both stores unavailable keep the visibly unsaved status',async()=>{
+ const f=fixture(),events=[],r=await runtime.createStorageRuntime({...f,onStatus:v=>events.push(v.status)});
+ await r.activate();const setter=f.storage.setItem;
+ f.storage.setItem=(k,v)=>{if(k===STATE_KEY)throw Error('quota');setter(k,v);};f.fail();
+ const state=createDefaultState();state.tracking.x={seen:88};
+ saveState(r.storage,state);await r.flush();
+ assert.equal(events.at(-1),'failed');
+ assert.equal(r.mode,'indexeddb');
 });
