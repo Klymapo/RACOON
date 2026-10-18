@@ -184,3 +184,7 @@ Diseño geométrico SVG y monocromo, un mismo rostro para las expresiones del Ra
 ## 2026-10-18 — entrega 19 (alpha.19, almacenamiento)
 
 IndexedDB acepta bibliotecas que exceden la cuota localStorage: el espejo se escribe cuando cabe; ante quota la escritura principal sigue mediante transacción verificada. El registro IDB conoce exactamente el último espejo para distinguir una copia antigua intacta de una edición local posterior. La reversión comprueba capacidad, los fallos combinados avisan y requieren respaldo JSON. Tests específicos de cuota y recuperación; Android físico pendiente.
+
+## 2026-10-18 — entrega 20 (alpha.20)
+
+Se integra una consulta opcional de TMDB por país con token de lectura gratuito no persistido y búsqueda con selección explícita de identidad. Las modalidades de JustWatch/TMDB aparecen solo como indicativas; se distinguen canales adicionales de plan base y no se infiere cobertura de temporadas o episodios. Borradores manuales conservan `verified=false`. Uso comercial y despliegue requieren revisar las condiciones/atribución de TMDB (incluido logo oficial). Sin credencial externa no se puede ejecutar una verificación real en vivo: el proveedor automático queda técnicamente integrado, no certificado en MX por prueba viva. Android físico sigue pendiente.

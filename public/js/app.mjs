@@ -1,3 +1,4 @@
+import {mountAutomaticRegionalLookup} from './regional-auto-ui.mjs';
 import {validDay} from './ratings.mjs';
 import {mountShareCards,shareButton} from './share-ui.mjs';
 import {mountWrap} from './wrap-ui.mjs';
@@ -25,7 +26,7 @@ import {createBackup, parseBackup, mergeBackup, replaceWithBackup, stateToCsv} f
 import {shouldRefresh, refreshCatalog, mergeCatalogObservation, FOUR_HOURS} from './refresh.mjs';
 import {createCustomId} from './model.mjs';
 
-const RACOON_VERSION = '3.0.0-alpha.19';
+const RACOON_VERSION = '3.0.0-alpha.20';
 const VIEWS = ['home', 'calendar', 'progress', 'add', 'backups'];
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -866,6 +867,7 @@ export function createApp({document = globalThis.document, storage = globalThis.
   const commitLocal = candidate => { state = validateState(candidate); const saved = persist(); render(); return saved; };
   mountDiscovery({document, storage, download: downloadFile, getState: () => state, commitState: candidate => { if (!saveState(storage, candidate)) return false; state = validateState(candidate); render(); return true; }, now});
   mountRegionalControls({document, getState: () => state, commitState: commitLocal, now});
+  mountAutomaticRegionalLookup({document, getState: () => state, fetch, now});
   sliceController = mountSlice({document, getState: () => state, commitState: commitLocal, now});
   mountSmartCollectionManager({document, getState: () => state, commitState: commitLocal, now});
   registerTableImporter({document, storage, getState: () => state, commitState: candidate => { if (!saveState(storage, candidate)) return false; state = candidate; render(); return true; }, download: downloadFile, now});

@@ -104,3 +104,9 @@ Este archivo complementa docs/REPORTE_MAESTRO_RACOON.md. El registro principal t
 - CI 39148685870 identificó regresión de edición concurrente al arrancar. Se añadió segunda comparación tras la lectura asincrónica y prueba compatible.
 - La copia previa de migración se verifica en IndexedDB aunque la cuota local impida duplicarla; Ajustes puede descargarla desde allí. El estado de error combinado ya no queda tapado por un mensaje posterior de éxito.
 - Se revisaron pruebas para conservación del primer respaldo y ausencia de borrado. Nueva CI por verificar.
+
+## 2026-10-18 — Argos — entrega 20 (alpha.20)
+
+- Adaptador de búsqueda TMDB con selección humana y consulta de proveedores por país. Distinción de suscripción, posible Channel, alquiler, compra, anuncios y acceso gratuito. No se adjudica cobertura de temporada o episodio desde resultados por obra.
+- Token de lectura del usuario solo en campo memoria, sin persistencia ni peticiones automáticas. Al copiar candidato se registra como borrador no verificado que requiere revisión. Pruebas sintéticas de MX/US, canales y privacidad de token.
+- Fuente TMDB gratuita para uso no comercial con atribución obligatoria; no hay credencial ni consulta real operativa sin token proporcionado. La integración se queda como optativa y no se certifica disponibilidad efectiva. Pendiente aceptación Android físico. CI por observar.

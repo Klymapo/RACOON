@@ -1,8 +1,9 @@
 {
-  "version": "3.0.0-alpha.19",
+  "version": "3.0.0-alpha.20",
   "changes": [
-    "IndexedDB principal sin dependencia de cuota localStorage",
-    "Recuperación frente a espejo desactualizado y reversión protegida",
-    "Errores de guardado visibles y respaldo JSON"
+    "Consulta optativa TMDB/JustWatch de plataformas por país con identidad confirmada",
+    "Clave de lectura gratuita solo en memoria, sin guardar en JSON ni localStorage",
+    "Modalidad y canal separados; resultados no verificados requieren revisión",
+    "IndexedDB primario resistente a cuota local"
   ]
 }

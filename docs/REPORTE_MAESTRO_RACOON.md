@@ -341,3 +341,8 @@ Actualización de pruebas entrega 18: evidencia cromática/geométrica revisada;
 
 - Transición IndexedDB fortalecida para que el guardado grande no dependa de cuota localStorage. Espejo opcional; registro del último espejo evita reabrir un estado anterior cuando IDB contiene uno más reciente. Degradación visible y reversión protegida. Pruebas de cuota y conflictos de origen. Sin borrar datos.
 - Falta aceptación en Android físico y evidencia regional automática; sin merge/despliegue. CI pendiente al momento de generar el commit.
+
+### 2026-10-18 — Argos — entrega 20 (alpha.20)
+
+- Consulta TMDB/JustWatch mediante token libre no guardado, selección explícita y país estricto; se protege contra confundir países, modalidades, canales, cobertura de temporada o confirmación de inclusión. No registra datos como verificados sin revisión propia del usuario. Funciona como complemento a evidencia manual.
+- Requiere credencial gratuita del usuario y atribución/licencia TMDB para operar realmente; sin ella solo se prueba con fixtures. Android físico pendiente de aceptación. Sin fusión ni publicación.
